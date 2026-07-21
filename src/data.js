@@ -1,0 +1,157 @@
+export const user = {
+  name: 'Alex Klein',
+  first: 'Alex',
+  initials: 'AK',
+  email: 'alex@mail.com',
+  phone: '+31 6 12 34 56 78',
+  country: 'Netherlands',
+  flag: '🇳🇱',
+  level: 'FIFA · Cat. 1',
+  sport: 'Football',
+  kit: 'L',
+  languages: 'NL · EN · DE',
+  emergency: 'Sofie Klein · +31 6 98 76 54 32',
+}
+
+export const tournaments = [
+  {
+    id: 'porto',
+    name: 'Porto International Cup',
+    country: 'Portugal',
+    city: 'Porto',
+    img: 'img/porto.jpg',
+    age: 'U11–U19',
+    sport: 'Football',
+    dates: 'Jul 1 – Jul 5',
+    lodging: 'Hotel',
+    price: 179,
+    spotsLeft: 20,
+    status: 'approved',
+    applied: true,
+    hotel: 'Hotel Vila Foz',
+    room: 'Room 214',
+    transfer: 'Bus 09:15, lobby',
+    keyTimes: [
+      { t: '08:30', label: 'Breakfast + briefing, lobby' },
+      { t: '10:00', label: 'Match 1 — Pitch C' },
+      { t: '13:30', label: 'Match 2 — Pitch A' },
+      { t: '19:30', label: 'Dinner + fair-play awards' },
+    ],
+    agenda: [
+      { d: 'Tue', label: 'Arrival + accreditation' },
+      { d: 'Wed', label: 'Group stage, day 1' },
+      { d: 'Thu', label: 'Group stage, day 2' },
+      { d: 'Fri', label: 'Finals + banquet' },
+    ],
+    documents: [
+      { name: 'Travel itinerary.pdf', meta: 'Updated Jun 24 · 240 KB', type: 'pdf' },
+      { name: 'E-ticket — LIS → OPO', meta: 'Jul 1 · 07:40', type: 'ticket' },
+      { name: 'Referee agreement.pdf', meta: 'Signed · Jun 20', type: 'doc' },
+    ],
+  },
+  {
+    id: 'copenhagen',
+    name: 'Copenhagen Cup',
+    country: 'Denmark',
+    city: 'Copenhagen',
+    img: 'img/copenhagen.jpg',
+    age: 'U10–U19',
+    sport: 'Football',
+    dates: 'Jul 10 – Jul 16',
+    lodging: 'Hotel',
+    price: 199,
+    spotsLeft: 15,
+    status: 'pending',
+    applied: true,
+    hotel: 'Wakeup Copenhagen',
+    room: 'Room 508',
+    transfer: 'Metro M2, 20 min',
+    keyTimes: [
+      { t: '09:00', label: 'Referee meeting' },
+      { t: '11:00', label: 'Match 1 — Field 4' },
+      { t: '18:00', label: 'Team dinner' },
+    ],
+    agenda: [
+      { d: 'Fri', label: 'Arrival + welcome' },
+      { d: 'Sat', label: 'Group stage' },
+      { d: 'Sun', label: 'Knockouts + finals' },
+    ],
+    documents: [
+      { name: 'Welcome pack.pdf', meta: 'Updated Jul 2 · 310 KB', type: 'pdf' },
+      { name: 'Kit sizing guide', meta: 'PDF · 480 KB', type: 'doc' },
+    ],
+  },
+  {
+    id: 'ibercup',
+    name: 'IberCup Cascais',
+    country: 'Portugal',
+    city: 'Cascais',
+    img: 'img/ibercup.jpg',
+    age: 'U12–U18',
+    sport: 'Football',
+    dates: 'Jun 2 – Jun 8',
+    lodging: 'Campus',
+    price: 165,
+    spotsLeft: 7,
+    status: 'open',
+    applied: false,
+  },
+  {
+    id: 'costabrava',
+    name: 'Costa Brava Cup',
+    country: 'Spain',
+    city: 'Girona',
+    img: 'img/costabrava.jpg',
+    age: 'U11–U19',
+    sport: 'Football',
+    dates: 'Aug 12 – Aug 16',
+    lodging: 'Hotel',
+    price: 189,
+    spotsLeft: 12,
+    status: 'open',
+    applied: false,
+  },
+]
+
+export const news = [
+  {
+    id: 1,
+    title: 'Welcome to Referee Abroad!',
+    body: 'We are excited to have you on board. Browse available tournaments and start your international refereeing journey today!',
+    ago: '2h ago',
+  },
+  {
+    id: 2,
+    title: 'IberCup Cascais — spots filling fast',
+    body: 'Only 7 spots remaining for the IberCup Cascais tournament in June. Apply now to secure your place!',
+    ago: '1d ago',
+  },
+  {
+    id: 3,
+    title: 'New tournament added: Costa Brava Cup',
+    body: 'We have added a new tournament in Spain! The Costa Brava Cup takes place in August. Check the tournaments page for details.',
+    ago: '3d ago',
+  },
+]
+
+export const generalDocs = [
+  { name: 'Referee handbook 2026', meta: 'PDF · 1.2 MB', type: 'doc' },
+  { name: 'Kit sizing guide', meta: 'PDF · 480 KB', type: 'shirt' },
+  { name: 'Code of conduct', meta: 'PDF · 190 KB', type: 'doc' },
+]
+
+export const orgChat = [
+  { from: 'org', text: 'Hi Alex! Your flight to Porto is confirmed ✈️ Arriving Jul 1 at 09:10.' },
+  { from: 'org', text: 'Your pickup will be waiting at arrivals with a Referee Abroad sign.' },
+  { from: 'me', text: 'Great, thanks! Can I still change my kit size to L?' },
+  { from: 'org', text: "Of course 👍 I've updated your size to L — it's set in your profile now." },
+  { from: 'me', text: 'Perfect 🙏' },
+]
+
+export const groupChat = [
+  { sys: 'Marco created the group' },
+  { from: 'Marco (org)', initials: 'MR', color: '#44A546', text: 'Welcome everyone! 👋 We meet at 09:15 in the lobby for the bus.' },
+  { from: 'Lucas B.', initials: 'LB', color: '#8a6d1f', text: 'Anyone want to share a taxi from the airport? 🚕' },
+  { from: 'me', text: 'Me! Also landing at 09:10 ✋' },
+  { from: 'Ana N.', initials: 'AN', color: '#1d6e56', text: "Don't forget to pack your yellow kit 😄" },
+]
