@@ -1,6 +1,8 @@
 import { Routes, Route, Outlet } from 'react-router-dom'
 import PhoneFrame from './components/PhoneFrame.jsx'
 import BottomNav from './components/BottomNav.jsx'
+import Hub from './pages/Hub.jsx'
+import DashboardComingSoon from './pages/DashboardComingSoon.jsx'
 import Login from './pages/Login.jsx'
 import Home from './pages/Home.jsx'
 import Tournaments from './pages/Tournaments.jsx'
@@ -10,6 +12,14 @@ import News from './pages/News.jsx'
 import Profile from './pages/Profile.jsx'
 import ChatOrg from './pages/ChatOrg.jsx'
 import GroupChat from './pages/GroupChat.jsx'
+
+function PhoneShell() {
+  return (
+    <PhoneFrame>
+      <Outlet />
+    </PhoneFrame>
+  )
+}
 
 function TabLayout() {
   return (
@@ -24,11 +34,13 @@ function TabLayout() {
 
 export default function App() {
   return (
-    <PhoneFrame>
-      <Routes>
+    <Routes>
+      <Route path="/" element={<Hub />} />
+      <Route path="/dashboard" element={<DashboardComingSoon />} />
+      <Route element={<PhoneShell />}>
         <Route path="/login" element={<Login />} />
         <Route element={<TabLayout />}>
-          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/tournaments" element={<Tournaments />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/news" element={<News />} />
@@ -37,7 +49,7 @@ export default function App() {
         <Route path="/tournament/:id" element={<TournamentDetail />} />
         <Route path="/tournament/:id/group" element={<GroupChat />} />
         <Route path="/chat" element={<ChatOrg />} />
-      </Routes>
-    </PhoneFrame>
+      </Route>
+    </Routes>
   )
 }

@@ -9,7 +9,7 @@ export default function Login() {
 
   function submit(e) {
     e.preventDefault()
-    nav('/')
+    nav('/home')
   }
 
   return (
