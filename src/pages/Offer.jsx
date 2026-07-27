@@ -75,6 +75,8 @@ export default function Offer() {
   const vat = Math.round(subtotal * 0.21)
   const total = subtotal + vat
   const sprints = items.reduce((a, b) => a + b.sprints, 0)
+  const friendly = 5000
+  const friendlyIncl = Math.round(friendly * 1.21)
 
   return (
     <div className="min-h-screen bg-page text-ink font-sans">
@@ -123,8 +125,19 @@ export default function Offer() {
           <div className="flex justify-between text-sm font-medium text-neutral-600 py-1">
             <span>VAT (21%)</span><span>{euro(vat)}</span>
           </div>
-          <div className="flex justify-between text-xl font-extrabold text-ink border-t border-neutral-200 pt-3 mt-2">
-            <span>Total (incl. VAT)</span><span className="text-brand-dark">{euro(total)}</span>
+          <div className="flex justify-between text-base font-semibold text-neutral-400 border-t border-neutral-200 pt-3 mt-2">
+            <span>Total (incl. VAT)</span>
+            <span className="line-through decoration-[3px] decoration-red-500">{euro(total)}</span>
+          </div>
+          <div className="mt-4 rounded-xl bg-brand-light p-4 flex items-end justify-between">
+            <div>
+              <p className="text-sm font-bold text-brand-dark">Agreed friendly price</p>
+              <p className="text-[11px] font-medium text-brand-dark/70">{euro(friendlyIncl)} incl. VAT</p>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-extrabold text-brand-dark leading-none">{euro(friendly)}</p>
+              <p className="text-[11px] font-semibold text-brand-dark/70 mt-1">excl. VAT</p>
+            </div>
           </div>
         </div>
 
