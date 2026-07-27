@@ -150,11 +150,51 @@ export function DashboardStaff() {
   )
 }
 
+function TicketChat({ ticket, onClose }) {
+  const first = ticket.name.split(' ')[0]
+  const initials = ticket.name.split(' ').map((w) => w[0]).join('')
+  const [messages, setMessages] = useState(() => {
+    const base = [{ from: 'them', text: `${ticket.subject}. Could you help me with this?` }]
+    if (ticket.status !== 'open') base.push({ from: 'me', text: `Hi ${first}, thanks for reaching out! We've taken care of it. 👍` })
+    return base
+  })
+  const [input, setInput] = useState('')
+  const send = (e) => {
+    e.preventDefault()
+    if (!input.trim()) return
+    setMessages((m) => [...m, { from: 'me', text: input }])
+    setInput('')
+  }
+  return (
+    <div className="flex flex-col h-[520px]">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-200 shrink-0">
+        <span className="w-9 h-9 rounded-full bg-brand-light text-brand-dark flex items-center justify-center font-bold text-xs flex-none">{initials}</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-ink text-sm truncate">{ticket.name}</p>
+          <p className="text-[11px] text-neutral-500 font-medium truncate">{ticket.tournament} · {ticket.subject}</p>
+        </div>
+        <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center flex-none"><X size={18} /></button>
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2 bg-page">
+        {messages.map((m, i) => (
+          <div key={i} className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm font-medium ${m.from === 'me' ? 'ml-auto bg-brand text-white rounded-br-md' : 'bg-white border border-neutral-200 text-ink rounded-bl-md'}`}>{m.text}</div>
+        ))}
+      </div>
+      <form onSubmit={send} className="flex items-center gap-2 p-3 border-t border-neutral-200 shrink-0">
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a reply…"
+          className="flex-1 h-10 px-3 rounded-full border border-neutral-200 text-sm font-medium outline-none focus:border-brand" />
+        <button type="submit" className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center flex-none"><Send size={17} /></button>
+      </form>
+    </div>
+  )
+}
+
 /* ---------------- Communication ---------------- */
 export function DashboardCommunication() {
   const [tournament, setTournament] = useState(dashTournaments[0].name)
   const [msg, setMsg] = useState('')
   const [sent, setSent] = useState(false)
+  const [openTicket, setOpenTicket] = useState(null)
 
   const statusMap = {
     open: 'bg-amber-100 text-amber-700',
@@ -163,6 +203,7 @@ export function DashboardCommunication() {
   }
 
   return (
+    <>
     <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 items-start">
       <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-200 flex items-center justify-between">
@@ -171,7 +212,7 @@ export function DashboardCommunication() {
         </div>
         <div className="divide-y divide-neutral-100">
           {dashTickets.map((t) => (
-            <button key={t.id} className="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-page transition">
+            <button key={t.id} onClick={() => setOpenTicket(t)} className="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-page transition">
               <span className="w-8 h-8 rounded-full bg-brand-light text-brand-dark flex items-center justify-center font-bold text-xs flex-none">{t.name.split(' ').map((w) => w[0]).join('')}</span>
               <span className="flex-1 min-w-0">
                 <span className="flex items-center justify-between gap-2">
@@ -200,9 +241,15 @@ export function DashboardCommunication() {
           className="mt-3 w-full h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2">
           <Send size={16} /> Send to group
         </button>
-        {sent && <p className="mt-3 text-xs font-semibold text-brand-dark text-center">✓ Sent — delivered to the webapp of all referees in {tournament}.</p>}
+        {sent && <p className="mt-3 text-xs font-semibold text-brand-dark text-center">✓ Sent, delivered to the webapp of all referees in {tournament}.</p>}
       </div>
     </div>
+    {openTicket && (
+      <Modal onClose={() => setOpenTicket(null)}>
+        <TicketChat ticket={openTicket} onClose={() => setOpenTicket(null)} />
+      </Modal>
+    )}
+    </>
   )
 }
 

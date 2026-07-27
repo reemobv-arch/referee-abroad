@@ -1,15 +1,15 @@
 // Mock data for the Tournament Command Centre prototype
 
 export const dashTournaments = [
-  { id: 't1', name: 'Porto International Cup', city: 'Porto', country: 'Portugal', img: 'img/porto.jpg', dates: 'Jul 1 – Jul 5', sport: 'Football', status: 'confirmed', enrolled: 48, capacity: 60 },
-  { id: 't2', name: 'Copenhagen Cup', city: 'Copenhagen', country: 'Denmark', img: 'img/copenhagen.jpg', dates: 'Jul 10 – Jul 16', sport: 'Football', status: 'recruiting', enrolled: 31, capacity: 50 },
-  { id: 't3', name: 'IberCup Cascais', city: 'Cascais', country: 'Portugal', img: 'img/ibercup.jpg', dates: 'Jun 2 – Jun 8', sport: 'Football', status: 'recruiting', enrolled: 33, capacity: 40 },
-  { id: 't4', name: 'Costa Brava Cup', city: 'Girona', country: 'Spain', img: 'img/costabrava.jpg', dates: 'Aug 12 – Aug 16', sport: 'Football', status: 'confirmed', enrolled: 48, capacity: 60 },
-  { id: 't5', name: 'Malta Youth Festival', city: 'Valletta', country: 'Malta', img: 'img/malta.jpg', dates: 'Oct 3 – Oct 7', sport: 'Football', status: 'planned', enrolled: 12, capacity: 50 },
-  { id: 't6', name: 'Alpine Hockey Trophy', city: 'Innsbruck', country: 'Austria', img: 'img/alpine.jpg', dates: 'Nov 21 – Nov 24', sport: 'Hockey', status: 'recruiting', enrolled: 12, capacity: 40 },
-  { id: 't7', name: 'Prague Spring Trophy', city: 'Prague', country: 'Czechia', img: 'img/porto.jpg', dates: 'Apr 18 – Apr 21', sport: 'Football', status: 'planned', enrolled: 6, capacity: 44 },
-  { id: 't8', name: 'Lisbon Handball Open', city: 'Lisbon', country: 'Portugal', img: 'img/ibercup.jpg', dates: 'May 9 – May 12', sport: 'Handball', status: 'confirmed', enrolled: 27, capacity: 36 },
-  { id: 't9', name: 'Berlin Winter Cup', city: 'Berlin', country: 'Germany', img: 'img/costabrava.jpg', dates: 'Dec 27 – Dec 30', sport: 'Football', status: 'planned', enrolled: 4, capacity: 48 },
+  { id: 't1', name: 'Porto International Cup', city: 'Porto', country: 'Portugal', img: 'img/porto.jpg', dates: 'Jul 1 to Jul 5', sport: 'Football', status: 'confirmed', enrolled: 48, capacity: 60 },
+  { id: 't2', name: 'Copenhagen Cup', city: 'Copenhagen', country: 'Denmark', img: 'img/copenhagen.jpg', dates: 'Jul 10 to Jul 16', sport: 'Football', status: 'recruiting', enrolled: 31, capacity: 50 },
+  { id: 't3', name: 'IberCup Cascais', city: 'Cascais', country: 'Portugal', img: 'img/ibercup.jpg', dates: 'Jun 2 to Jun 8', sport: 'Football', status: 'recruiting', enrolled: 33, capacity: 40 },
+  { id: 't4', name: 'Costa Brava Cup', city: 'Girona', country: 'Spain', img: 'img/costabrava.jpg', dates: 'Aug 12 to Aug 16', sport: 'Football', status: 'confirmed', enrolled: 48, capacity: 60 },
+  { id: 't5', name: 'Malta Youth Festival', city: 'Valletta', country: 'Malta', img: 'img/malta.jpg', dates: 'Oct 3 to Oct 7', sport: 'Football', status: 'planned', enrolled: 12, capacity: 50 },
+  { id: 't6', name: 'Alpine Hockey Trophy', city: 'Innsbruck', country: 'Austria', img: 'img/alpine.jpg', dates: 'Nov 21 to Nov 24', sport: 'Hockey', status: 'recruiting', enrolled: 12, capacity: 40 },
+  { id: 't7', name: 'Prague Spring Trophy', city: 'Prague', country: 'Czechia', img: 'img/porto.jpg', dates: 'Apr 18 to Apr 21', sport: 'Football', status: 'planned', enrolled: 6, capacity: 44 },
+  { id: 't8', name: 'Lisbon Handball Open', city: 'Lisbon', country: 'Portugal', img: 'img/ibercup.jpg', dates: 'May 9 to May 12', sport: 'Handball', status: 'confirmed', enrolled: 27, capacity: 36 },
+  { id: 't9', name: 'Berlin Winter Cup', city: 'Berlin', country: 'Germany', img: 'img/costabrava.jpg', dates: 'Dec 27 to Dec 30', sport: 'Football', status: 'planned', enrolled: 4, capacity: 48 },
 ]
 
 export const dashReferees = [
@@ -40,7 +40,7 @@ export const dashStaff = [
   { name: 'Sara Mendes', role: 'Logistics coordinator', initials: 'SM', tournament: 'Porto International Cup' },
   { name: 'Kevin Alofs', role: 'Referee mentor', initials: 'KA', tournament: 'Copenhagen Cup' },
   { name: 'Nadia Haddad', role: 'Communication', initials: 'NH', tournament: 'Costa Brava Cup' },
-  { name: 'Paulo Reis', role: 'On-site host', initials: 'PR', tournament: 'IberCup Cascais' },
+  { name: 'Paulo Reis', role: 'Onsite host', initials: 'PR', tournament: 'IberCup Cascais' },
   { name: 'Femke Bakker', role: 'Media & content', initials: 'FB', tournament: 'Costa Brava Cup' },
   { name: 'Tim Vermeer', role: 'Logistics coordinator', initials: 'TV', tournament: 'Alpine Hockey Trophy' },
 ]

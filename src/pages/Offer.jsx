@@ -17,17 +17,17 @@ const items = [
     ],
   },
   {
-    title: 'Clickable prototype — Referee webapp',
+    title: 'Clickable prototype, Referee webapp',
     sprints: 1,
     price: 5500,
     req: [
-      'Mobile-first screens: tournaments, detail, documents, profile, chats',
+      'Mobile first screens: tournaments, detail, documents, profile, chats',
       'Referee Abroad branding and interactions',
       'Clickable flows on a hosted preview link',
     ],
   },
   {
-    title: 'Clickable prototype — Tournament Command Centre',
+    title: 'Clickable prototype, Tournament Command Centre',
     sprints: 1,
     price: 5500,
     req: [
@@ -37,25 +37,25 @@ const items = [
     ],
   },
   {
-    title: 'Referee webapp — production build',
+    title: 'Referee webapp, production build',
     sprints: 3,
     price: 19500,
     req: [
       'Login via existing WordPress accounts',
       'Tournaments & enrolment data from WooCommerce',
       'Apply & pay through the existing checkout',
-      'In-app messages + push notifications, profile editing',
+      'In app messages + push notifications, profile editing',
     ],
   },
   {
-    title: 'Tournament Command Centre — production build',
+    title: 'Tournament Command Centre, production build',
     sprints: 3,
     price: 19500,
     req: [
       'Manage tournaments, enrolments, referees and staff',
       'Broadcast messages to tournament groups + support tickets',
       'P&L and analytics overview',
-      'Two-way sync with WordPress (source of truth in Phase 1)',
+      'Two way sync with WordPress (source of truth in Phase 1)',
     ],
   },
   {
@@ -92,7 +92,7 @@ export default function Offer() {
 
         <h1 className="mt-6 text-3xl sm:text-4xl font-extrabold leading-tight">Commercial offer</h1>
         <p className="mt-2 text-neutral-500 font-medium max-w-xl">
-          Indicative pricing per component for Phase 1 — building alongside the current platform. {sprints} sprints in total (± {sprints * 2} weeks).
+          Indicative pricing per component for Phase 1, building alongside the current platform. {sprints} sprints in total (± {sprints * 2} weeks).
         </p>
         <p className="mt-3 text-sm font-medium text-neutral-600">
           Prepared by{' '}
@@ -161,8 +161,8 @@ export default function Offer() {
         </div>
 
         <p className="mt-5 text-xs text-neutral-400 font-medium leading-relaxed">
-          Figures are indicative and for Phase 1 only. Excludes hosting and third-party fees (payment provider, push service).
-          Phase 2 — the full Tournament Command Centre, an own database and a new website replacing WordPress — is scoped as a separate offer.
+          Figures are indicative and for Phase 1 only. Excludes hosting and third party fees (payment provider, push service).
+          Phase 2, the full Tournament Command Centre, an own database and a new website replacing WordPress, is scoped as a separate offer.
         </p>
       </div>
     </div>

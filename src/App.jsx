@@ -10,6 +10,7 @@ import Tournaments from './pages/Tournaments.jsx'
 import TournamentDetail from './pages/TournamentDetail.jsx'
 import Documents from './pages/Documents.jsx'
 import News from './pages/News.jsx'
+import Chat from './pages/Chat.jsx'
 import Profile from './pages/Profile.jsx'
 import ChatOrg from './pages/ChatOrg.jsx'
 import GroupChat from './pages/GroupChat.jsx'
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/tournaments" element={<Tournaments />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/news" element={<News />} />
+          <Route path="/chats" element={<Chat />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
         <Route path="/tournament/:id" element={<TournamentDetail />} />
