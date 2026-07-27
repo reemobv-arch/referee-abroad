@@ -2,6 +2,14 @@ import { Link } from 'react-router-dom'
 import { Route, Smartphone, LayoutDashboard, Receipt, ArrowRight, ArrowUpRight } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
+const cardCls =
+  'group flex flex-col rounded-2xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-4 min-h-[160px] shadow-card active:scale-[0.98] transition'
+const iconCls =
+  'w-10 h-10 rounded-xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center transition'
+const titleCls = 'mt-auto text-sm sm:text-base font-bold leading-tight text-ink group-hover:text-white transition'
+const subCls = 'mt-0.5 text-[11px] font-medium text-neutral-500 group-hover:text-white/80 transition'
+const ctaCls = 'mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-brand-dark group-hover:text-white transition'
+
 export default function Hub() {
   return (
     <div className="min-h-screen bg-page text-ink font-sans flex flex-col items-center justify-center px-5 py-12">
@@ -11,59 +19,32 @@ export default function Hub() {
         </div>
 
         <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
-          <a
-            href="/architecture.html"
-            className="group flex flex-col rounded-2xl bg-white border border-neutral-200 p-4 min-h-[160px] shadow-card active:scale-[0.98] transition-transform"
-          >
-            <span className="w-10 h-10 rounded-xl bg-brand-light text-brand-dark flex items-center justify-center">
-              <Route size={20} />
-            </span>
-            <h2 className="mt-auto text-sm sm:text-base font-bold leading-tight">Architectural advice</h2>
-            <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-brand-dark">
-              View <ArrowUpRight size={14} />
-            </span>
+          <a href="/architecture.html" className={cardCls}>
+            <span className={iconCls}><Route size={20} /></span>
+            <h2 className={titleCls}>Architectural advice</h2>
+            <p className={subCls}>Rollout plan</p>
+            <span className={ctaCls}>View <ArrowUpRight size={14} /></span>
           </a>
 
-          <Link
-            to="/login"
-            className="group flex flex-col rounded-2xl bg-brand text-white p-4 min-h-[160px] shadow-card active:scale-[0.98] transition-transform"
-          >
-            <span className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <Smartphone size={20} />
-            </span>
-            <h2 className="mt-auto text-sm sm:text-base font-bold leading-tight">Referee webapp</h2>
-            <p className="mt-0.5 text-[11px] font-medium text-white/80">Clickable prototype</p>
-            <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold">
-              Open <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-            </span>
+          <Link to="/login" className={cardCls}>
+            <span className={iconCls}><Smartphone size={20} /></span>
+            <h2 className={titleCls}>Referee webapp</h2>
+            <p className={subCls}>Clickable prototype</p>
+            <span className={ctaCls}>Open <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" /></span>
           </Link>
 
-          <Link
-            to="/dashboard"
-            className="group flex flex-col rounded-2xl bg-white border border-neutral-200 p-4 min-h-[160px] shadow-card active:scale-[0.98] transition-transform"
-          >
-            <span className="w-10 h-10 rounded-xl bg-brand-light text-brand-dark flex items-center justify-center">
-              <LayoutDashboard size={20} />
-            </span>
-            <h2 className="mt-auto text-sm sm:text-base font-bold leading-tight">Dashboard</h2>
-            <p className="mt-0.5 text-[11px] font-medium text-neutral-500">Clickable prototype</p>
-            <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-brand-dark">
-              Open <ArrowRight size={14} />
-            </span>
+          <Link to="/dashboard" className={cardCls}>
+            <span className={iconCls}><LayoutDashboard size={20} /></span>
+            <h2 className={titleCls}>Dashboard</h2>
+            <p className={subCls}>Clickable prototype</p>
+            <span className={ctaCls}>Open <ArrowRight size={14} /></span>
           </Link>
 
-          <Link
-            to="/offer"
-            className="group flex flex-col rounded-2xl bg-white border border-neutral-200 p-4 min-h-[160px] shadow-card active:scale-[0.98] transition-transform"
-          >
-            <span className="w-10 h-10 rounded-xl bg-brand-light text-brand-dark flex items-center justify-center">
-              <Receipt size={20} />
-            </span>
-            <h2 className="mt-auto text-sm sm:text-base font-bold leading-tight">Commercial offer</h2>
-            <p className="mt-0.5 text-[11px] font-medium text-neutral-500">Phase 1 pricing</p>
-            <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-brand-dark">
-              View <ArrowRight size={14} />
-            </span>
+          <Link to="/offer" className={cardCls}>
+            <span className={iconCls}><Receipt size={20} /></span>
+            <h2 className={titleCls}>Commercial offer</h2>
+            <p className={subCls}>Phase 1 pricing</p>
+            <span className={ctaCls}>View <ArrowRight size={14} /></span>
           </Link>
         </div>
       </div>

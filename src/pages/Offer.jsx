@@ -94,6 +94,11 @@ export default function Offer() {
         <p className="mt-2 text-neutral-500 font-medium max-w-xl">
           Indicative pricing per component for Phase 1 — building alongside the current platform. {sprints} sprints in total (± {sprints * 2} weeks).
         </p>
+        <p className="mt-3 text-sm font-medium text-neutral-600">
+          Prepared by{' '}
+          <a href="https://reemo.nl" target="_blank" rel="noreferrer" className="font-bold text-brand-dark underline">Reemo</a>
+          , software studio · reemo.nl
+        </p>
 
         <div className="mt-8 space-y-3">
           {items.map((it, i) => (
@@ -136,6 +141,20 @@ export default function Offer() {
             </div>
             <div className="text-right">
               <p className="text-3xl font-extrabold text-brand-dark leading-none">{euro(friendly)}</p>
+              <p className="text-[11px] font-semibold text-brand-dark/70 mt-1">excl. VAT</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 bg-white rounded-2xl border border-neutral-200 p-5 shadow-card">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="font-bold text-ink text-base leading-tight">Ongoing maintenance</h2>
+              <p className="text-[11px] font-medium text-neutral-500 mt-1">2 hours per month · updates, monitoring and support</p>
+            </div>
+            <div className="text-right tabular-nums">
+              <p className="text-sm font-semibold text-neutral-400 line-through decoration-[3px] decoration-red-500">{euro(250)} / month</p>
+              <p className="text-2xl font-extrabold text-brand-dark leading-none mt-1">{euro(100)}<span className="text-sm font-bold"> / month</span></p>
               <p className="text-[11px] font-semibold text-brand-dark/70 mt-1">excl. VAT</p>
             </div>
           </div>
