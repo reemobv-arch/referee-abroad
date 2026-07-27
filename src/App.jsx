@@ -2,7 +2,7 @@ import { Routes, Route, Outlet } from 'react-router-dom'
 import PhoneFrame from './components/PhoneFrame.jsx'
 import BottomNav from './components/BottomNav.jsx'
 import Hub from './pages/Hub.jsx'
-import DashboardComingSoon from './pages/DashboardComingSoon.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 import Login from './pages/Login.jsx'
 import Home from './pages/Home.jsx'
 import Tournaments from './pages/Tournaments.jsx'
@@ -36,7 +36,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Hub />} />
-      <Route path="/dashboard" element={<DashboardComingSoon />} />
+      <Route path="/dashboard" element={<Dashboard />} />
       <Route element={<PhoneShell />}>
         <Route path="/login" element={<Login />} />
         <Route element={<TabLayout />}>

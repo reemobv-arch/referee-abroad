@@ -40,18 +40,15 @@ export default function Hub() {
 
           <Link
             to="/dashboard"
-            className="group relative flex flex-col rounded-2xl bg-white border border-neutral-200 p-4 min-h-[160px] shadow-card active:scale-[0.98] transition-transform"
+            className="group flex flex-col rounded-2xl bg-white border border-neutral-200 p-4 min-h-[160px] shadow-card active:scale-[0.98] transition-transform"
           >
-            <span className="absolute top-3 right-3 text-[9px] font-bold uppercase tracking-wide bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full">
-              Soon
-            </span>
             <span className="w-10 h-10 rounded-xl bg-brand-light text-brand-dark flex items-center justify-center">
               <LayoutDashboard size={20} />
             </span>
             <h2 className="mt-auto text-sm sm:text-base font-bold leading-tight">Dashboard</h2>
             <p className="mt-0.5 text-[11px] font-medium text-neutral-500">Clickable prototype</p>
-            <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-neutral-400">
-              Preview <ArrowRight size={14} />
+            <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-brand-dark">
+              Open <ArrowRight size={14} />
             </span>
           </Link>
         </div>
