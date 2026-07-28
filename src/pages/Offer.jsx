@@ -5,77 +5,36 @@ import Logo from '../components/Logo.jsx'
 const euro = (n) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 
-const items = [
-  {
-    title: 'Architecture & rollout plan',
-    sprints: 1,
-    price: 4500,
-    req: [
-      'Analysis of the current WordPress + WooCommerce setup',
-      'Target architecture for Phase 1 and Phase 2',
-      'Phased rollout plan and integration decisions',
-    ],
-  },
-  {
-    title: 'Clickable prototype, Referee webapp',
-    sprints: 1,
-    price: 5500,
-    req: [
-      'Mobile first screens: tournaments, detail, documents, profile, chats',
-      'Referee Abroad branding and interactions',
-      'Clickable flows on a hosted preview link',
-    ],
-  },
-  {
-    title: 'Clickable prototype, Tournament Command Centre',
-    sprints: 1,
-    price: 5500,
-    req: [
-      'Admin dashboard shell with left navigation',
-      'Sections: tournaments, referees, staff, communication, P&L, analytics',
-      'Example data and clickable actions',
-    ],
-  },
-  {
-    title: 'Referee webapp, production build',
-    sprints: 3,
-    price: 19500,
-    req: [
-      'Login via existing WordPress accounts',
-      'Tournaments & enrolment data from WooCommerce',
-      'Apply & pay through the existing checkout',
-      'In app messages + push notifications, profile editing',
-    ],
-  },
-  {
-    title: 'Tournament Command Centre, production build',
-    sprints: 3,
-    price: 19500,
-    req: [
-      'Manage tournaments, enrolments, referees and staff',
-      'Broadcast messages to tournament groups + support tickets',
-      'P&L and analytics overview',
-      'Two way sync with WordPress (source of truth in Phase 1)',
-    ],
-  },
-  {
-    title: 'Integration, testing & launch',
-    sprints: 1,
-    price: 5500,
-    req: [
-      'WordPress / WooCommerce API and webhooks',
-      'QA across devices and browsers',
-      'Deployment, documentation and handover',
-    ],
-  },
-]
+// Offer content is injected at build time via VITE_OFFER_DATA (base64 JSON),
+// kept out of the repository. See .env.local / Vercel environment variables.
+let offer = null
+try {
+  offer = JSON.parse(atob(import.meta.env.VITE_OFFER_DATA))
+} catch {
+  offer = null
+}
 
 export default function Offer() {
+  if (!offer || !offer.items) {
+    return (
+      <div className="min-h-screen bg-page text-ink font-sans flex items-center justify-center px-5">
+        <div className="text-center max-w-sm">
+          <Logo size={56} showText textClass="text-xl" />
+          <p className="mt-6 text-neutral-500 font-medium">The commercial offer is not available in this environment.</p>
+          <Link to="/" className="mt-4 inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm">
+            <ArrowLeft size={16} /> Back to hub
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const { items } = offer
   const subtotal = items.reduce((a, b) => a + b.price, 0)
   const vat = Math.round(subtotal * 0.21)
   const total = subtotal + vat
   const sprints = items.reduce((a, b) => a + b.sprints, 0)
-  const friendly = 5000
+  const friendly = offer.friendly
   const friendlyIncl = Math.round(friendly * 1.21)
 
   return (
@@ -153,8 +112,8 @@ export default function Offer() {
               <p className="text-[11px] font-medium text-neutral-500 mt-1">2 hours per month · updates, monitoring and support</p>
             </div>
             <div className="text-right tabular-nums">
-              <p className="text-sm font-semibold text-neutral-400 line-through decoration-[3px] decoration-red-500">{euro(250)} / month</p>
-              <p className="text-2xl font-extrabold text-brand-dark leading-none mt-1">{euro(100)}<span className="text-sm font-bold"> / month</span></p>
+              <p className="text-sm font-semibold text-neutral-400 line-through decoration-[3px] decoration-red-500">{euro(offer.maintenanceOld)} / month</p>
+              <p className="text-2xl font-extrabold text-brand-dark leading-none mt-1">{euro(offer.maintenanceNew)}<span className="text-sm font-bold"> / month</span></p>
               <p className="text-[11px] font-semibold text-brand-dark/70 mt-1">excl. VAT</p>
             </div>
           </div>
