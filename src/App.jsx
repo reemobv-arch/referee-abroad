@@ -4,6 +4,7 @@ import BottomNav from './components/BottomNav.jsx'
 import Hub from './pages/Hub.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Offer from './pages/Offer.jsx'
+import PasswordGate from './pages/PasswordGate.jsx'
 import Login from './pages/Login.jsx'
 import Home from './pages/Home.jsx'
 import Tournaments from './pages/Tournaments.jsx'
@@ -37,10 +38,10 @@ function TabLayout() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Hub />} />
+      <Route path="/" element={<PasswordGate><Hub /></PasswordGate>} />
       <Route path="/client" element={<Hub showOffer={false} />} />
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/offer" element={<Offer />} />
+      <Route path="/offer" element={<PasswordGate><Offer /></PasswordGate>} />
       <Route element={<PhoneShell />}>
         <Route path="/login" element={<Login />} />
         <Route element={<TabLayout />}>
