@@ -38,6 +38,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Hub />} />
+      <Route path="/client" element={<Hub showOffer={false} />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/offer" element={<Offer />} />
       <Route element={<PhoneShell />}>

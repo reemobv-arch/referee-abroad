@@ -10,7 +10,7 @@ const titleCls = 'mt-auto text-sm sm:text-base font-bold leading-tight text-ink 
 const subCls = 'mt-0.5 text-[11px] font-medium text-neutral-500 group-hover:text-white/80 transition'
 const ctaCls = 'mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-brand-dark group-hover:text-white transition'
 
-export default function Hub() {
+export default function Hub({ showOffer = true }) {
   return (
     <div className="min-h-screen bg-page text-ink font-sans flex flex-col items-center justify-center px-5 py-12">
       <div className="w-full max-w-3xl pb-[12vh]">
@@ -18,7 +18,7 @@ export default function Hub() {
           <Logo size={80} showText textClass="text-3xl" />
         </div>
 
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
+        <div className={`mt-12 grid grid-cols-2 gap-3 items-stretch ${showOffer ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
           <a href="/architecture.html" className={cardCls}>
             <span className={iconCls}><Route size={20} /></span>
             <h2 className={titleCls}>Architectural advice</h2>
@@ -40,12 +40,14 @@ export default function Hub() {
             <span className={ctaCls}>Open <ArrowRight size={14} /></span>
           </Link>
 
-          <Link to="/offer" className={cardCls}>
-            <span className={iconCls}><Receipt size={20} /></span>
-            <h2 className={titleCls}>Commercial offer</h2>
-            <p className={subCls}>Phase 1 pricing</p>
-            <span className={ctaCls}>View <ArrowRight size={14} /></span>
-          </Link>
+          {showOffer && (
+            <Link to="/offer" className={cardCls}>
+              <span className={iconCls}><Receipt size={20} /></span>
+              <h2 className={titleCls}>Commercial offer</h2>
+              <p className={subCls}>Phase 1 pricing</p>
+              <span className={ctaCls}>View <ArrowRight size={14} /></span>
+            </Link>
+          )}
         </div>
       </div>
     </div>
