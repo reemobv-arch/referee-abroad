@@ -32,7 +32,14 @@ export default function PasswordGate({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-page text-ink font-sans flex items-center justify-center px-5">
+    <div
+      className="min-h-screen text-ink font-sans flex items-center justify-center px-5"
+      style={{
+        backgroundImage: 'linear-gradient(rgba(244,245,244,0.45), rgba(244,245,244,0.45)), url(img/hub-bg.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
       <form onSubmit={submit} className="w-full max-w-sm text-center">
         <div className="flex justify-center"><Logo size={64} showText textClass="text-2xl" /></div>
         <div className="mx-auto mt-9 w-12 h-12 rounded-2xl bg-brand-light text-brand-dark flex items-center justify-center">
