@@ -66,7 +66,7 @@ export default function Hub({ showOffer = true }) {
             <span className={iconCls}><FileSignature size={20} /></span>
             <span className="flex-1 min-w-0">
               <span className="block text-sm sm:text-base font-bold leading-tight text-ink group-hover:text-white transition">Agreement</span>
-              <span className="block text-[11px] font-medium text-neutral-500 group-hover:text-white/80 transition">Draft</span>
+              <span className="block text-[11px] font-medium text-neutral-500 group-hover:text-white/80 transition">The rules we play by</span>
             </span>
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-dark group-hover:text-white transition">View <ArrowRight size={14} /></span>
           </Link>

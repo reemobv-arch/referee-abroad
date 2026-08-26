@@ -7,7 +7,7 @@ const euro = (n) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 
 const bgStyle = {
-  backgroundImage: 'linear-gradient(rgba(244,245,244,0.80), rgba(244,245,244,0.82)), url(img/doc-bg.jpg)',
+  backgroundImage: 'linear-gradient(rgba(244,245,244,0.70), rgba(244,245,244,0.72)), url(img/doc-bg.jpg)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundAttachment: 'fixed',
