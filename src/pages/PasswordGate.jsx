@@ -40,7 +40,7 @@ export default function PasswordGate({ children }) {
         backgroundPosition: 'center',
       }}
     >
-      <form onSubmit={submit} className="w-full max-w-sm text-center bg-white/30 backdrop-blur-xl rounded-3xl shadow-xl border border-white/40 px-7 py-9">
+      <form onSubmit={submit} className="w-full max-w-sm text-center bg-white/20 backdrop-blur-xl rounded-3xl shadow-xl border border-white/30 px-7 py-9">
         <div className="flex justify-center"><Logo size={64} showText textClass="text-2xl" /></div>
         <div className="mx-auto mt-9 w-12 h-12 rounded-2xl bg-brand-light text-brand-dark flex items-center justify-center">
           <Lock size={22} />
