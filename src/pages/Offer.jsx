@@ -33,7 +33,7 @@ export default function Offer() {
     <div
       className="min-h-screen text-ink font-sans"
       style={{
-        backgroundImage: 'linear-gradient(rgba(244,245,244,0.90), rgba(244,245,244,0.92)), url(img/doc-bg.jpg)',
+        backgroundImage: 'linear-gradient(rgba(244,245,244,0.80), rgba(244,245,244,0.82)), url(img/doc-bg.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',

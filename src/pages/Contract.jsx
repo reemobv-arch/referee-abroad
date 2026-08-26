@@ -7,7 +7,7 @@ const euro = (n) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 
 const bgStyle = {
-  backgroundImage: 'linear-gradient(rgba(244,245,244,0.90), rgba(244,245,244,0.92)), url(img/doc-bg.jpg)',
+  backgroundImage: 'linear-gradient(rgba(244,245,244,0.80), rgba(244,245,244,0.82)), url(img/doc-bg.jpg)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundAttachment: 'fixed',
@@ -31,19 +31,20 @@ export default function Contract() {
 
   const fee = euro(offer.friendly)
   const maint = euro(offer.maintenanceNew)
+  const addRate = euro(c.additionalRate || 50)
 
   const clauses = [
     ['Parties & background', 'This agreement is entered into by Reemo B.V. (the provider) and Referee Abroad (the client). Referee Abroad organises international tournaments for referees. The provider designs, builds and maintains the Phase 1 platform described below.'],
     ['Subject of the agreement', 'The provider delivers Phase 1 of the Referee Abroad platform: a mobile referee webapp and an admin Tournament Command Centre, built alongside the existing WordPress and WooCommerce environment, plus ongoing maintenance after launch.'],
-    ['Scope & work', 'The work follows the commercial offer for Phase 1 and includes the referee webapp, the Tournament Command Centre, the referee appointing system, and integration, testing and launch. Work not listed in the offer is additional work under clause 8.'],
+    ['Scope & work', 'The work follows the commercial offer for Phase 1 and includes the referee webapp, the Tournament Command Centre, the referee appointing system, and integration, testing and launch. This agreement covers Phase 1 only. Phase 2 (the full Tournament Command Centre, an own database and a new website replacing WordPress) is out of scope and is quoted separately in a new agreement. Work not listed in the offer is additional work under clause 8.'],
     ['Term & planning', 'Work starts in mutual agreement after signing. The indicative duration follows the commercial offer. Planning depends on timely feedback, content and access provided by the client.'],
     ['Way of working & collaboration', 'The provider works in short iterations and shares progress regularly. The client appoints one contact person for decisions, feedback and the delivery of content, access and credentials.'],
     ['Fee & invoicing', `For Phase 1 the client pays a single agreed fee of ${fee} excluding VAT, invoiced in two parts: 50% on start and 50% on delivery. After launch, maintenance is ${maint} per month excluding VAT for two hours of updates, monitoring and support. Invoices are due within 14 days.`],
     ['Privacy & processing of personal data', 'In Phase 1, WordPress remains the source of truth for personal data. The provider processes personal data only on the instructions of the client and in line with the GDPR. Where the provider processes personal data on behalf of the client, the parties enter into a data processing agreement.'],
-    ['Changes & additional work', 'Changes to the scope are agreed in writing, where email is sufficient. Additional work is charged at an hourly rate to be agreed, or as a separate fixed price, and is confirmed before the work starts.'],
+    ['Changes & additional work', `Changes to the scope are agreed in writing, where email is sufficient. Additional work outside the agreed scope is charged at ${addRate} per hour excluding VAT. This additional work is separate from and not included in the monthly maintenance.`],
     ['Intellectual property', 'On full payment, the intellectual property rights in the delivered source code and designs transfer to the client. The provider keeps the right to reuse generic building blocks, methods and libraries that are not specific to Referee Abroad.'],
     ['Confidentiality', 'Both parties keep confidential the business and technical information shared under this agreement and do not share it with third parties without consent, except where required by law.'],
-    ['Liability', 'The liability of the provider is limited to the fees paid for Phase 1. The provider is not liable for indirect or consequential damage, including lost revenue or data. This limit does not apply in case of intent or deliberate recklessness.'],
+    ['Liability', 'The liability of the provider is limited to the fees paid for Phase 1. The provider is not liable for indirect or consequential damage, including lost revenue or data. The provider is not responsible for downtime or unavailability caused by force majeure or by third parties, such as the hosting, the payment provider or WordPress. This limit does not apply in case of intent or deliberate recklessness.'],
     ['Termination', 'Either party may terminate this agreement in writing with reasonable notice. Work performed and costs incurred up to the end date are invoiced. Maintenance is monthly and cancellable with one month notice.'],
     ['Governing law & disputes', 'The parties first try to resolve any dispute in good faith. The governing law and the competent court are to be agreed by the parties before signing.'],
     ['Final provisions', 'This agreement, together with the commercial offer, forms the complete agreement for Phase 1 and replaces earlier proposals. Changes are valid only in writing. If a provision is invalid, the remaining provisions stay in force.'],
