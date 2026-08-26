@@ -218,10 +218,7 @@ export default function Contract() {
           </div>
         </div>
 
-        <p className="mt-6 text-xs text-neutral-400 font-medium leading-relaxed">
-          This is a draft template prepared by Reemo B.V., not legal advice. Please have it reviewed by a legal advisor and complete the remaining details (registration number) before signing.
-        </p>
-        <p className="mt-4 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Reemo · agreement · 2026</p>
+        <p className="mt-8 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Reemo · agreement · 2026</p>
       </div>
     </div>
   )
