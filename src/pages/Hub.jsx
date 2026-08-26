@@ -18,7 +18,7 @@ export default function Hub({ showOffer = true }) {
           <Logo size={80} showText textClass="text-3xl" />
         </div>
 
-        <div className={`mt-12 grid grid-cols-2 gap-3 items-stretch ${showOffer ? 'md:grid-cols-5' : 'md:grid-cols-3'}`}>
+        <div className={`mt-12 grid grid-cols-2 gap-3 items-stretch ${showOffer ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
           <a href="/architecture.html" className={cardCls}>
             <span className={iconCls}><Route size={20} /></span>
             <h2 className={titleCls}>Architectural advice</h2>
@@ -49,15 +49,21 @@ export default function Hub({ showOffer = true }) {
             </Link>
           )}
 
-          {showOffer && (
-            <Link to="/contract" className={cardCls}>
-              <span className={iconCls}><FileSignature size={20} /></span>
-              <h2 className={titleCls}>Contract</h2>
-              <p className={subCls}>Draft agreement</p>
-              <span className={ctaCls}>View <ArrowRight size={14} /></span>
-            </Link>
-          )}
         </div>
+
+        {showOffer && (
+          <Link
+            to="/contract"
+            className="group mt-3 flex items-center gap-4 rounded-2xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-4 shadow-card active:scale-[0.99] transition"
+          >
+            <span className={iconCls}><FileSignature size={20} /></span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm sm:text-base font-bold leading-tight text-ink group-hover:text-white transition">Contract</span>
+              <span className="block text-[11px] font-medium text-neutral-500 group-hover:text-white/80 transition">Draft agreement</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-dark group-hover:text-white transition">View <ArrowRight size={14} /></span>
+          </Link>
+        )}
       </div>
     </div>
   )
