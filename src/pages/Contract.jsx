@@ -7,6 +7,8 @@ import offer from '../offerData.js'
 const euro = (n) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 
+const keyOf = (name) => String(name).replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()
+
 const bgStyle = {
   backgroundImage: 'linear-gradient(rgba(244,245,244,0.58), rgba(244,245,244,0.60)), url(img/doc-bg.jpg)',
   backgroundSize: 'cover',
@@ -14,13 +16,13 @@ const bgStyle = {
   backgroundAttachment: 'fixed',
 }
 
-function SignField({ label, name, role }) {
+function SignField({ label, name, role, remote, onSave }) {
   const ref = useRef(null)
   const savedRef = useRef(false)
   const [saved, setSaved] = useState(false)
   const [date, setDate] = useState('')
+  const [busy, setBusy] = useState(false)
   const [hint, setHint] = useState('')
-  const key = 'ra-sig-' + String(name).replace(/[^a-zA-Z0-9]+/g, '-')
 
   useEffect(() => {
     const canvas = ref.current
@@ -47,25 +49,26 @@ function SignField({ label, name, role }) {
     canvas.addEventListener('pointerdown', down)
     canvas.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
-
-    try {
-      const stored = localStorage.getItem(key)
-      if (stored) {
-        const img = new Image()
-        img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-        img.src = stored
-        savedRef.current = true
-        setSaved(true)
-        setDate(localStorage.getItem(key + '-date') || '')
-      }
-    } catch { /* storage unavailable */ }
-
     return () => {
       canvas.removeEventListener('pointerdown', down)
       canvas.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
     }
-  }, [key])
+  }, [])
+
+  // Lock and draw when a stored signature arrives from the server.
+  useEffect(() => {
+    if (!remote || !remote.img || savedRef.current) return
+    const canvas = ref.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    img.src = remote.img
+    savedRef.current = true
+    setSaved(true)
+    setDate(remote.date || '')
+  }, [remote])
 
   const hasInk = () => {
     const cv = ref.current
@@ -74,16 +77,14 @@ function SignField({ label, name, role }) {
     return false
   }
   const clear = () => { const cv = ref.current; cv.getContext('2d').clearRect(0, 0, cv.width, cv.height); setHint('') }
-  const save = () => {
+  const save = async () => {
+    if (busy) return
     if (!hasInk()) { setHint('Draw your signature first.'); return }
-    savedRef.current = true
-    setSaved(true)
-    const dt = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    setDate(dt)
-    try {
-      localStorage.setItem(key, ref.current.toDataURL('image/png'))
-      localStorage.setItem(key + '-date', dt)
-    } catch { /* storage unavailable */ }
+    setBusy(true); setHint('')
+    const url = ref.current.toDataURL('image/png')
+    const ok = await onSave(url)
+    setBusy(false)
+    if (!ok) setHint('Could not save. Try again.')
   }
 
   return (
@@ -108,7 +109,9 @@ function SignField({ label, name, role }) {
             <button type="button" onClick={clear} className="text-[11px] font-semibold text-neutral-500 inline-flex items-center gap-1">
               <Eraser size={12} /> Clear
             </button>
-            <button type="button" onClick={save} className="text-xs font-bold text-white bg-brand px-3 py-1 rounded-full">Save</button>
+            <button type="button" onClick={save} disabled={busy} className="text-xs font-bold text-white bg-brand px-3 py-1 rounded-full disabled:opacity-60">
+              {busy ? 'Saving…' : 'Save'}
+            </button>
           </>
         )}
       </div>
@@ -119,6 +122,21 @@ function SignField({ label, name, role }) {
 
 export default function Contract() {
   const [signedDate, setSignedDate] = useState('')
+  const [remote, setRemote] = useState(null)
+
+  useEffect(() => {
+    let alive = true
+    const load = async () => {
+      try {
+        const r = await fetch('/api/signatures')
+        const d = await r.json()
+        if (alive) setRemote(d.signatures || {})
+      } catch { if (alive) setRemote({}) }
+    }
+    load()
+    const t = setInterval(load, 6000)
+    return () => { alive = false; clearInterval(t) }
+  }, [])
 
   const c = offer && offer.contract
   if (!offer || !c) {
@@ -168,7 +186,25 @@ export default function Contract() {
   const signers = [
     { label: 'For Reemo B.V.', name: c.provider.rep.split(' · ')[0], role: 'Founder' },
     ...c.signatories.map((s) => ({ label: 'For Referee Abroad', name: s.name, role: s.role })),
-  ]
+  ].map((s) => ({ ...s, key: keyOf(s.name) }))
+
+  const saveSig = async (key, name, url) => {
+    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    try {
+      const r = await fetch('/api/signatures', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ key, name, img: url, date }),
+      })
+      if (r.ok) { setRemote((p) => ({ ...(p || {}), [key]: { name, img: url, date } })); return true }
+      if (r.status === 409) {
+        const d = await r.json().catch(() => ({}))
+        if (d.existing) setRemote((p) => ({ ...(p || {}), [key]: d.existing }))
+        return true
+      }
+      return false
+    } catch { return false }
+  }
 
   const download = () => {
     setSignedDate(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }))
@@ -239,12 +275,12 @@ export default function Contract() {
 
         <h2 className="mt-8 text-lg font-bold text-ink">Approval &amp; signature</h2>
         <p className="text-sm text-neutral-500 font-medium mt-1">
-          Each party signs in their own field below and clicks Save. A saved signature is final.
+          Each party signs in their own field below and clicks Save. Saved signatures are final and are shown to everyone who opens this link.
         </p>
 
         <div className="mt-4 grid sm:grid-cols-2 gap-3">
-          {signers.map((s, i) => (
-            <SignField key={i} label={s.label} name={s.name} role={s.role} />
+          {signers.map((s) => (
+            <SignField key={s.key} label={s.label} name={s.name} role={s.role} remote={remote ? remote[s.key] : undefined} onSave={(url) => saveSig(s.key, s.name, url)} />
           ))}
         </div>
 
