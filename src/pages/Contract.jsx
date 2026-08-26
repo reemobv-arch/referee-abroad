@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ChevronDown, Download, Eraser } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Download, Eraser, Mail } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 import offer from '../offerData.js'
 
@@ -14,8 +14,13 @@ const bgStyle = {
   backgroundAttachment: 'fixed',
 }
 
-function SignField({ label, name, role }) {
+function SignField({ index, label, name, role, onSign }) {
   const ref = useRef(null)
+  const savedRef = useRef(false)
+  const [saved, setSaved] = useState(false)
+  const [date, setDate] = useState('')
+  const [hint, setHint] = useState('')
+
   useEffect(() => {
     const canvas = ref.current
     if (!canvas) return
@@ -30,9 +35,9 @@ function SignField({ label, name, role }) {
       const r = canvas.getBoundingClientRect()
       return { x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height) }
     }
-    const down = (e) => { drawing = true; last = pos(e); e.preventDefault() }
+    const down = (e) => { if (savedRef.current) return; drawing = true; last = pos(e); setHint(''); e.preventDefault() }
     const move = (e) => {
-      if (!drawing) return
+      if (!drawing || savedRef.current) return
       const p = pos(e)
       ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke()
       last = p; e.preventDefault()
@@ -47,33 +52,62 @@ function SignField({ label, name, role }) {
       window.removeEventListener('pointerup', up)
     }
   }, [])
-  const clear = () => {
+
+  const hasInk = () => {
     const cv = ref.current
-    if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height)
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data
+    for (let j = 3; j < d.length; j += 4) { if (d[j] > 0) return true }
+    return false
   }
+  const clear = () => { const cv = ref.current; cv.getContext('2d').clearRect(0, 0, cv.width, cv.height); setHint('') }
+  const save = () => {
+    if (!hasInk()) { setHint('Draw your signature first.'); return }
+    savedRef.current = true
+    setSaved(true)
+    setDate(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }))
+    onSign(index, ref.current.toDataURL('image/png'))
+  }
+  const edit = () => { savedRef.current = false; setSaved(false); onSign(index, null) }
+
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 p-4">
+    <div className={`rounded-2xl border p-4 ${saved ? 'bg-brand-light border-brand/40' : 'bg-white border-neutral-200'}`}>
       <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{label}</p>
       <p className="mt-1 font-bold text-ink text-sm">{name}</p>
       {role && <p className="text-xs text-neutral-500 font-medium">{role}</p>}
-      <canvas
-        ref={ref}
-        width={520}
-        height={130}
-        className="mt-2 w-full h-[100px] rounded-xl border border-neutral-200 bg-white touch-none cursor-crosshair"
-      />
-      <div className="mt-2 flex items-center justify-between no-print">
-        <span className="text-[11px] text-neutral-400 font-medium">Sign above</span>
-        <button type="button" onClick={clear} className="text-[11px] font-semibold text-brand-dark inline-flex items-center gap-1">
-          <Eraser size={12} /> Clear
-        </button>
+      <div className="relative mt-2">
+        <canvas
+          ref={ref}
+          width={520}
+          height={130}
+          className={`w-full h-[100px] rounded-xl border bg-white touch-none ${saved ? 'border-brand/40' : 'border-neutral-200 cursor-crosshair'}`}
+        />
+        {saved && <span className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-wide bg-brand text-white px-2 py-0.5 rounded-full">Saved</span>}
       </div>
+      <div className="mt-2 flex items-center justify-between no-print min-h-[20px]">
+        {saved ? (
+          <>
+            <span className="text-[11px] font-semibold text-brand-dark">Signed · {date}</span>
+            <button type="button" onClick={edit} className="text-[11px] font-semibold text-neutral-500">Edit</button>
+          </>
+        ) : (
+          <>
+            <button type="button" onClick={clear} className="text-[11px] font-semibold text-neutral-500 inline-flex items-center gap-1">
+              <Eraser size={12} /> Clear
+            </button>
+            <button type="button" onClick={save} className="text-xs font-bold text-white bg-brand px-3 py-1 rounded-full">Save</button>
+          </>
+        )}
+      </div>
+      {hint && <p className="text-[11px] font-semibold text-red-500 no-print">{hint}</p>}
     </div>
   )
 }
 
 export default function Contract() {
   const [signedDate, setSignedDate] = useState('')
+  const [sigs, setSigs] = useState({})
+  const [sending, setSending] = useState(false)
+  const [sendMsg, setSendMsg] = useState('')
 
   const c = offer && offer.contract
   if (!offer || !c) {
@@ -125,10 +159,31 @@ export default function Contract() {
     ...c.signatories.map((s) => ({ label: 'For Referee Abroad', name: s.name, role: s.role })),
   ]
 
+  const onSign = (i, url) => setSigs((prev) => ({ ...prev, [i]: url }))
+  const allSigned = signers.every((_, i) => !!sigs[i])
+
   const download = () => {
     setSignedDate(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }))
     document.querySelectorAll('details').forEach((d) => { d.open = true })
     setTimeout(() => window.print(), 200)
+  }
+
+  const sendCopy = async () => {
+    if (!allSigned || sending) return
+    setSending(true); setSendMsg('')
+    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    try {
+      const res = await fetch('/api/sign', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ date, signers: signers.map((s, i) => ({ label: s.label, name: s.name, img: sigs[i] })) }),
+      })
+      const data = await res.json().catch(() => ({}))
+      setSendMsg(res.ok ? 'A signed copy has been sent to Reemo.' : (data.error || 'Could not send the copy.'))
+    } catch {
+      setSendMsg('Could not send the copy.')
+    }
+    setSending(false)
   }
 
   const Meta = ({ label, value }) => (
@@ -194,12 +249,12 @@ export default function Contract() {
 
         <h2 className="mt-8 text-lg font-bold text-ink">Approval &amp; signature</h2>
         <p className="text-sm text-neutral-500 font-medium mt-1">
-          Each party signs in their own field below. Then download the signed PDF.
+          Each party signs in their own field below. A copy is sent to Reemo once all four have signed.
         </p>
 
         <div className="mt-4 grid sm:grid-cols-2 gap-3">
           {signers.map((s, i) => (
-            <SignField key={i} label={s.label} name={s.name} role={s.role} />
+            <SignField key={i} index={i} label={s.label} name={s.name} role={s.role} onSign={onSign} />
           ))}
         </div>
 
@@ -207,9 +262,20 @@ export default function Contract() {
           ? <p className="mt-4 text-sm font-semibold text-brand-dark">Signed on {signedDate}.</p>
           : <p className="mt-4 text-sm font-medium text-neutral-500">Date: ______________</p>}
 
-        <button onClick={download} className="no-print mt-4 h-11 px-5 rounded-full bg-brand text-white text-sm font-semibold inline-flex items-center gap-1.5">
-          <Download size={16} /> Download signed PDF
-        </button>
+        <div className="no-print mt-4 flex flex-wrap gap-2">
+          <button onClick={download} className="h-11 px-5 rounded-full bg-white border border-neutral-200 text-ink text-sm font-semibold inline-flex items-center gap-1.5">
+            <Download size={16} /> Download signed PDF
+          </button>
+          <button
+            onClick={sendCopy}
+            disabled={!allSigned || sending}
+            className={`h-11 px-5 rounded-full text-sm font-semibold inline-flex items-center gap-1.5 ${allSigned && !sending ? 'bg-brand text-white' : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'}`}
+          >
+            <Mail size={16} /> {sending ? 'Sending…' : 'Send signed copy to Reemo'}
+          </button>
+        </div>
+        {!allSigned && <p className="no-print mt-2 text-xs font-medium text-neutral-500">All four fields must be signed before a copy is sent.</p>}
+        {sendMsg && <p className="no-print mt-2 text-sm font-semibold text-brand-dark">{sendMsg}</p>}
 
         <p className="mt-8 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Reemo · agreement · 2026</p>
       </div>
