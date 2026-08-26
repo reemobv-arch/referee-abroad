@@ -4,7 +4,9 @@
 /* global __OFFER_DATA__ */
 let data = null
 try {
-  data = JSON.parse(atob(__OFFER_DATA__))
+  const bin = atob(__OFFER_DATA__)
+  const bytes = Uint8Array.from(bin, (ch) => ch.charCodeAt(0))
+  data = JSON.parse(new TextDecoder().decode(bytes))
 } catch {
   data = null
 }

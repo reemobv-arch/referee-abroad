@@ -12,7 +12,14 @@ const ctaCls = 'mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text
 
 export default function Hub({ showOffer = true }) {
   return (
-    <div className="min-h-screen bg-page text-ink font-sans flex flex-col items-center justify-center px-5 py-12">
+    <div
+      className="min-h-screen text-ink font-sans flex flex-col items-center justify-center px-5 py-12"
+      style={{
+        backgroundImage: 'linear-gradient(rgba(244,245,244,0.66), rgba(244,245,244,0.66)), url(img/hub-bg.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
       <div className="w-full max-w-3xl pb-[12vh]">
         <div className="flex justify-center">
           <Logo size={80} showText textClass="text-3xl" />

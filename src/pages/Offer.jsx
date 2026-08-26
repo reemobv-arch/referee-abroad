@@ -30,7 +30,15 @@ export default function Offer() {
   const friendlyIncl = Math.round(friendly * 1.21)
 
   return (
-    <div className="min-h-screen bg-page text-ink font-sans">
+    <div
+      className="min-h-screen text-ink font-sans"
+      style={{
+        backgroundImage: 'linear-gradient(rgba(244,245,244,0.90), rgba(244,245,244,0.92)), url(img/doc-bg.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <div className="max-w-3xl mx-auto px-5 py-10">
         <Link to="/" className="inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm mb-8">
           <ArrowLeft size={17} /> Back to hub

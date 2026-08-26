@@ -1,10 +1,17 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ChevronDown } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 import offer from '../offerData.js'
 
 const euro = (n) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
+
+const bgStyle = {
+  backgroundImage: 'linear-gradient(rgba(244,245,244,0.90), rgba(244,245,244,0.92)), url(img/doc-bg.jpg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundAttachment: 'fixed',
+}
 
 export default function Contract() {
   const c = offer && offer.contract
@@ -13,7 +20,7 @@ export default function Contract() {
       <div className="min-h-screen bg-page text-ink font-sans flex items-center justify-center px-5">
         <div className="text-center max-w-sm">
           <Logo size={56} showText textClass="text-xl" />
-          <p className="mt-6 text-neutral-500 font-medium">The contract is not available in this environment.</p>
+          <p className="mt-6 text-neutral-500 font-medium">The agreement is not available in this environment.</p>
           <Link to="/" className="mt-4 inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm">
             <ArrowLeft size={16} /> Back to hub
           </Link>
@@ -22,24 +29,39 @@ export default function Contract() {
     )
   }
 
+  const fee = euro(offer.friendly)
+  const maint = euro(offer.maintenanceNew)
+
   const clauses = [
-    ['Scope', 'Reemo develops Phase 1 of the Referee Abroad platform as described in the commercial offer: the referee webapp, the Tournament Command Centre, the referee appointing system, and integration, testing and launch.'],
-    ['Fee', `Referee Abroad pays a single agreed fee of ${euro(offer.friendly)} excluding VAT for Phase 1. Invoicing in two parts: 50% on start and 50% on delivery.`],
-    ['Maintenance', `After launch, Reemo provides ${euro(offer.maintenanceNew)} per month excluding VAT for two hours of updates, monitoring and support. Monthly and cancellable with one month notice.`],
-    ['Timeline', 'Work starts after signing. The indicative duration follows the commercial offer.'],
-    ['Intellectual property', 'On full payment, the delivered source code and designs transfer to Referee Abroad. Reemo may reuse generic building blocks that are not specific to Referee Abroad.'],
-    ['Data', 'In Phase 1 WordPress remains the source of truth. Reemo handles all data with care and in line with applicable privacy rules.'],
-    ['Confidentiality', 'Both parties keep shared business and technical information confidential.'],
-    ['Liability', 'The liability of Reemo is limited to the fees paid for Phase 1. Reemo is not liable for indirect or consequential damages.'],
-    ['Term and law', 'This agreement runs until Phase 1 is delivered and accepted. Maintenance continues monthly until cancelled. Governing law and competent court to be agreed by both parties.'],
+    ['Parties & background', 'This agreement is entered into by Reemo B.V. (the provider) and Referee Abroad (the client). Referee Abroad organises international tournaments for referees. The provider designs, builds and maintains the Phase 1 platform described below.'],
+    ['Subject of the agreement', 'The provider delivers Phase 1 of the Referee Abroad platform: a mobile referee webapp and an admin Tournament Command Centre, built alongside the existing WordPress and WooCommerce environment, plus ongoing maintenance after launch.'],
+    ['Scope & work', 'The work follows the commercial offer for Phase 1 and includes the referee webapp, the Tournament Command Centre, the referee appointing system, and integration, testing and launch. Work not listed in the offer is additional work under clause 8.'],
+    ['Term & planning', 'Work starts in mutual agreement after signing. The indicative duration follows the commercial offer. Planning depends on timely feedback, content and access provided by the client.'],
+    ['Way of working & collaboration', 'The provider works in short iterations and shares progress regularly. The client appoints one contact person for decisions, feedback and the delivery of content, access and credentials.'],
+    ['Fee & invoicing', `For Phase 1 the client pays a single agreed fee of ${fee} excluding VAT, invoiced in two parts: 50% on start and 50% on delivery. After launch, maintenance is ${maint} per month excluding VAT for two hours of updates, monitoring and support. Invoices are due within 14 days.`],
+    ['Privacy & processing of personal data', 'In Phase 1, WordPress remains the source of truth for personal data. The provider processes personal data only on the instructions of the client and in line with the GDPR. Where the provider processes personal data on behalf of the client, the parties enter into a data processing agreement.'],
+    ['Changes & additional work', 'Changes to the scope are agreed in writing, where email is sufficient. Additional work is charged at an hourly rate to be agreed, or as a separate fixed price, and is confirmed before the work starts.'],
+    ['Intellectual property', 'On full payment, the intellectual property rights in the delivered source code and designs transfer to the client. The provider keeps the right to reuse generic building blocks, methods and libraries that are not specific to Referee Abroad.'],
+    ['Confidentiality', 'Both parties keep confidential the business and technical information shared under this agreement and do not share it with third parties without consent, except where required by law.'],
+    ['Liability', 'The liability of the provider is limited to the fees paid for Phase 1. The provider is not liable for indirect or consequential damage, including lost revenue or data. This limit does not apply in case of intent or deliberate recklessness.'],
+    ['Termination', 'Either party may terminate this agreement in writing with reasonable notice. Work performed and costs incurred up to the end date are invoiced. Maintenance is monthly and cancellable with one month notice.'],
+    ['Governing law & disputes', 'The parties first try to resolve any dispute in good faith. The governing law and the competent court are to be agreed by the parties before signing.'],
+    ['Final provisions', 'This agreement, together with the commercial offer, forms the complete agreement for Phase 1 and replaces earlier proposals. Changes are valid only in writing. If a provision is invalid, the remaining provisions stay in force.'],
   ]
 
-  const SignBlock = ({ label, name, role }) => (
+  const Meta = ({ label, value }) => (
+    <div className="bg-white/80 rounded-xl border border-neutral-200 p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">{label}</p>
+      <p className="mt-0.5 text-sm font-bold text-ink leading-snug">{value}</p>
+    </div>
+  )
+
+  const Sign = ({ label, name, role }) => (
     <div className="bg-white rounded-2xl border border-neutral-200 p-4">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{label}</p>
       <p className="mt-1 font-bold text-ink">{name}</p>
       {role && <p className="text-xs text-neutral-500 font-medium">{role}</p>}
-      <div className="mt-8 border-t border-neutral-300" />
+      <div className="mt-10 border-t border-neutral-300" />
       <div className="flex justify-between text-[11px] text-neutral-400 font-medium mt-1">
         <span>Signature</span><span>Date</span>
       </div>
@@ -47,7 +69,7 @@ export default function Contract() {
   )
 
   return (
-    <div className="min-h-screen bg-page text-ink font-sans">
+    <div className="min-h-screen text-ink font-sans" style={bgStyle}>
       <div className="max-w-3xl mx-auto px-5 py-10">
         <Link to="/" className="inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm mb-8">
           <ArrowLeft size={17} /> Back to hub
@@ -58,44 +80,62 @@ export default function Contract() {
           <span className="text-xs font-bold uppercase tracking-wide bg-amber-100 text-amber-700 px-3 py-1 rounded-full">Draft</span>
         </div>
 
-        <h1 className="mt-6 text-3xl sm:text-4xl font-extrabold leading-tight">Development agreement</h1>
-        <p className="mt-2 text-neutral-500 font-medium">Phase 1 of the Referee Abroad platform, between the parties below.</p>
+        <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-dark">Statement of work · Nº {c.sowNo}</p>
+        <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold leading-tight">Agreement, Referee Abroad platform</h1>
+        <p className="mt-2 text-neutral-600 font-medium max-w-2xl">
+          This document sets out the agreement between Reemo B.V. and Referee Abroad for the design, build and ongoing maintenance of the Phase 1 platform: the referee webapp and the Tournament Command Centre.
+        </p>
 
         <div className="mt-6 grid sm:grid-cols-2 gap-3">
           <div className="bg-white rounded-2xl border border-neutral-200 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Provider</p>
-            <p className="mt-1 font-bold text-ink">Reemo</p>
-            <p className="text-sm text-neutral-500 font-medium">Software studio · reemo.nl</p>
+            <p className="mt-1 font-bold text-ink">{c.provider.name}</p>
+            {c.provider.lines.map((l, i) => <p key={i} className="text-sm text-neutral-500 font-medium">{l}</p>)}
+            <p className="text-sm text-neutral-500 font-medium mt-1">Represented by: {c.provider.rep}</p>
+            <p className="text-sm text-neutral-500 font-medium">{c.provider.contact}</p>
           </div>
           <div className="bg-white rounded-2xl border border-neutral-200 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Client</p>
             <p className="mt-1 font-bold text-ink">{c.clientName}</p>
-            {(c.clientLines || [c.clientDetail]).filter(Boolean).map((line, i) => (
-              <p key={i} className="text-sm text-neutral-500 font-medium">{line}</p>
-            ))}
+            {c.clientLines.map((l, i) => <p key={i} className="text-sm text-neutral-500 font-medium">{l}</p>)}
+            <p className="text-sm text-neutral-500 font-medium mt-1">Represented by: {c.signatories.map((s) => s.name).join(', ')}</p>
           </div>
         </div>
 
-        <ol className="mt-6 space-y-3">
-          {clauses.map(([title, body], i) => (
-            <li key={i} className="bg-white rounded-2xl border border-neutral-200 p-4">
-              <p className="font-bold text-ink text-sm">{i + 1}. {title}</p>
-              <p className="mt-1 text-sm text-neutral-600 font-medium leading-relaxed">{body}</p>
-            </li>
-          ))}
-        </ol>
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Meta label="Project" value="Referee Abroad platform, Phase 1" />
+          <Meta label="Date" value={c.date} />
+          <Meta label="Start" value="In mutual agreement" />
+          <Meta label="Fee" value={`${fee} excl. VAT`} />
+        </div>
 
-        <h2 className="mt-8 text-lg font-bold text-ink">Signatures</h2>
+        <h2 className="mt-8 text-lg font-bold text-ink">The agreement</h2>
+        <div className="mt-3 space-y-2">
+          {clauses.map(([title, body], i) => (
+            <details key={i} className="group bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+              <summary className="flex items-center gap-3 p-4 cursor-pointer list-none">
+                <span className="text-xs font-bold text-brand-dark tabular-nums w-6">{String(i + 1).padStart(2, '0')}</span>
+                <span className="flex-1 font-bold text-ink text-sm">{title}</span>
+                <ChevronDown size={18} className="text-neutral-400 transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="px-4 pb-4 pl-12 text-sm text-neutral-600 font-medium leading-relaxed">{body}</p>
+            </details>
+          ))}
+        </div>
+
+        <h2 className="mt-8 text-lg font-bold text-ink">Approval &amp; signature</h2>
+        <p className="text-sm text-neutral-500 font-medium mt-1">Each party signs below. This confirms agreement with the terms above.</p>
         <div className="mt-3 grid sm:grid-cols-2 gap-3">
-          <SignBlock label="For Reemo" name="Reemo representative" role="reemo.nl" />
+          <Sign label="For Reemo B.V." name={c.provider.rep.split(' · ')[0]} role="Founder" />
           {c.signatories.map((s, i) => (
-            <SignBlock key={i} label="For Referee Abroad" name={s.name} role={s.role} />
+            <Sign key={i} label="For Referee Abroad" name={s.name} role={s.role} />
           ))}
         </div>
 
         <p className="mt-6 text-xs text-neutral-400 font-medium leading-relaxed">
-          This is a draft template prepared by Reemo, not legal advice. Please have it reviewed by a legal advisor and complete the remaining organisation and legal details before signing.
+          This is a draft template prepared by Reemo B.V., not legal advice. Please have it reviewed by a legal advisor and complete the remaining details (VAT and registration numbers, governing law) before signing.
         </p>
+        <p className="mt-4 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Reemo · agreement · 2026</p>
       </div>
     </div>
   )
