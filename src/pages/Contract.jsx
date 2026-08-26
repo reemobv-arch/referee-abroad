@@ -70,7 +70,9 @@ export default function Contract() {
           <div className="bg-white rounded-2xl border border-neutral-200 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Client</p>
             <p className="mt-1 font-bold text-ink">{c.clientName}</p>
-            <p className="text-sm text-neutral-500 font-medium">{c.clientDetail}</p>
+            {(c.clientLines || [c.clientDetail]).filter(Boolean).map((line, i) => (
+              <p key={i} className="text-sm text-neutral-500 font-medium">{line}</p>
+            ))}
           </div>
         </div>
 
