@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Route, Smartphone, LayoutDashboard, Receipt, ArrowRight, ArrowUpRight } from 'lucide-react'
+import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
 const cardCls =
@@ -18,7 +18,7 @@ export default function Hub({ showOffer = true }) {
           <Logo size={80} showText textClass="text-3xl" />
         </div>
 
-        <div className={`mt-12 grid grid-cols-2 gap-3 items-stretch ${showOffer ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+        <div className={`mt-12 grid grid-cols-2 gap-3 items-stretch ${showOffer ? 'md:grid-cols-5' : 'md:grid-cols-3'}`}>
           <a href="/architecture.html" className={cardCls}>
             <span className={iconCls}><Route size={20} /></span>
             <h2 className={titleCls}>Architectural advice</h2>
@@ -45,6 +45,15 @@ export default function Hub({ showOffer = true }) {
               <span className={iconCls}><Receipt size={20} /></span>
               <h2 className={titleCls}>Commercial offer</h2>
               <p className={subCls}>Phase 1 pricing</p>
+              <span className={ctaCls}>View <ArrowRight size={14} /></span>
+            </Link>
+          )}
+
+          {showOffer && (
+            <Link to="/contract" className={cardCls}>
+              <span className={iconCls}><FileSignature size={20} /></span>
+              <h2 className={titleCls}>Contract</h2>
+              <p className={subCls}>Draft agreement</p>
               <span className={ctaCls}>View <ArrowRight size={14} /></span>
             </Link>
           )}

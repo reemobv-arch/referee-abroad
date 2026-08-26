@@ -4,6 +4,7 @@ import BottomNav from './components/BottomNav.jsx'
 import Hub from './pages/Hub.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Offer from './pages/Offer.jsx'
+import Contract from './pages/Contract.jsx'
 import PasswordGate from './pages/PasswordGate.jsx'
 import Login from './pages/Login.jsx'
 import Home from './pages/Home.jsx'
@@ -42,6 +43,7 @@ export default function App() {
       <Route path="/client" element={<Hub showOffer={false} />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/offer" element={<PasswordGate><Offer /></PasswordGate>} />
+      <Route path="/contract" element={<PasswordGate><Contract /></PasswordGate>} />
       <Route element={<PhoneShell />}>
         <Route path="/login" element={<Login />} />
         <Route element={<TabLayout />}>

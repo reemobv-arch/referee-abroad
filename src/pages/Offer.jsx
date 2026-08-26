@@ -1,18 +1,10 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Check } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
+import offer from '../offerData.js'
 
 const euro = (n) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
-
-// Offer content is injected at build time via VITE_OFFER_DATA (base64 JSON),
-// kept out of the repository. See .env.local / Vercel environment variables.
-let offer = null
-try {
-  offer = JSON.parse(atob(import.meta.env.VITE_OFFER_DATA))
-} catch {
-  offer = null
-}
 
 export default function Offer() {
   if (!offer || !offer.items) {
