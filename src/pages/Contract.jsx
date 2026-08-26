@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ChevronDown, Download, Eraser, Mail } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Download, Eraser, Check } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 import offer from '../offerData.js'
 
@@ -14,12 +14,13 @@ const bgStyle = {
   backgroundAttachment: 'fixed',
 }
 
-function SignField({ index, label, name, role, onSign }) {
+function SignField({ label, name, role }) {
   const ref = useRef(null)
   const savedRef = useRef(false)
   const [saved, setSaved] = useState(false)
   const [date, setDate] = useState('')
   const [hint, setHint] = useState('')
+  const key = 'ra-sig-' + String(name).replace(/[^a-zA-Z0-9]+/g, '-')
 
   useEffect(() => {
     const canvas = ref.current
@@ -46,12 +47,25 @@ function SignField({ index, label, name, role, onSign }) {
     canvas.addEventListener('pointerdown', down)
     canvas.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
+
+    try {
+      const stored = localStorage.getItem(key)
+      if (stored) {
+        const img = new Image()
+        img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        img.src = stored
+        savedRef.current = true
+        setSaved(true)
+        setDate(localStorage.getItem(key + '-date') || '')
+      }
+    } catch { /* storage unavailable */ }
+
     return () => {
       canvas.removeEventListener('pointerdown', down)
       canvas.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
     }
-  }, [])
+  }, [key])
 
   const hasInk = () => {
     const cv = ref.current
@@ -64,10 +78,13 @@ function SignField({ index, label, name, role, onSign }) {
     if (!hasInk()) { setHint('Draw your signature first.'); return }
     savedRef.current = true
     setSaved(true)
-    setDate(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }))
-    onSign(index, ref.current.toDataURL('image/png'))
+    const dt = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    setDate(dt)
+    try {
+      localStorage.setItem(key, ref.current.toDataURL('image/png'))
+      localStorage.setItem(key + '-date', dt)
+    } catch { /* storage unavailable */ }
   }
-  const edit = () => { savedRef.current = false; setSaved(false); onSign(index, null) }
 
   return (
     <div className={`rounded-2xl border p-4 ${saved ? 'bg-brand-light border-brand/40' : 'bg-white border-neutral-200'}`}>
@@ -81,14 +98,11 @@ function SignField({ index, label, name, role, onSign }) {
           height={130}
           className={`w-full h-[100px] rounded-xl border bg-white touch-none ${saved ? 'border-brand/40' : 'border-neutral-200 cursor-crosshair'}`}
         />
-        {saved && <span className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-wide bg-brand text-white px-2 py-0.5 rounded-full">Saved</span>}
+        {saved && <span className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-wide bg-brand text-white px-2 py-0.5 rounded-full inline-flex items-center gap-1"><Check size={11} /> Signed</span>}
       </div>
       <div className="mt-2 flex items-center justify-between no-print min-h-[20px]">
         {saved ? (
-          <>
-            <span className="text-[11px] font-semibold text-brand-dark">Signed · {date}</span>
-            <button type="button" onClick={edit} className="text-[11px] font-semibold text-neutral-500">Edit</button>
-          </>
+          <span className="text-[11px] font-semibold text-brand-dark">Signed{date ? ` · ${date}` : ''}</span>
         ) : (
           <>
             <button type="button" onClick={clear} className="text-[11px] font-semibold text-neutral-500 inline-flex items-center gap-1">
@@ -105,9 +119,6 @@ function SignField({ index, label, name, role, onSign }) {
 
 export default function Contract() {
   const [signedDate, setSignedDate] = useState('')
-  const [sigs, setSigs] = useState({})
-  const [sending, setSending] = useState(false)
-  const [sendMsg, setSendMsg] = useState('')
 
   const c = offer && offer.contract
   if (!offer || !c) {
@@ -159,31 +170,10 @@ export default function Contract() {
     ...c.signatories.map((s) => ({ label: 'For Referee Abroad', name: s.name, role: s.role })),
   ]
 
-  const onSign = (i, url) => setSigs((prev) => ({ ...prev, [i]: url }))
-  const allSigned = signers.every((_, i) => !!sigs[i])
-
   const download = () => {
     setSignedDate(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }))
     document.querySelectorAll('details').forEach((d) => { d.open = true })
     setTimeout(() => window.print(), 200)
-  }
-
-  const sendCopy = async () => {
-    if (!allSigned || sending) return
-    setSending(true); setSendMsg('')
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-    try {
-      const res = await fetch('/api/sign', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ date, signers: signers.map((s, i) => ({ label: s.label, name: s.name, img: sigs[i] })) }),
-      })
-      const data = await res.json().catch(() => ({}))
-      setSendMsg(res.ok ? 'A signed copy has been sent to Reemo.' : (data.error || 'Could not send the copy.'))
-    } catch {
-      setSendMsg('Could not send the copy.')
-    }
-    setSending(false)
   }
 
   const Meta = ({ label, value }) => (
@@ -249,12 +239,12 @@ export default function Contract() {
 
         <h2 className="mt-8 text-lg font-bold text-ink">Approval &amp; signature</h2>
         <p className="text-sm text-neutral-500 font-medium mt-1">
-          Each party signs in their own field below. A copy is sent to Reemo once all four have signed.
+          Each party signs in their own field below and clicks Save. A saved signature is final.
         </p>
 
         <div className="mt-4 grid sm:grid-cols-2 gap-3">
           {signers.map((s, i) => (
-            <SignField key={i} index={i} label={s.label} name={s.name} role={s.role} onSign={onSign} />
+            <SignField key={i} label={s.label} name={s.name} role={s.role} />
           ))}
         </div>
 
@@ -262,20 +252,9 @@ export default function Contract() {
           ? <p className="mt-4 text-sm font-semibold text-brand-dark">Signed on {signedDate}.</p>
           : <p className="mt-4 text-sm font-medium text-neutral-500">Date: ______________</p>}
 
-        <div className="no-print mt-4 flex flex-wrap gap-2">
-          <button onClick={download} className="h-11 px-5 rounded-full bg-white border border-neutral-200 text-ink text-sm font-semibold inline-flex items-center gap-1.5">
-            <Download size={16} /> Download signed PDF
-          </button>
-          <button
-            onClick={sendCopy}
-            disabled={!allSigned || sending}
-            className={`h-11 px-5 rounded-full text-sm font-semibold inline-flex items-center gap-1.5 ${allSigned && !sending ? 'bg-brand text-white' : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'}`}
-          >
-            <Mail size={16} /> {sending ? 'Sending…' : 'Send signed copy to Reemo'}
-          </button>
-        </div>
-        {!allSigned && <p className="no-print mt-2 text-xs font-medium text-neutral-500">All four fields must be signed before a copy is sent.</p>}
-        {sendMsg && <p className="no-print mt-2 text-sm font-semibold text-brand-dark">{sendMsg}</p>}
+        <button onClick={download} className="no-print mt-4 h-11 px-5 rounded-full bg-brand text-white text-sm font-semibold inline-flex items-center gap-1.5">
+          <Download size={16} /> Download signed PDF
+        </button>
 
         <p className="mt-8 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Reemo · agreement · 2026</p>
       </div>
