@@ -125,9 +125,8 @@ export default function Contract() {
           <ArrowLeft size={17} /> Back to hub
         </Link>
 
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4 flex-wrap">
           <Logo size={40} showText textClass="text-lg" />
-          <span className="text-xs font-bold uppercase tracking-wide bg-amber-100 text-amber-700 px-3 py-1 rounded-full">Draft</span>
         </div>
 
         <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-dark">Statement of work · Nº {c.sowNo}</p>
