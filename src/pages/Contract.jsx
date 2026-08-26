@@ -14,14 +14,10 @@ const bgStyle = {
   backgroundAttachment: 'fixed',
 }
 
-export default function Contract() {
-  const canvasRef = useRef(null)
-  const [signerName, setSignerName] = useState('')
-  const [signed, setSigned] = useState(null)
-  const [err, setErr] = useState('')
-
+function SignField({ label, name, role }) {
+  const ref = useRef(null)
   useEffect(() => {
-    const canvas = canvasRef.current
+    const canvas = ref.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     ctx.lineWidth = 2.2
@@ -51,6 +47,33 @@ export default function Contract() {
       window.removeEventListener('pointerup', up)
     }
   }, [])
+  const clear = () => {
+    const cv = ref.current
+    if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height)
+  }
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-200 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{label}</p>
+      <p className="mt-1 font-bold text-ink text-sm">{name}</p>
+      {role && <p className="text-xs text-neutral-500 font-medium">{role}</p>}
+      <canvas
+        ref={ref}
+        width={520}
+        height={130}
+        className="mt-2 w-full h-[100px] rounded-xl border border-neutral-200 bg-white touch-none cursor-crosshair"
+      />
+      <div className="mt-2 flex items-center justify-between no-print">
+        <span className="text-[11px] text-neutral-400 font-medium">Sign above</span>
+        <button type="button" onClick={clear} className="text-[11px] font-semibold text-brand-dark inline-flex items-center gap-1">
+          <Eraser size={12} /> Clear
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default function Contract() {
+  const [signedDate, setSignedDate] = useState('')
 
   const c = offer && offer.contract
   if (!offer || !c) {
@@ -80,7 +103,7 @@ export default function Contract() {
     ['Delivery & acceptance', 'Deliverables are made available for review. The client tests within a reasonable period, indicatively 10 working days. Work is accepted when the client approves it, starts using it in production, or lets the review period pass without a substantiated objection. Acceptance of the final delivery triggers the final invoice.'],
     ['Warranty', 'For two weeks after go live, the provider fixes defects in the delivered Phase 1 work free of charge. A defect is a demonstrable deviation from the agreed functionality. New wishes, changes and functionality outside the agreed scope are additional work. After this period, corrections fall under the monthly maintenance or additional work.'],
     ['Fee & invoicing', `For Phase 1 the client pays a single agreed fee of ${fee} excluding VAT, invoiced in two parts: 50% on start and 50% on delivery. Invoices are due within 14 days. If an invoice is not paid on time, the provider may charge statutory interest and suspend the work and the maintenance until payment is received. The offer prices are valid for 30 days. The monthly maintenance fee may be indexed once a year.`],
-    ['Third-party costs & services', 'Costs of third parties are not included in the fee and are borne by the client, including hosting, domains, the payment provider fees, the push notification service, and any plugins or licenses. The provider advises on these but does not carry their cost.'],
+    ['Third party costs & services', 'Costs of third parties are not included in the fee and are borne by the client, including hosting, domains, the payment provider fees, the push notification service, and any plugins or licenses. The provider advises on these but does not carry their cost.'],
     ['Changes & additional work', `Changes to the scope are agreed in writing, where email is sufficient. Additional work outside the agreed scope is charged at ${addRate} per hour excluding VAT and is separate from and not included in the monthly maintenance. Changes required because third party platforms change, such as WordPress, WooCommerce or their APIs, are also additional work.`],
     ['Support & maintenance', 'After launch, the maintenance covers two hours per month of updates, monitoring and support during business hours. There is no 24/7 guarantee. The provider aims to respond within one business day. Unused hours do not carry over. Work beyond the two hours is additional work.'],
     ['Privacy & processing of personal data', 'In Phase 1, WordPress remains the source of truth for personal data. The provider processes personal data only on the instructions of the client and in line with the GDPR. Where the provider processes personal data on behalf of the client, the parties enter into a data processing agreement.'],
@@ -97,16 +120,13 @@ export default function Contract() {
     ['Final provisions', 'This agreement, together with the commercial offer, forms the complete agreement for Phase 1 and replaces earlier proposals. Changes are valid only in writing. If a provision is invalid, the remaining provisions stay in force.'],
   ]
 
-  const clearSig = () => {
-    const cv = canvasRef.current
-    if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height)
-  }
+  const signers = [
+    { label: 'For Reemo B.V.', name: c.provider.rep.split(' · ')[0], role: 'Founder' },
+    ...c.signatories.map((s) => ({ label: 'For Referee Abroad', name: s.name, role: s.role })),
+  ]
 
-  const handleSign = () => {
-    if (!signerName.trim()) { setErr('Please enter your name.'); return }
-    setErr('')
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-    setSigned({ name: signerName.trim(), date })
+  const download = () => {
+    setSignedDate(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }))
     document.querySelectorAll('details').forEach((d) => { d.open = true })
     setTimeout(() => window.print(), 200)
   }
@@ -174,48 +194,22 @@ export default function Contract() {
 
         <h2 className="mt-8 text-lg font-bold text-ink">Approval &amp; signature</h2>
         <p className="text-sm text-neutral-500 font-medium mt-1">
-          Signing on behalf of Referee Abroad: {c.signatories.map((s) => s.name).join(', ')}.
+          Each party signs in their own field below. Then download the signed PDF.
         </p>
 
-        <div className="mt-4 bg-white rounded-2xl border border-neutral-200 p-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">Full name of signer</label>
-              <input
-                value={signerName}
-                onChange={(e) => { setSignerName(e.target.value); setErr('') }}
-                placeholder="Your name"
-                className="w-full h-10 px-3 rounded-xl border border-neutral-200 outline-none focus:border-brand text-sm font-medium"
-              />
-              <p className="text-xs font-semibold text-ink mt-3 mb-1">On behalf of</p>
-              <p className="text-sm text-neutral-500 font-medium">Referee Abroad / Reemo B.V.</p>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">Signature</label>
-              <canvas
-                ref={canvasRef}
-                width={600}
-                height={170}
-                className="w-full h-[120px] rounded-xl border border-neutral-200 bg-white touch-none cursor-crosshair"
-              />
-              <p className="text-[11px] text-neutral-400 font-medium mt-1 no-print">Draw your signature above with the mouse or your finger.</p>
-            </div>
-          </div>
-
-          {signed && (
-            <p className="mt-3 text-sm font-semibold text-brand-dark">Signed by {signed.name} on {signed.date}.</p>
-          )}
-          {err && <p className="mt-3 text-sm font-semibold text-red-500">{err}</p>}
-
-          <div className="mt-4 flex gap-2 no-print">
-            <button onClick={clearSig} className="h-10 px-4 rounded-full border border-neutral-200 text-sm font-semibold text-ink inline-flex items-center gap-1.5">
-              <Eraser size={15} /> Clear
-            </button>
-            <button onClick={handleSign} className="h-10 px-5 rounded-full bg-brand text-white text-sm font-semibold inline-flex items-center gap-1.5">
-              <Download size={15} /> Sign &amp; download PDF
-            </button>
-          </div>
+        <div className="mt-4 grid sm:grid-cols-2 gap-3">
+          {signers.map((s, i) => (
+            <SignField key={i} label={s.label} name={s.name} role={s.role} />
+          ))}
         </div>
+
+        {signedDate
+          ? <p className="mt-4 text-sm font-semibold text-brand-dark">Signed on {signedDate}.</p>
+          : <p className="mt-4 text-sm font-medium text-neutral-500">Date: ______________</p>}
+
+        <button onClick={download} className="no-print mt-4 h-11 px-5 rounded-full bg-brand text-white text-sm font-semibold inline-flex items-center gap-1.5">
+          <Download size={16} /> Download signed PDF
+        </button>
 
         <p className="mt-8 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Reemo · agreement · 2026</p>
       </div>
