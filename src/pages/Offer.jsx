@@ -117,6 +117,20 @@ export default function Offer() {
               <p className="text-[11px] font-semibold text-brand-dark/70 mt-1">excl. VAT</p>
             </div>
           </div>
+          {offer.aiMonthlyMin != null && (
+            <div className="mt-4 rounded-xl bg-brand-light p-4">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold text-brand-dark">Plus AI usage (LLM tokens)</p>
+                  <p className="text-[11px] font-medium text-brand-dark/70 mt-1">Metered on the chatbot and smart inbox, based on monthly volume</p>
+                </div>
+                <div className="text-right tabular-nums whitespace-nowrap">
+                  <p className="text-2xl font-extrabold text-brand-dark leading-none">{euro(offer.aiMonthlyMin)} to {euro(offer.aiMonthlyMax)}<span className="text-sm font-bold"> / month</span></p>
+                  <p className="text-[11px] font-semibold text-brand-dark/70 mt-1">excl. VAT</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <p className="mt-5 text-xs text-neutral-400 font-medium leading-relaxed">
