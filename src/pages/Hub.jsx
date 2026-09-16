@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight, Wrench } from 'lucide-react'
+import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight, Wrench, Rocket } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
 const cardCls =
@@ -73,21 +73,34 @@ export default function Hub({ showOffer = true }) {
         )}
 
         {showOffer && (
-          <Link
-            to="/phase1"
-            className="group mt-3 w-64 max-w-full aspect-square flex flex-col rounded-3xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-7 shadow-card active:scale-[0.99] transition"
-          >
-            <div className="flex items-start justify-between">
-              <span className="w-16 h-16 rounded-2xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center transition">
-                <Wrench size={30} />
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-dark group-hover:text-white transition">
-                Open <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
-              </span>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Link
+              to="/phase1"
+              className="group aspect-square flex flex-col rounded-3xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-6 shadow-card active:scale-[0.99] transition"
+            >
+              <div className="flex items-start justify-between">
+                <span className="w-14 h-14 rounded-2xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center transition">
+                  <Wrench size={26} />
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-dark group-hover:text-white transition">
+                  Open <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </div>
+              <span className="mt-auto block text-2xl sm:text-3xl font-extrabold leading-tight text-ink group-hover:text-white transition">Fase 1</span>
+              <span className="mt-1 block text-xs sm:text-sm font-medium text-neutral-500 group-hover:text-white/80 transition">Build workspace · source of truth, timeline and requirements</span>
+            </Link>
+
+            <div className="aspect-square flex flex-col rounded-3xl bg-white/60 border-2 border-dashed border-neutral-300 p-6 cursor-default select-none">
+              <div className="flex items-start justify-between">
+                <span className="w-14 h-14 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center">
+                  <Rocket size={26} />
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-400">Coming soon</span>
+              </div>
+              <span className="mt-auto block text-2xl sm:text-3xl font-extrabold leading-tight text-neutral-400">Fase 2</span>
+              <span className="mt-1 block text-xs sm:text-sm font-medium text-neutral-400">Tournament Command Centre, own database and new website</span>
             </div>
-            <span className="mt-auto block text-2xl sm:text-3xl font-extrabold leading-tight text-ink group-hover:text-white transition">Fase 1</span>
-            <span className="mt-1 block text-sm font-medium text-neutral-500 group-hover:text-white/80 transition">Build workspace · source of truth, timeline and requirements</span>
-          </Link>
+          </div>
         )}
       </div>
     </div>
