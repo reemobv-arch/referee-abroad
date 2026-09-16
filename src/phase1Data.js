@@ -65,6 +65,23 @@ export const requirements = [
     ],
   },
   {
+    id: 'U', title: 'User interface & design build', items: [
+      ['U1', 'Design system built in code: colours, typography and spacing tokens'],
+      ['U2', 'Reusable component library: buttons, cards, inputs, chips, modals'],
+      ['U3', 'Referee webapp screens built to the agreed design'],
+      ['U4', 'Tournament Command Centre screens built to the agreed design'],
+      ['U5', 'Loading states for every data view'],
+      ['U6', 'Empty states with helpful copy'],
+      ['U7', 'Error states with a retry option'],
+      ['U8', 'Form validation with inline error styling'],
+      ['U9', 'Consistent icon set and imagery'],
+      ['U10', 'Micro-interactions and transitions (taps, hovers, sheets)'],
+      ['U11', 'Responsive layouts across phone and desktop'],
+      ['U12', 'Brand app icon and launch / splash screen'],
+      ['U13', 'Visual QA and polish pass: spacing, alignment, consistency'],
+    ],
+  },
+  {
     id: 'F', title: 'Referee appointing', items: [
       ['F1', 'Create matches per tournament (teams, time, pitch)'],
       ['F2', 'Appoint a referee to a match'],

@@ -12,7 +12,7 @@ const COLS = [
 ]
 const ORDER = COLS.map((c) => c.key)
 const LS_KEY = 'ra_board_phase1'
-const SEED_VERSION = 3 // bump to re-seed the shared board
+const SEED_VERSION = 4 // bump to re-seed the shared board
 const uid = () => Math.random().toString(36).slice(2, 9)
 
 // Cards come straight from the source-of-truth requirements, one card per item.
