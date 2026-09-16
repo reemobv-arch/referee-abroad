@@ -21,9 +21,11 @@ const MENU = [
 export default function Dashboard() {
   const [active, setActive] = useState('tournaments')
   const [appointTid, setAppointTid] = useState(null)
+  const [createSignal, setCreateSignal] = useState(0)
   const current = MENU.find((m) => m.key === active)
   const Section = current.Comp
   const goAppoint = (tid) => { setAppointTid(tid); setActive('appointing') }
+  const onHeaderAction = () => { if (active === 'tournaments') setCreateSignal((s) => s + 1) }
 
   return (
     <div className="h-screen bg-page text-ink font-sans flex overflow-hidden">
@@ -76,7 +78,7 @@ export default function Dashboard() {
               <input placeholder="Search…" className="flex-1 bg-transparent outline-none text-sm font-medium placeholder:text-neutral-400" />
             </div>
             {current.action && (
-              <button className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-9 rounded-full hover:bg-brand-dark transition shadow-sm">
+              <button onClick={onHeaderAction} className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-9 rounded-full hover:bg-brand-dark transition shadow-sm">
                 <Plus size={15} /> {current.action}
               </button>
             )}
@@ -86,7 +88,7 @@ export default function Dashboard() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {active === 'tournaments' && <DashboardTournaments onManage={goAppoint} />}
+          {active === 'tournaments' && <DashboardTournaments onManage={goAppoint} createSignal={createSignal} />}
           {active === 'appointing' && <DashboardAppointing initialTournament={appointTid} />}
           {active !== 'tournaments' && active !== 'appointing' && <Section />}
         </div>

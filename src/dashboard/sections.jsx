@@ -193,14 +193,106 @@ function TournamentView({ t, onBack, onManage }) {
   )
 }
 
-export function DashboardTournaments({ onManage }) {
+const PRESET_IMAGES = ['img/porto.jpg', 'img/copenhagen.jpg', 'img/ibercup.jpg', 'img/costabrava.jpg', 'img/malta.jpg', 'img/alpine.jpg']
+const fmtDate = (v) => v ? new Date(v).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : ''
+
+function Field({ label, children }) {
+  return (
+    <label className="block">
+      <span className="block text-xs font-semibold text-ink mb-1">{label}</span>
+      {children}
+    </label>
+  )
+}
+const inputCls = 'w-full h-10 px-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand bg-white'
+
+function CreateTournamentModal({ onClose, onCreate }) {
+  const [f, setF] = useState({ name: '', sport: 'Football', city: '', country: '', start: '', end: '', capacity: 40, status: 'planned', img: PRESET_IMAGES[0] })
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
+  const valid = f.name.trim() && f.city.trim() && f.country.trim()
+
+  const submit = () => {
+    if (!valid) return
+    const dates = f.start && f.end ? `${fmtDate(f.start)} to ${fmtDate(f.end)}` : (f.start ? fmtDate(f.start) : 'Dates to be set')
+    onCreate({
+      id: 't' + Math.random().toString(36).slice(2, 7),
+      name: f.name.trim(), city: f.city.trim(), country: f.country.trim(),
+      sport: f.sport, dates, status: f.status,
+      enrolled: 0, capacity: Number(f.capacity) || 0, img: f.img,
+    })
+  }
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-extrabold text-ink">New tournament</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+        </div>
+
+        <div className="space-y-3">
+          <Field label="Tournament name">
+            <input value={f.name} onChange={set('name')} placeholder="e.g. Lisbon Spring Cup" className={inputCls} autoFocus />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Sport">
+              <select value={f.sport} onChange={set('sport')} className={inputCls}>
+                <option>Football</option><option>Hockey</option><option>Handball</option>
+              </select>
+            </Field>
+            <Field label="Status">
+              <select value={f.status} onChange={set('status')} className={inputCls}>
+                <option value="planned">Planned</option><option value="recruiting">Recruiting</option><option value="confirmed">Confirmed</option>
+              </select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="City"><input value={f.city} onChange={set('city')} placeholder="Lisbon" className={inputCls} /></Field>
+            <Field label="Country"><input value={f.country} onChange={set('country')} placeholder="Portugal" className={inputCls} /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Start date"><input type="date" value={f.start} onChange={set('start')} className={inputCls} /></Field>
+            <Field label="End date"><input type="date" value={f.end} onChange={set('end')} className={inputCls} /></Field>
+          </div>
+          <Field label="Referee capacity"><input type="number" min="0" value={f.capacity} onChange={set('capacity')} className={inputCls} /></Field>
+          <Field label="Cover image">
+            <div className="grid grid-cols-6 gap-2">
+              {PRESET_IMAGES.map((img) => (
+                <button key={img} type="button" onClick={() => setF((s) => ({ ...s, img }))}
+                  className={`h-12 rounded-lg overflow-hidden ring-2 transition ${f.img === img ? 'ring-brand' : 'ring-transparent hover:ring-neutral-300'}`}>
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </Field>
+        </div>
+
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+          <button onClick={submit} disabled={!valid} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+            <Plus size={16} /> Create tournament
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+export function DashboardTournaments({ onManage, createSignal }) {
   const [selected, setSelected] = useState(null)
+  const [tournaments, setTournaments] = useState(dashTournaments)
+  const [creating, setCreating] = useState(false)
+
+  useEffect(() => { if (createSignal) { setSelected(null); setCreating(true) } }, [createSignal])
+
+  const create = (t) => { setTournaments((prev) => [t, ...prev]); setCreating(false); setSelected(t) }
 
   if (selected) return <TournamentView t={selected} onBack={() => setSelected(null)} onManage={onManage} />
 
   return (
+    <>
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {dashTournaments.map((t) => (
+      {tournaments.map((t) => (
         <button
           key={t.id}
           onClick={() => setSelected(t)}
@@ -222,11 +314,13 @@ export function DashboardTournaments({ onManage }) {
         </button>
       ))}
 
-      <button className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand min-h-[240px] transition">
+      <button onClick={() => setCreating(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand min-h-[240px] transition">
         <span className="w-12 h-12 rounded-full bg-page flex items-center justify-center"><Plus size={24} /></span>
         <span className="text-sm font-semibold">Create new tournament</span>
       </button>
     </div>
+    {creating && <CreateTournamentModal onClose={() => setCreating(false)} onCreate={create} />}
+    </>
   )
 }
 
