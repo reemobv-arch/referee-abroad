@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight, Wrench, Rocket } from 'lucide-react'
+import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight, Wrench } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
 const cardCls =
@@ -89,17 +89,6 @@ export default function Hub({ showOffer = true }) {
               <span className="mt-auto block text-2xl sm:text-3xl font-extrabold leading-tight text-ink group-hover:text-white transition">Fase 1</span>
               <span className="mt-1 block text-xs sm:text-sm font-medium text-neutral-500 group-hover:text-white/80 transition">Build workspace · source of truth, timeline and requirements</span>
             </Link>
-
-            <div className="aspect-square flex flex-col rounded-3xl bg-white/60 border-2 border-dashed border-neutral-300 p-6 cursor-default select-none">
-              <div className="flex items-start justify-between">
-                <span className="w-14 h-14 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center">
-                  <Rocket size={26} />
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-400">Coming soon</span>
-              </div>
-              <span className="mt-auto block text-2xl sm:text-3xl font-extrabold leading-tight text-neutral-400">Fase 2</span>
-              <span className="mt-1 block text-xs sm:text-sm font-medium text-neutral-400">Tournament Command Centre, own database and new website</span>
-            </div>
           </div>
         )}
       </div>
