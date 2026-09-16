@@ -4,12 +4,15 @@ import Logo from '../components/Logo.jsx'
 
 const activeCard =
   'group flex flex-col rounded-2xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-5 min-h-[180px] shadow-card active:scale-[0.98] transition'
-const soonCard =
-  'flex flex-col rounded-2xl bg-white/70 border border-dashed border-neutral-300 p-5 min-h-[180px] cursor-default select-none'
-
 const iconActive =
   'w-11 h-11 rounded-xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center transition'
-const iconSoon = 'w-11 h-11 rounded-xl bg-neutral-100 text-neutral-400 flex items-center justify-center'
+
+const cards = [
+  { to: '/phase1/source-of-truth', icon: Database, title: 'Source of truths', sub: 'Architecture timeline, design system and requirements' },
+  { to: '/phase1/sprint-board', icon: KanbanSquare, title: 'Sprint board', sub: 'Track the Phase 1 work per sprint' },
+  { to: '/phase1/progress-log', icon: Activity, title: 'Progress log', sub: 'What shipped and when' },
+  { to: '/phase1/handover', icon: PackageCheck, title: 'Handover', sub: 'Access, deliverables and go-live' },
+]
 
 export default function Phase1Hub() {
   return (
@@ -35,35 +38,19 @@ export default function Phase1Hub() {
         </div>
 
         <div className="mt-10 grid grid-cols-2 gap-3 items-stretch">
-          <Link to="/phase1/source-of-truth" className={activeCard}>
-            <span className={iconActive}><Database size={22} /></span>
-            <h2 className="mt-auto text-base font-bold leading-tight text-ink group-hover:text-white transition">Source of truths</h2>
-            <p className="mt-0.5 text-[11px] font-medium text-neutral-500 group-hover:text-white/80 transition">Architecture timeline, design system and requirements</p>
-            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand-dark group-hover:text-white transition">
-              Open <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </Link>
-
-          <div className={soonCard}>
-            <span className={iconSoon}><KanbanSquare size={22} /></span>
-            <h2 className="mt-auto text-base font-bold leading-tight text-neutral-400">Sprint board</h2>
-            <p className="mt-0.5 text-[11px] font-medium text-neutral-400">Track work per sprint</p>
-            <span className="mt-2 text-[10px] font-bold uppercase tracking-wide text-neutral-400">Coming soon</span>
-          </div>
-
-          <div className={soonCard}>
-            <span className={iconSoon}><Activity size={22} /></span>
-            <h2 className="mt-auto text-base font-bold leading-tight text-neutral-400">Progress log</h2>
-            <p className="mt-0.5 text-[11px] font-medium text-neutral-400">What shipped and when</p>
-            <span className="mt-2 text-[10px] font-bold uppercase tracking-wide text-neutral-400">Coming soon</span>
-          </div>
-
-          <div className={soonCard}>
-            <span className={iconSoon}><PackageCheck size={22} /></span>
-            <h2 className="mt-auto text-base font-bold leading-tight text-neutral-400">Handover</h2>
-            <p className="mt-0.5 text-[11px] font-medium text-neutral-400">Docs, access and go-live</p>
-            <span className="mt-2 text-[10px] font-bold uppercase tracking-wide text-neutral-400">Coming soon</span>
-          </div>
+          {cards.map((c) => {
+            const Icon = c.icon
+            return (
+              <Link key={c.to} to={c.to} className={activeCard}>
+                <span className={iconActive}><Icon size={22} /></span>
+                <h2 className="mt-auto text-base font-bold leading-tight text-ink group-hover:text-white transition">{c.title}</h2>
+                <p className="mt-0.5 text-[11px] font-medium text-neutral-500 group-hover:text-white/80 transition">{c.sub}</p>
+                <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand-dark group-hover:text-white transition">
+                  Open <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </Link>
+            )
+          })}
         </div>
       </div>
     </div>
