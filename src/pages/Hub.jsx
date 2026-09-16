@@ -75,7 +75,7 @@ export default function Hub({ showOffer = true }) {
         {showOffer && (
           <Link
             to="/phase1"
-            className="group mt-3 flex flex-col rounded-3xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-7 min-h-[190px] shadow-card active:scale-[0.99] transition"
+            className="group mt-3 w-64 max-w-full aspect-square flex flex-col rounded-3xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-7 shadow-card active:scale-[0.99] transition"
           >
             <div className="flex items-start justify-between">
               <span className="w-16 h-16 rounded-2xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center transition">
