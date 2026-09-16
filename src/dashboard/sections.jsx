@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Plus, MapPin, Calendar, Users, X, Send, MessageSquare, Search, TrendingUp,
   Mail, MessageCircle, AlertTriangle, Check, Sparkles, Star, Globe, Phone, ClipboardList,
-  ChevronRight, Clock,
+  ChevronRight, Clock, Pencil, Trash2, RefreshCw, CheckCircle2, Coins, Building2, Plug, HelpCircle,
 } from 'lucide-react'
 import {
   dashTournaments, dashReferees, dashStaff, dashTickets, dashPnl, dashAnalytics,
   dashEnrolments, dashMatches, dashInbox, refById,
 } from './data.js'
+import { faq } from '../data.js'
 
 const euro = (n) => '€' + n.toLocaleString('en-US')
 const initialsOf = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
@@ -75,19 +76,29 @@ function Crumb({ children, onClick, current }) {
   return <button onClick={onClick} className="text-neutral-500 hover:text-brand-dark font-medium transition">{children}</button>
 }
 
-function EnrolmentList({ enrol }) {
+function EnrolmentList({ enrol, onAction }) {
   if (enrol.length === 0) return <p className="text-sm text-neutral-400 font-medium">No enrolments yet.</p>
+  const actionsFor = (status) => {
+    if (status === 'applied') return [['approve', 'Approve', 'bg-brand text-white'], ['decline', 'Decline', 'border border-neutral-200 text-neutral-500']]
+    if (status === 'paid') return [['approve', 'Confirm', 'bg-brand text-white'], ['decline', 'Remove', 'border border-neutral-200 text-neutral-500']]
+    if (status === 'waitlist') return [['promote', 'Move off waitlist', 'bg-brand-light text-brand-dark'], ['decline', 'Remove', 'border border-neutral-200 text-neutral-500']]
+    return [['decline', 'Remove', 'border border-neutral-200 text-neutral-500']]
+  }
   return (
     <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
       {enrol.map((e, i) => {
         const r = refById[e.refId]
         return (
-          <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+          <div key={i} className="flex items-center gap-3 px-4 py-2.5 flex-wrap">
             <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(r.name)}</span>
-            <span className="flex-1 text-sm font-semibold text-ink truncate">{r.name}</span>
-            <span className="text-sm text-neutral-400 font-medium hidden sm:block">{r.flag} {r.country}</span>
-            <span className="w-20 flex justify-end"><LevelPill level={r.level} /></span>
+            <span className="flex-1 min-w-[120px] text-sm font-semibold text-ink truncate">{r.name}</span>
+            <span className="text-sm text-neutral-400 font-medium hidden lg:block">{r.flag} {r.country}</span>
             <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize w-20 text-center ${enrolMap[e.status]}`}>{e.status}</span>
+            <span className="flex gap-1.5">
+              {actionsFor(e.status).map(([act, label, cls]) => (
+                <button key={act} onClick={() => onAction(e.refId, act)} className={`text-[11px] font-semibold px-2.5 h-7 rounded-full ${cls}`}>{label}</button>
+              ))}
+            </span>
           </div>
         )
       })}
@@ -121,10 +132,13 @@ function MatchList({ matches, onManage, tid }) {
   )
 }
 
-function TournamentView({ t, onBack, onManage }) {
+function TournamentView({ t, onBack, onManage, onEdit }) {
   const [tab, setTab] = useState('info')
-  const enrol = dashEnrolments[t.id] || []
+  const [enrol, setEnrol] = useState(dashEnrolments[t.id] || [])
   const matches = dashMatches[t.id] || []
+  const onEnrolAction = (refId, action) => setEnrol((prev) =>
+    action === 'decline' ? prev.filter((e) => e.refId !== refId)
+      : prev.map((e) => e.refId === refId ? { ...e, status: action === 'promote' ? 'applied' : 'confirmed' } : e))
   const tabs = [
     { k: 'info', label: 'Tournament information' },
     { k: 'enrolments', label: `Enrolments (${enrol.length})` },
@@ -147,6 +161,7 @@ function TournamentView({ t, onBack, onManage }) {
         <img src={t.img} alt={t.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <span className="absolute top-4 left-4"><StatusPill status={t.status} /></span>
+        <button onClick={() => onEdit && onEdit(t)} className="absolute top-4 right-4 inline-flex items-center gap-1.5 bg-white/90 hover:bg-white text-ink text-xs font-semibold px-3 h-8 rounded-full transition"><Pencil size={13} /> Edit</button>
         <div className="absolute bottom-5 left-6 right-6 text-white">
           <h2 className="text-3xl font-extrabold leading-tight">{t.name}</h2>
           <p className="text-sm font-medium text-white/90 flex items-center gap-1.5 mt-1"><MapPin size={15} /> {t.city}, {t.country} · {t.dates}</p>
@@ -186,7 +201,7 @@ function TournamentView({ t, onBack, onManage }) {
             </div>
           </div>
         )}
-        {tab === 'enrolments' && <EnrolmentList enrol={enrol} />}
+        {tab === 'enrolments' && <EnrolmentList enrol={enrol} onAction={onEnrolAction} />}
         {tab === 'matches' && <MatchList matches={matches} onManage={onManage} tid={t.id} />}
       </div>
     </div>
@@ -206,19 +221,23 @@ function Field({ label, children }) {
 }
 const inputCls = 'w-full h-10 px-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand bg-white'
 
-function CreateTournamentModal({ onClose, onCreate }) {
-  const [f, setF] = useState({ name: '', sport: 'Football', city: '', country: '', start: '', end: '', capacity: 40, status: 'planned', img: PRESET_IMAGES[0] })
+function TournamentFormModal({ initial, onClose, onSave }) {
+  const edit = !!initial
+  const [f, setF] = useState({
+    name: initial?.name || '', sport: initial?.sport || 'Football', city: initial?.city || '', country: initial?.country || '',
+    start: '', end: '', capacity: initial?.capacity ?? 40, status: initial?.status || 'planned', img: initial?.img || PRESET_IMAGES[0],
+  })
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
   const valid = f.name.trim() && f.city.trim() && f.country.trim()
 
   const submit = () => {
     if (!valid) return
-    const dates = f.start && f.end ? `${fmtDate(f.start)} to ${fmtDate(f.end)}` : (f.start ? fmtDate(f.start) : 'Dates to be set')
-    onCreate({
-      id: 't' + Math.random().toString(36).slice(2, 7),
+    const dates = f.start && f.end ? `${fmtDate(f.start)} to ${fmtDate(f.end)}` : (f.start ? fmtDate(f.start) : (initial?.dates || 'Dates to be set'))
+    onSave({
+      id: initial?.id || ('t' + Math.random().toString(36).slice(2, 7)),
       name: f.name.trim(), city: f.city.trim(), country: f.country.trim(),
       sport: f.sport, dates, status: f.status,
-      enrolled: 0, capacity: Number(f.capacity) || 0, img: f.img,
+      enrolled: initial?.enrolled ?? 0, capacity: Number(f.capacity) || 0, img: f.img,
     })
   }
 
@@ -226,9 +245,10 @@ function CreateTournamentModal({ onClose, onCreate }) {
     <Modal onClose={onClose}>
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-extrabold text-ink">New tournament</h3>
+          <h3 className="text-xl font-extrabold text-ink">{edit ? 'Edit tournament' : 'New tournament'}</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
         </div>
+        {edit && <p className="-mt-3 mb-3 text-[11px] font-medium text-neutral-400">Leave the dates empty to keep the current dates ({initial.dates}).</p>}
 
         <div className="space-y-3">
           <Field label="Tournament name">
@@ -270,7 +290,7 @@ function CreateTournamentModal({ onClose, onCreate }) {
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
           <button onClick={submit} disabled={!valid} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
-            <Plus size={16} /> Create tournament
+            {edit ? <><Check size={16} /> Save changes</> : <><Plus size={16} /> Create tournament</>}
           </button>
         </div>
       </div>
@@ -278,16 +298,33 @@ function CreateTournamentModal({ onClose, onCreate }) {
   )
 }
 
-export function DashboardTournaments({ onManage, createSignal }) {
+export function DashboardTournaments({ onManage, createSignal, focusT }) {
   const [selected, setSelected] = useState(null)
   const [tournaments, setTournaments] = useState(dashTournaments)
   const [creating, setCreating] = useState(false)
+  const [editing, setEditing] = useState(null)
 
   useEffect(() => { if (createSignal) { setSelected(null); setCreating(true) } }, [createSignal])
+  useEffect(() => {
+    if (focusT && focusT.id) {
+      const t = tournaments.find((x) => x.id === focusT.id)
+      if (t) { setCreating(false); setSelected(t) }
+    }
+  }, [focusT]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const create = (t) => { setTournaments((prev) => [t, ...prev]); setCreating(false); setSelected(t) }
+  const update = (t) => {
+    setTournaments((prev) => prev.map((x) => x.id === t.id ? { ...x, ...t } : x))
+    setSelected((s) => (s && s.id === t.id ? { ...s, ...t } : s))
+    setEditing(null)
+  }
 
-  if (selected) return <TournamentView t={selected} onBack={() => setSelected(null)} onManage={onManage} />
+  if (selected) return (
+    <>
+      <TournamentView key={selected.id} t={selected} onBack={() => setSelected(null)} onManage={onManage} onEdit={(t) => setEditing(t)} />
+      {editing && <TournamentFormModal initial={editing} onClose={() => setEditing(null)} onSave={update} />}
+    </>
+  )
 
   return (
     <>
@@ -319,7 +356,7 @@ export function DashboardTournaments({ onManage, createSignal }) {
         <span className="text-sm font-semibold">Create new tournament</span>
       </button>
     </div>
-    {creating && <CreateTournamentModal onClose={() => setCreating(false)} onCreate={create} />}
+    {creating && <TournamentFormModal onClose={() => setCreating(false)} onSave={create} />}
     </>
   )
 }
@@ -409,11 +446,41 @@ export function DashboardReferees() {
   )
 }
 
+function AddStaffModal({ onClose, onAdd }) {
+  const [f, setF] = useState({ name: '', role: 'Logistics coordinator', tournament: dashTournaments[0].name })
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
+  const roles = ['Tournament director', 'Logistics coordinator', 'Referee mentor', 'Communication', 'Onsite host', 'Media & content']
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-extrabold text-ink">Add staff member</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+        </div>
+        <div className="space-y-3">
+          <Field label="Full name"><input value={f.name} onChange={set('name')} placeholder="e.g. Sara Mendes" className={inputCls} autoFocus /></Field>
+          <Field label="Role"><select value={f.role} onChange={set('role')} className={inputCls}>{roles.map((r) => <option key={r}>{r}</option>)}</select></Field>
+          <Field label="Assigned to"><select value={f.tournament} onChange={set('tournament')} className={inputCls}>{dashTournaments.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+          <button onClick={() => f.name.trim() && onAdd({ name: f.name.trim(), role: f.role, tournament: f.tournament, initials: initialsOf(f.name.trim()) })}
+            disabled={!f.name.trim()} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"><Plus size={16} /> Add staff</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 /* ---------------- Staff ---------------- */
-export function DashboardStaff() {
+export function DashboardStaff({ createSignal }) {
+  const [staff, setStaff] = useState(dashStaff)
+  const [adding, setAdding] = useState(false)
+  useEffect(() => { if (createSignal) setAdding(true) }, [createSignal])
+  const add = (s) => { setStaff((prev) => [...prev, s]); setAdding(false) }
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-      {dashStaff.map((s, i) => (
+      {staff.map((s, i) => (
         <div key={i} className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
           <div className="flex items-center gap-3">
             <span className="w-11 h-11 rounded-full bg-brand text-white flex items-center justify-center font-bold text-sm">{s.initials}</span>
@@ -427,22 +494,57 @@ export function DashboardStaff() {
           </div>
         </div>
       ))}
-      <button className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand min-h-[128px] transition">
+      <button onClick={() => setAdding(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand min-h-[128px] transition">
         <Plus size={24} />
         <span className="text-sm font-semibold">Add staff member</span>
       </button>
+      {adding && <AddStaffModal onClose={() => setAdding(false)} onAdd={add} />}
     </div>
+  )
+}
+
+function AddMatchModal({ onClose, onAdd }) {
+  const [f, setF] = useState({ time: '', pitch: '', home: '', away: '' })
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
+  const valid = f.time && f.home.trim() && f.away.trim()
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-extrabold text-ink">New match</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+        </div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Kick-off time"><input type="time" value={f.time} onChange={set('time')} className={inputCls} autoFocus /></Field>
+            <Field label="Pitch / field"><input value={f.pitch} onChange={set('pitch')} placeholder="Pitch A" className={inputCls} /></Field>
+          </div>
+          <Field label="Home team"><input value={f.home} onChange={set('home')} placeholder="Ajax U15" className={inputCls} /></Field>
+          <Field label="Away team"><input value={f.away} onChange={set('away')} placeholder="Benfica U15" className={inputCls} /></Field>
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+          <button onClick={() => valid && onAdd({ time: f.time, pitch: f.pitch.trim() || 'TBD', home: f.home.trim(), away: f.away.trim() })} disabled={!valid}
+            className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"><Plus size={16} /> Add match</button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 
 /* ---------------- Appointing ---------------- */
 export function DashboardAppointing({ initialTournament }) {
-  const withMatches = dashTournaments.filter((t) => dashMatches[t.id])
-  const [tid, setTid] = useState(initialTournament && dashMatches[initialTournament] ? initialTournament : withMatches[0].id)
+  const [tid, setTid] = useState(initialTournament || dashTournaments[0].id)
   const [matches, setMatches] = useState(() => JSON.parse(JSON.stringify(dashMatches)))
+  const [addingMatch, setAddingMatch] = useState(false)
   const [toast, setToast] = useState('')
 
   const list = matches[tid] || []
+
+  const addMatch = (m) => {
+    setMatches((prev) => ({ ...prev, [tid]: [...(prev[tid] || []), { id: 'm' + Math.random().toString(36).slice(2, 7), main: null, assistants: [], ...m }] }))
+    setAddingMatch(false)
+  }
 
   // Conflict = a referee appointed to two matches at the same time.
   const conflicts = useMemo(() => {
@@ -476,12 +578,17 @@ export function DashboardAppointing({ initialTournament }) {
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <select value={tid} onChange={(e) => setTid(e.target.value)} className="h-10 px-3 rounded-xl border border-neutral-200 text-sm font-semibold outline-none focus:border-brand bg-white">
-          {withMatches.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          {dashTournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
         <span className="text-xs font-medium text-neutral-500">{list.length} matches · {openSlots} without a main referee</span>
-        <button onClick={() => setToast(`Appointments published to referees for ${dashTournaments.find((t) => t.id === tid).name}.`)} className="ml-auto inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-10 rounded-full">
-          <Send size={15} /> Publish appointments
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition">
+            <Plus size={15} /> Add match
+          </button>
+          <button onClick={() => setToast(`Appointments published to referees for ${dashTournaments.find((t) => t.id === tid).name}.`)} className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-10 rounded-full hover:bg-brand-dark transition">
+            <Send size={15} /> Publish appointments
+          </button>
+        </div>
       </div>
 
       {conflicts.size > 0 && (
@@ -490,6 +597,14 @@ export function DashboardAppointing({ initialTournament }) {
         </div>
       )}
 
+      {list.length === 0 && (
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-10 text-center">
+          <p className="text-sm font-semibold text-ink">No matches scheduled yet</p>
+          <p className="text-xs text-neutral-500 font-medium mt-1">Add matches to start appointing referees.</p>
+          <button onClick={() => setAddingMatch(true)} className="mt-4 inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-10 rounded-full"><Plus size={15} /> Add match</button>
+        </div>
+      )}
+      {list.length > 0 && (
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
         {list.map((m) => {
           const mainConflict = m.main && conflicts.has(`${m.id}::${m.main}`)
@@ -536,6 +651,8 @@ export function DashboardAppointing({ initialTournament }) {
           )
         })}
       </div>
+      )}
+      {addingMatch && <AddMatchModal onClose={() => setAddingMatch(false)} onAdd={addMatch} />}
       {toast && <Toast text={toast} onDone={() => setToast('')} />}
     </div>
   )
@@ -880,6 +997,204 @@ export function DashboardAnalytics() {
               return <g key={i}><circle cx={x} cy={y} r="3.5" fill="#44A546" /><text x={x} y="145" textAnchor="middle" fontSize="10" fill="#7c837e" fontWeight="500">{d.m}</text></g>
             })}
           </svg>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ---------------- Assistant (FAQ + AI usage) ---------------- */
+export function DashboardAssistant() {
+  const [items, setItems] = useState(() => faq.map((x, i) => ({ id: 'f' + i, q: x.q, a: x.a })))
+  const [editing, setEditing] = useState(null) // id or 'new'
+  const [draft, setDraft] = useState({ q: '', a: '' })
+
+  const startEdit = (it) => { setEditing(it.id); setDraft({ q: it.q, a: it.a }) }
+  const startNew = () => { setEditing('new'); setDraft({ q: '', a: '' }) }
+  const save = () => {
+    if (!draft.q.trim() || !draft.a.trim()) return
+    if (editing === 'new') setItems((prev) => [...prev, { id: 'f' + Math.random().toString(36).slice(2, 6), ...draft }])
+    else setItems((prev) => prev.map((x) => x.id === editing ? { ...x, ...draft } : x))
+    setEditing(null)
+  }
+  const remove = (id) => setItems((prev) => prev.filter((x) => x.id !== id))
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-ink"><Coins size={17} className="text-brand" /> AI usage this month</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Messages handled" value="428" sub="+12% vs last month" />
+          <StatCard label="Tokens used" value="1.24M" />
+          <StatCard label="Estimated cost" value="€42" sub="within €30 to €50 band" />
+          <StatCard label="Auto-answered" value="63%" sub="rest drafted for review" />
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink"><HelpCircle size={17} className="text-brand" /> FAQ knowledge base <span className="text-neutral-400 font-medium">({items.length})</span></div>
+          <button onClick={startNew} className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-9 rounded-full hover:bg-brand-dark transition"><Plus size={15} /> Add entry</button>
+        </div>
+        <p className="text-xs font-medium text-neutral-500 mb-3">This is the source the chatbot and the smart inbox draft replies from. Keep it accurate.</p>
+
+        <div className="space-y-3">
+          {editing === 'new' && (
+            <FaqEditor draft={draft} setDraft={setDraft} onSave={save} onCancel={() => setEditing(null)} />
+          )}
+          {items.map((it) => editing === it.id ? (
+            <FaqEditor key={it.id} draft={draft} setDraft={setDraft} onSave={save} onCancel={() => setEditing(null)} />
+          ) : (
+            <div key={it.id} className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-bold text-ink text-sm">{it.q}</p>
+                <div className="flex items-center gap-1 flex-none">
+                  <button onClick={() => startEdit(it)} className="w-8 h-8 rounded-lg hover:bg-page flex items-center justify-center text-neutral-500"><Pencil size={15} /></button>
+                  <button onClick={() => remove(it.id)} className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-neutral-400 hover:text-red-500"><Trash2 size={15} /></button>
+                </div>
+              </div>
+              <p className="mt-1 text-sm text-neutral-600 font-medium leading-relaxed">{it.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FaqEditor({ draft, setDraft, onSave, onCancel }) {
+  return (
+    <div className="bg-white rounded-2xl border border-brand/40 shadow-sm p-4">
+      <Field label="Question"><input value={draft.q} onChange={(e) => setDraft((d) => ({ ...d, q: e.target.value }))} placeholder="What do referees ask?" className={inputCls} autoFocus /></Field>
+      <div className="mt-3">
+        <span className="block text-xs font-semibold text-ink mb-1">Answer</span>
+        <textarea value={draft.a} onChange={(e) => setDraft((d) => ({ ...d, a: e.target.value }))} rows={3} placeholder="The grounded answer the AI should give." className="w-full p-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand resize-none" />
+      </div>
+      <div className="flex justify-end gap-2 mt-3">
+        <button onClick={onCancel} className="text-xs font-bold text-neutral-500 px-3 h-9">Cancel</button>
+        <button onClick={onSave} className="text-xs font-bold text-white bg-brand rounded-full px-4 h-9">Save entry</button>
+      </div>
+    </div>
+  )
+}
+
+/* ---------------- Sync status ---------------- */
+const syncLog = [
+  { time: '2 min ago', event: 'Order #10428 imported as enrolment', status: 'ok' },
+  { time: '18 min ago', event: 'Tournament products synced (6 items)', status: 'ok' },
+  { time: '1 hour ago', event: 'Referee profile updated in WordPress', status: 'ok' },
+  { time: '3 hours ago', event: 'Retry: order #10419 (timeout, succeeded on retry)', status: 'retry' },
+  { time: 'Yesterday', event: 'Webhook received: new WooCommerce order', status: 'ok' },
+]
+
+export function DashboardSync() {
+  const [toast, setToast] = useState('')
+  const statusCls = { ok: 'bg-brand-light text-brand-dark', retry: 'bg-amber-100 text-amber-700', error: 'bg-red-50 text-red-600' }
+  return (
+    <div>
+      <div className="grid sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 flex items-center gap-3">
+          <CheckCircle2 size={22} className="text-brand" />
+          <div><p className="font-bold text-ink text-sm">WordPress</p><p className="text-xs text-brand-dark font-semibold">Connected</p></div>
+        </div>
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 flex items-center gap-3">
+          <CheckCircle2 size={22} className="text-brand" />
+          <div><p className="font-bold text-ink text-sm">WooCommerce</p><p className="text-xs text-brand-dark font-semibold">Connected</p></div>
+        </div>
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 flex items-center gap-3">
+          <Clock size={22} className="text-neutral-400" />
+          <div><p className="font-bold text-ink text-sm">Last sync</p><p className="text-xs text-neutral-500 font-semibold">2 minutes ago</p></div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm font-semibold text-ink">Recent sync activity</p>
+        <button onClick={() => setToast('Sync started. WordPress is the source of truth in Phase 1.')} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-9 rounded-full hover:border-brand transition"><RefreshCw size={15} /> Sync now</button>
+      </div>
+
+      <div className="mt-3 bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
+        {syncLog.map((l, i) => (
+          <div key={i} className="flex items-center gap-3 px-4 py-3">
+            <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full flex-none ${statusCls[l.status]}`}>{l.status === 'retry' ? 'Retried' : l.status === 'error' ? 'Error' : 'OK'}</span>
+            <span className="flex-1 text-sm font-medium text-ink">{l.event}</span>
+            <span className="text-xs text-neutral-400 font-medium flex-none">{l.time}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-xs text-neutral-400 font-medium leading-relaxed">Two-way sync with automatic retries and logging. WordPress remains the single source of truth in Phase 1.</p>
+      {toast && <Toast text={toast} onDone={() => setToast('')} />}
+    </div>
+  )
+}
+
+/* ---------------- Settings ---------------- */
+const roleRows = [
+  { name: 'Reemo van Dijk', role: 'Owner', access: 'Full access' },
+  { name: 'Sara Mendes', role: 'Coordinator', access: 'Tournaments, communication' },
+  { name: 'Nadia Haddad', role: 'Communication', access: 'Inbox, communication' },
+  { name: 'Paulo Reis', role: 'Viewer', access: 'Read only' },
+]
+
+function Toggle({ on, onClick }) {
+  return (
+    <span onClick={onClick} className={`w-10 h-6 rounded-full transition relative cursor-pointer ${on ? 'bg-brand' : 'bg-neutral-300'}`}>
+      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition ${on ? 'left-[18px]' : 'left-0.5'}`} />
+    </span>
+  )
+}
+
+export function DashboardSettings() {
+  const [org, setOrg] = useState({ name: 'Referee Abroad', email: 'info@refereeabroad.com', country: 'Netherlands' })
+  const [integrations, setIntegrations] = useState({ wordpress: true, woocommerce: true, push: true, llm: true })
+  const [saved, setSaved] = useState(false)
+  const set = (k) => (e) => { setOrg((s) => ({ ...s, [k]: e.target.value })); setSaved(false) }
+  const toggle = (k) => setIntegrations((s) => ({ ...s, [k]: !s[k] }))
+  const intList = [
+    { k: 'wordpress', label: 'WordPress', desc: 'Source of truth for data' },
+    { k: 'woocommerce', label: 'WooCommerce', desc: 'Applications and payments' },
+    { k: 'push', label: 'Push notifications', desc: 'In-app messages and appointments' },
+    { k: 'llm', label: 'AI / language model', desc: 'Chatbot and smart inbox' },
+  ]
+
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+        <div className="flex items-center gap-2 mb-4 text-sm font-bold text-ink"><Building2 size={17} className="text-brand-dark" /> Organisation profile</div>
+        <div className="space-y-3">
+          <Field label="Organisation name"><input value={org.name} onChange={set('name')} className={inputCls} /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Contact email"><input value={org.email} onChange={set('email')} className={inputCls} /></Field>
+            <Field label="Country"><input value={org.country} onChange={set('country')} className={inputCls} /></Field>
+          </div>
+        </div>
+        <button onClick={() => setSaved(true)} className="mt-4 inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-10 rounded-full hover:bg-brand-dark transition">
+          {saved ? <><Check size={15} /> Saved</> : 'Save profile'}
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+        <div className="flex items-center gap-2 mb-4 text-sm font-bold text-ink"><Plug size={17} className="text-brand-dark" /> Integrations</div>
+        <div className="divide-y divide-neutral-100">
+          {intList.map((it) => (
+            <div key={it.k} className="flex items-center gap-3 py-3">
+              <div className="flex-1"><p className="font-semibold text-ink text-sm">{it.label}</p><p className="text-xs text-neutral-500 font-medium">{it.desc}</p></div>
+              <Toggle on={integrations[it.k]} onClick={() => toggle(it.k)} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+        <div className="flex items-center gap-2 mb-4 text-sm font-bold text-ink"><Users size={17} className="text-brand-dark" /> Team & roles</div>
+        <div className="divide-y divide-neutral-100">
+          {roleRows.map((r, i) => (
+            <div key={i} className="flex items-center gap-3 py-2.5">
+              <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{r.name.split(' ').map((w) => w[0]).join('')}</span>
+              <span className="flex-1 text-sm font-semibold text-ink">{r.name}</span>
+              <span className="text-xs font-medium text-neutral-500 hidden sm:block w-56">{r.access}</span>
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-brand-light text-brand-dark w-28 text-center">{r.role}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
