@@ -30,9 +30,9 @@ export default function Matches() {
             <h2 className="text-xs font-bold text-neutral-500 mb-2">{tournament}</h2>
             <div className="space-y-3">
               {list.map((m) => (
-                <div key={m.id} className="bg-white rounded-2xl p-4 shadow-card">
+                <div key={m.id} className="bg-white rounded-3xl p-5 shadow-card">
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${roleColor(m.role)}`}>{m.role}</span>
+                    <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${roleColor(m.role)}`}>{m.role}</span>
                     {m.status === 'confirmed'
                       ? <span className="text-[11px] font-semibold text-brand-dark inline-flex items-center gap-1"><Check size={13} /> Confirmed</span>
                       : m.status === 'declined'
@@ -40,7 +40,7 @@ export default function Matches() {
                         : <span className="text-[11px] font-semibold text-amber-600">Awaiting response</span>}
                   </div>
 
-                  <p className="mt-2.5 text-base font-bold text-ink leading-tight">{m.home} <span className="text-neutral-400 font-medium">vs</span> {m.away}</p>
+                  <p className="mt-2.5 text-[17px] font-extrabold text-ink leading-tight">{m.home} <span className="text-neutral-300 font-semibold">vs</span> {m.away}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-neutral-500">
                     <span className="flex items-center gap-1"><Clock size={13} /> {m.day} · {m.time}</span>
                     <span className="flex items-center gap-1"><MapPin size={13} /> {m.pitch}</span>

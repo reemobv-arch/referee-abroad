@@ -38,7 +38,7 @@ export function TopBar({ title, back = false, right = null }) {
             <ChevronLeft size={24} />
           </button>
         )}
-        <h1 className="text-[17px] font-semibold text-ink">{title}</h1>
+        <h1 className="text-[19px] font-extrabold text-ink">{title}</h1>
         {right && <div className="absolute right-3">{right}</div>}
       </div>
     </header>
@@ -48,9 +48,9 @@ export function TopBar({ title, back = false, right = null }) {
 export function SectionHeader({ title, action, onAction }) {
   return (
     <div className="flex items-center justify-between mt-1 mb-2">
-      <h2 className="text-lg font-bold text-ink">{title}</h2>
+      <h2 className="text-xl font-extrabold text-ink">{title}</h2>
       {action && (
-        <button onClick={onAction} className="text-brand text-sm font-semibold">
+        <button onClick={onAction} className="text-brand-dark text-[13px] font-bold">
           {action}
         </button>
       )}

@@ -23,8 +23,8 @@ export default function Home() {
       </header>
 
       <div className="px-4 pt-5">
-        <h1 className="text-3xl font-extrabold text-ink">Hello, {user.first}!</h1>
-        <p className="text-neutral-500 font-medium">Explore your refereeing world</p>
+        <h1 className="text-[32px] font-extrabold text-ink leading-tight">Hi {user.first}</h1>
+        <p className="text-neutral-500 font-semibold text-[15px]">Ready for your next tournament?</p>
 
         {nextMatch && (
           <button onClick={() => nav('/matches')} className="mt-5 w-full text-left rounded-2xl bg-brand text-white p-4 shadow-card active:scale-[0.99] transition">
