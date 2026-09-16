@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Check, Palette, Type as TypeIcon, MousePointerClick, LayoutGrid, ListChecks, GitBranch } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
+import { requirements, reqCount } from '../phase1Data.js'
 
 /* ---------------- Architecture timeline ---------------- */
 const timeline = [
@@ -137,132 +138,6 @@ const typeSamples = [
   { label: 'CAPTION / EYEBROW', cls: 'text-[11px] font-bold uppercase tracking-wide', note: 'Baloo 2 · 700 · labels and tags' },
 ]
 
-/* ---------------- Requirements ---------------- */
-const requirements = [
-  {
-    id: 'A', title: 'Access & environment', items: [
-      ['A1', 'Dedicated WordPress admin account for Reemo'],
-      ['A2', 'Staging copy of the WordPress site to build against'],
-      ['A3', 'WordPress REST API enabled with an application password'],
-      ['A4', 'WooCommerce REST API keys with read and write access'],
-      ['A5', 'Hosting and deploy access, and a target domain for the webapp'],
-      ['A6', 'LLM API key on Referee Abroad’s own account'],
-      ['A7', 'Mailbox access for the inbox addresses'],
-      ['A8', 'Brand assets and sample tournament data delivered'],
-    ],
-  },
-  {
-    id: 'B', title: 'Authentication', items: [
-      ['B1', 'Referees log in with their existing WordPress credentials'],
-      ['B2', 'The session persists across app restarts'],
-      ['B3', 'Password reset uses the existing WordPress flow'],
-      ['B4', 'A failed login shows a clear inline error'],
-      ['B5', 'Logout clears the session'],
-    ],
-  },
-  {
-    id: 'C', title: 'WordPress & WooCommerce integration', items: [
-      ['C1', 'Read tournaments from WooCommerce products'],
-      ['C2', 'Read enrolments from WooCommerce orders'],
-      ['C3', 'Create a WooCommerce order when a referee applies'],
-      ['C4', 'Payment runs through the existing WooCommerce checkout'],
-      ['C5', 'WordPress remains the single source of truth in Phase 1'],
-      ['C6', 'Two-way sync keeps the app and WordPress in step'],
-      ['C7', 'Webhooks notify the app of new and changed orders'],
-      ['C8', 'Sync failures are retried automatically with backoff'],
-      ['C9', 'Sync activity is logged for troubleshooting'],
-    ],
-  },
-  {
-    id: 'D', title: 'Referee webapp', items: [
-      ['D1', 'Tournament list with name, dates and location'],
-      ['D2', 'Tournament detail with description, dates and pitch info'],
-      ['D3', 'Apply to a tournament from the detail screen'],
-      ['D4', 'Pay for an application through the checkout'],
-      ['D5', 'Documents screen lists the referee’s documents'],
-      ['D6', 'Profile screen shows and edits personal details'],
-      ['D7', 'In-app chat per tournament group'],
-      ['D8', 'Direct message to the organisation'],
-      ['D9', 'Unread badge on chat'],
-      ['D10', 'Mobile-first layout for common phone sizes'],
-    ],
-  },
-  {
-    id: 'E', title: 'Tournament Command Centre', items: [
-      ['E1', 'Tournament overview with status'],
-      ['E2', 'Manage a tournament’s details'],
-      ['E3', 'Enrolment list per tournament'],
-      ['E4', 'Referee directory with profiles'],
-      ['E5', 'Staff management'],
-      ['E6', 'Broadcast a message to a tournament group'],
-      ['E7', 'Support ticket inbox with a chat view'],
-      ['E8', 'P&L overview per tournament'],
-      ['E9', 'Analytics overview with totals and trends'],
-      ['E10', 'Two-way sync status visible to admins'],
-      ['E11', 'Left navigation across all sections'],
-    ],
-  },
-  {
-    id: 'F', title: 'Referee appointing', items: [
-      ['F1', 'Create matches per tournament (teams, time, pitch)'],
-      ['F2', 'Appoint a referee to a match'],
-      ['F3', 'Assign a role: main or assistant'],
-      ['F4', 'Warn on double booking or time conflict'],
-      ['F5', 'Push the appointment to the referee’s webapp'],
-      ['F6', 'Referee sees the appointment in the app'],
-      ['F7', 'Reassign or remove an appointment'],
-    ],
-  },
-  {
-    id: 'G', title: 'AI communication assistant', items: [
-      ['G1', 'Chatbot embedded in the webapp'],
-      ['G2', 'Chatbot answers grounded in the Referee Abroad FAQ'],
-      ['G3', 'Chatbot signals when it is unsure instead of guessing'],
-      ['G4', 'Unified inbox collects incoming mails'],
-      ['G5', 'AI triages the topic'],
-      ['G6', 'AI triages the urgency'],
-      ['G7', 'AI tags the tournament'],
-      ['G8', 'AI detects the language'],
-      ['G9', 'AI drafts a reply from the FAQ and tournament data'],
-      ['G10', 'Safe, high-confidence cases can be answered automatically'],
-      ['G11', 'Low-confidence cases are drafted for human review'],
-      ['G12', 'A human can edit and send any draft'],
-      ['G13', 'Token usage is tracked for the monthly usage cost'],
-      ['G14', 'No auto-answer on sensitive topics'],
-    ],
-  },
-  {
-    id: 'H', title: 'Notifications', items: [
-      ['H1', 'Push notification on a new message'],
-      ['H2', 'Push notification on a new appointment'],
-      ['H3', 'In-app read status'],
-    ],
-  },
-  {
-    id: 'N', title: 'Non-functional', items: [
-      ['N1', 'App loads within a reasonable time on mobile data'],
-      ['N2', 'Sync retries with backoff on failure'],
-      ['N3', 'Errors are logged and monitored'],
-      ['N4', 'Personal data handled per GDPR; WordPress stays source in Phase 1'],
-      ['N5', 'Data processing agreement in place where needed'],
-      ['N6', 'Works on the latest iOS and Android browsers'],
-      ['N7', 'Basic accessibility: contrast and tap targets'],
-    ],
-  },
-  {
-    id: 'Q', title: 'QA & launch', items: [
-      ['Q1', 'QA across devices and browsers'],
-      ['Q2', 'End-to-end test: apply, pay and order lands in WordPress'],
-      ['Q3', 'End-to-end test: appointment, push and visible in the app'],
-      ['Q4', 'Deployment to production'],
-      ['Q5', 'Documentation and handover'],
-      ['Q6', 'Two-week warranty window after go-live'],
-    ],
-  },
-]
-
-const reqCount = requirements.reduce((a, g) => a + g.items.length, 0)
-
 function SectionTitle({ icon: Icon, kicker, title, desc }) {
   return (
     <div className="flex items-start gap-3">
@@ -299,49 +174,11 @@ export default function Phase1SourceOfTruth() {
 
         <h1 className="mt-6 text-3xl sm:text-4xl font-extrabold leading-tight">Source of truths</h1>
         <p className="mt-2 text-neutral-600 font-medium max-w-2xl">
-          The single reference for building Phase 1: the architecture as a timeline with action points, the design system, and every requirement broken down small.
+          The single reference for building Phase 1: the design system, the architecture as a timeline with action points, and every requirement broken down small.
         </p>
 
-        {/* ============ TIMELINE ============ */}
-        <section className="mt-10">
-          <SectionTitle icon={GitBranch} kicker="Architecture" title="Phase 1 timeline" desc="The Phase 1 architecture, rebuilt as an ordered build plan with concrete action points per step." />
-
-          <div className="mt-6 relative">
-            <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-neutral-200" aria-hidden="true" />
-            <div className="space-y-3">
-              {timeline.map((step) => {
-                const s = statusStyles[step.status]
-                return (
-                  <div key={step.n} className="relative pl-14">
-                    <span className={`absolute left-0 top-3 w-10 h-10 rounded-full flex items-center justify-center text-sm font-extrabold ${s.ring}`}>
-                      {step.status === 'delivered' ? <Check size={18} /> : step.n}
-                    </span>
-                    <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-card">
-                      <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <h3 className="font-bold text-base leading-tight">{step.title}</h3>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-400">{step.tag}</span>
-                          <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${s.chip}`}>{s.label}</span>
-                        </div>
-                      </div>
-                      <p className="mt-1 text-sm font-medium text-neutral-600">{step.summary}</p>
-                      <ul className="mt-3 grid sm:grid-cols-2 gap-x-4 gap-y-1.5">
-                        {step.points.map((p, i) => (
-                          <li key={i} className="flex gap-2 text-[13px] text-neutral-700 font-medium">
-                            <Check size={15} className="text-brand shrink-0 mt-0.5" /> {p}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-
         {/* ============ DESIGN SYSTEM ============ */}
-        <section className="mt-14">
+        <section className="mt-10">
           <SectionTitle icon={Palette} kicker="Design choices" title="Design system" desc="The visual language every screen is built from." />
 
           {/* Colors */}
@@ -418,6 +255,45 @@ export default function Phase1SourceOfTruth() {
                 </div>
               </div>
               <p className="mt-3 text-[11px] font-medium text-neutral-400">Centered card, dimmed backdrop, primary action on the right.</p>
+            </div>
+          </div>
+        </section>
+
+
+        {/* ============ TIMELINE ============ */}
+        <section className="mt-14">
+          <SectionTitle icon={GitBranch} kicker="Architecture" title="Phase 1 timeline" desc="The Phase 1 architecture, rebuilt as an ordered build plan with concrete action points per step." />
+
+          <div className="mt-6 relative">
+            <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-neutral-200" aria-hidden="true" />
+            <div className="space-y-3">
+              {timeline.map((step) => {
+                const s = statusStyles[step.status]
+                return (
+                  <div key={step.n} className="relative pl-14">
+                    <span className={`absolute left-0 top-3 w-10 h-10 rounded-full flex items-center justify-center text-sm font-extrabold ${s.ring}`}>
+                      {step.status === 'delivered' ? <Check size={18} /> : step.n}
+                    </span>
+                    <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-card">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <h3 className="font-bold text-base leading-tight">{step.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-400">{step.tag}</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${s.chip}`}>{s.label}</span>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-sm font-medium text-neutral-600">{step.summary}</p>
+                      <ul className="mt-3 grid sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                        {step.points.map((p, i) => (
+                          <li key={i} className="flex gap-2 text-[13px] text-neutral-700 font-medium">
+                            <Check size={15} className="text-brand shrink-0 mt-0.5" /> {p}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </section>

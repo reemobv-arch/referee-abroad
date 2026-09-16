@@ -2,34 +2,38 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, KanbanSquare, Plus, X, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
+import { requirements } from '../phase1Data.js'
 
 const COLS = [
   { key: 'todo', title: 'To do', dot: 'bg-neutral-300', chip: 'bg-neutral-100 text-neutral-500' },
   { key: 'doing', title: 'In progress', dot: 'bg-brand-dark', chip: 'bg-brand-dark text-white' },
+  { key: 'testing', title: 'Testing', dot: 'bg-sky-400', chip: 'bg-sky-100 text-sky-700' },
   { key: 'done', title: 'Done', dot: 'bg-brand', chip: 'bg-brand-light text-brand-dark' },
 ]
 const ORDER = COLS.map((c) => c.key)
 const LS_KEY = 'ra_board_phase1'
+const SEED_VERSION = 3 // bump to re-seed the shared board
 const uid = () => Math.random().toString(36).slice(2, 9)
 
+// Cards come straight from the source-of-truth requirements, one card per item.
+const cardsFor = (groupId) => {
+  const g = requirements.find((x) => x.id === groupId)
+  return g.items.map(([id, text]) => ({ id: uid(), title: text, sprint: id, note: g.title }))
+}
+const cardsExcept = (groupIds) =>
+  requirements.filter((g) => !groupIds.includes(g.id)).flatMap((g) =>
+    g.items.map(([id, text]) => ({ id: uid(), title: text, sprint: id, note: g.title })))
+
 const seed = () => ({
+  version: SEED_VERSION,
   updatedAt: Date.now(),
   cols: {
-    todo: [
-      { id: uid(), title: 'WordPress & WooCommerce integration', sprint: 'Sprint 2', note: 'Read/write, orders, webhooks, two-way sync' },
-      { id: uid(), title: 'Referee webapp, production build', sprint: 'Sprints 2 to 4', note: 'Login, apply & pay, messages, push, profile' },
-      { id: uid(), title: 'Tournament Command Centre, production build', sprint: 'Sprints 3 to 5', note: 'Manage, broadcast, tickets, P&L, analytics' },
-      { id: uid(), title: 'Referee appointing system', sprint: 'Sprint 5', note: 'Matches, appoint, conflicts, push' },
-      { id: uid(), title: 'AI communication assistant', sprint: 'Sprints 5 to 6', note: 'Chatbot + smart inbox, triage, drafts' },
-      { id: uid(), title: 'Integration, testing & launch', sprint: 'Sprint 6', note: 'API + webhooks, QA, deploy, handover' },
-      { id: uid(), title: 'Warranty & maintenance', sprint: 'Aftercare', note: 'Two-week warranty, then monthly maintenance' },
-    ],
-    doing: [
-      { id: uid(), title: 'Discovery & access', sprint: 'Kickoff', note: 'WordPress, staging, API keys, LLM key, mailboxes' },
-    ],
+    todo: cardsExcept(['A']),
+    doing: cardsFor('A'),
+    testing: [],
     done: [
-      { id: uid(), title: 'Architecture & rollout plan', sprint: 'Sprint 1', note: 'Analysis, target architecture, rollout plan' },
-      { id: uid(), title: 'Clickable prototypes', sprint: 'Sprint 1', note: 'Referee webapp + Command Centre previews' },
+      { id: uid(), title: 'Architecture & rollout plan', sprint: 'Sprint 1', note: 'Delivered' },
+      { id: uid(), title: 'Clickable prototypes', sprint: 'Sprint 1', note: 'Delivered' },
     ],
   },
 })
@@ -38,7 +42,7 @@ const normalise = (b) => {
   if (!b || !b.cols) return seed()
   const cols = {}
   for (const k of ORDER) cols[k] = Array.isArray(b.cols[k]) ? b.cols[k] : []
-  return { updatedAt: b.updatedAt || Date.now(), cols }
+  return { version: b.version, updatedAt: b.updatedAt || Date.now(), cols }
 }
 
 export default function SprintBoard() {
@@ -61,7 +65,7 @@ export default function SprintBoard() {
         if (!r.ok) throw new Error('no api')
         const { board: remote } = await r.json()
         if (!alive) return
-        if (remote) {
+        if (remote && remote.version === SEED_VERSION) {
           const b = normalise(remote); localAt.current = b.updatedAt; setBoard(b)
         } else {
           const b = seed(); localAt.current = b.updatedAt; setBoard(b); save(b)
@@ -70,7 +74,8 @@ export default function SprintBoard() {
         // Local fallback (e.g. dev without the serverless function).
         try {
           const raw = localStorage.getItem(LS_KEY)
-          const b = raw ? normalise(JSON.parse(raw)) : seed()
+          const parsed = raw ? JSON.parse(raw) : null
+          const b = parsed && parsed.version === SEED_VERSION ? normalise(parsed) : seed()
           localAt.current = b.updatedAt; setBoard(b); setStatus('local')
         } catch { const b = seed(); localAt.current = b.updatedAt; setBoard(b) }
       }
@@ -107,7 +112,7 @@ export default function SprintBoard() {
 
   const commit = (mutator) => {
     setBoard((prev) => {
-      const next = { updatedAt: Date.now(), cols: { ...prev.cols } }
+      const next = { version: SEED_VERSION, updatedAt: Date.now(), cols: { ...prev.cols } }
       for (const k of ORDER) next.cols[k] = [...prev.cols[k]]
       mutator(next.cols)
       localAt.current = next.updatedAt
@@ -203,7 +208,7 @@ export default function SprintBoard() {
           )}
         </div>
 
-        <div className="mt-6 grid md:grid-cols-3 gap-4 items-start">
+        <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
           {COLS.map((col) => (
             <div
               key={col.key}
@@ -217,7 +222,7 @@ export default function SprintBoard() {
                 <span className={`ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full ${col.chip}`}>{count(col.key)}</span>
               </div>
 
-              <div className="mt-1 space-y-2.5">
+              <div className="mt-1 space-y-2.5 max-h-[68vh] overflow-y-auto no-scrollbar pr-0.5">
                 {board.cols[col.key].map((c) => {
                   const ci = ORDER.indexOf(col.key)
                   return (
