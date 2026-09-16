@@ -32,10 +32,10 @@ export default function ChatOrg() {
       <div className="flex-1 min-h-0 px-3.5 py-3 space-y-2 overflow-y-auto no-scrollbar">
         <p className="text-center text-[11px] text-neutral-400 font-medium">Today</p>
         {msgs.map((m, i) => (
-          <div key={i} className={`max-w-[78%] px-3.5 py-2 text-sm font-medium leading-snug ${
+          <div key={i} className={`max-w-[80%] px-4 py-2.5 text-[15px] font-medium leading-snug ${
             m.from === 'me'
-              ? 'ml-auto bg-brand text-white rounded-2xl rounded-br-md'
-              : 'bg-white border border-neutral-200 text-ink rounded-2xl rounded-bl-md'
+              ? 'ml-auto bg-brand text-white rounded-3xl rounded-br-md'
+              : 'bg-white border border-neutral-200 text-ink rounded-3xl rounded-bl-md'
           }`}>
             {m.text}
           </div>

@@ -49,7 +49,7 @@ export default function GroupChat() {
           }
           if (m.from === 'me') {
             return (
-              <div key={i} className="ml-auto max-w-[78%] bg-brand text-white text-sm font-medium px-3.5 py-2 rounded-2xl rounded-br-md">
+              <div key={i} className="ml-auto max-w-[80%] bg-brand text-white text-[15px] font-medium px-4 py-2.5 rounded-3xl rounded-br-md">
                 {m.text}
               </div>
             )
@@ -60,7 +60,7 @@ export default function GroupChat() {
                 <Avatar initials={m.initials} color={m.color} />
                 <span className="text-[11px] font-bold text-ink">{m.from}</span>
               </div>
-              <div className="bg-white border border-neutral-200 text-ink text-sm font-medium px-3.5 py-2 rounded-2xl rounded-bl-md">
+              <div className="bg-white border border-neutral-200 text-ink text-[15px] font-medium px-4 py-2.5 rounded-3xl rounded-bl-md">
                 {m.text}
               </div>
             </div>

@@ -71,9 +71,9 @@ export default function TournamentDetail() {
         <span className="absolute top-4 right-4 bg-white text-brand-dark text-[11px] font-semibold px-3 py-1 rounded-full">
           {t.age}
         </span>
-        <div className="absolute bottom-3 left-4 right-4 text-white">
-          <h1 className="text-2xl font-extrabold leading-tight">{t.name}</h1>
-          <div className="flex items-center gap-1.5 text-sm font-medium mt-1 text-white/90">
+        <div className="absolute bottom-4 left-4 right-4 text-white">
+          <h1 className="text-[28px] font-extrabold leading-tight">{t.name}</h1>
+          <div className="flex items-center gap-1.5 text-[14px] font-semibold mt-1 text-white/90">
             <MapPin size={15} /> {t.city}, {t.country} · {t.dates}
           </div>
         </div>
@@ -119,7 +119,7 @@ export default function TournamentDetail() {
               </div>
             </div>
 
-            <h2 className="text-lg font-bold text-ink mt-5 mb-2">Agenda</h2>
+            <h2 className="text-xl font-extrabold text-ink mt-6 mb-3">Agenda</h2>
             <div className="bg-white rounded-2xl px-3.5 shadow-card">
               {t.agenda.map((a, i) => (
                 <div key={i} className={`flex items-center gap-3 py-2.5 ${i < t.agenda.length - 1 ? 'border-b border-neutral-100' : ''}`}>
@@ -129,7 +129,7 @@ export default function TournamentDetail() {
               ))}
             </div>
 
-            <h2 className="text-lg font-bold text-ink mt-5 mb-2">Documents</h2>
+            <h2 className="text-xl font-extrabold text-ink mt-6 mb-3">Documents</h2>
             <Link to="/documents" className="flex items-center gap-3 bg-white rounded-2xl p-3.5 shadow-card active:scale-[0.99]">
               <span className="w-9 h-9 rounded-xl bg-brand-light flex items-center justify-center">
                 <FileText size={18} className="text-brand-dark" />
@@ -140,7 +140,7 @@ export default function TournamentDetail() {
 
             {matches.length > 0 && (
               <>
-                <h2 className="text-lg font-bold text-ink mt-5 mb-2">My matches</h2>
+                <h2 className="text-xl font-extrabold text-ink mt-6 mb-3">My matches</h2>
                 <button onClick={() => nav('/matches')} className="w-full text-left flex items-center gap-3 bg-white rounded-2xl p-3.5 shadow-card active:scale-[0.99]">
                   <span className="w-9 h-9 rounded-xl bg-brand-light flex items-center justify-center">
                     <CalendarCheck size={18} className="text-brand-dark" />
@@ -157,10 +157,10 @@ export default function TournamentDetail() {
           </>
         ) : (
           <div className="mt-4 bg-white rounded-2xl p-4 shadow-card">
-            <p className="text-sm text-neutral-500 font-medium">
+            <p className="text-[15px] text-neutral-500 font-medium">
               Apply for this tournament to unlock logistics, agenda, documents and the group chat.
             </p>
-            <p className="text-brand text-2xl font-extrabold mt-3">€{t.price}</p>
+            <p className="text-brand-dark text-[30px] font-extrabold mt-3">€{t.price}</p>
           </div>
         )}
 

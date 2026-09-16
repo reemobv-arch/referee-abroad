@@ -12,15 +12,15 @@ const iconFor = {
 function DocRow({ d }) {
   const { Icon, cls } = iconFor[d.type] || iconFor.doc
   return (
-    <div className="flex items-center gap-3 bg-white rounded-2xl p-3 shadow-card">
-      <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${cls}`}>
-        <Icon size={18} />
+    <div className="flex items-center gap-3.5 bg-white rounded-2xl border border-neutral-200 p-3.5">
+      <span className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-none ${cls}`}>
+        <Icon size={20} />
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-ink truncate">{d.name}</p>
-        <p className="text-[11px] text-neutral-500 font-medium">{d.meta}</p>
+        <p className="text-[15px] font-bold text-ink truncate">{d.name}</p>
+        <p className="text-[12px] text-neutral-500 font-semibold">{d.meta}</p>
       </div>
-      <button aria-label="Download" className="text-brand active:scale-90">
+      <button aria-label="Download" className="w-10 h-10 rounded-xl bg-page text-brand-dark flex items-center justify-center active:scale-90">
         <Download size={19} />
       </button>
     </div>
@@ -31,11 +31,11 @@ export default function Documents() {
   const withDocs = tournaments.filter((t) => t.documents?.length)
   return (
     <div className="pb-4">
-      <TopBar title="Documents" />
-      <div className="px-4 pt-4 space-y-5">
+      <TopBar title="Documents" back />
+      <div className="px-4 pt-4 space-y-6">
         {withDocs.map((t) => (
           <section key={t.id}>
-            <h2 className="text-xs font-bold text-neutral-500 mb-2">{t.name}</h2>
+            <h2 className="text-sm font-extrabold text-ink mb-2.5">{t.name}</h2>
             <div className="space-y-2.5">
               {t.documents.map((d, i) => (
                 <DocRow key={i} d={d} />
@@ -44,7 +44,7 @@ export default function Documents() {
           </section>
         ))}
         <section>
-          <h2 className="text-xs font-bold text-neutral-500 mb-2">General</h2>
+          <h2 className="text-sm font-extrabold text-ink mb-2.5">General</h2>
           <div className="space-y-2.5">
             {generalDocs.map((d, i) => (
               <DocRow key={i} d={d} />
