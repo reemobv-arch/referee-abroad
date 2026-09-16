@@ -1,16 +1,60 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { MapPin, Clock, BedDouble, Plane, Users, MessageCircle, FileText, ChevronLeft, ArrowRight, Check } from 'lucide-react'
-import { tournaments } from '../data.js'
+import { MapPin, Clock, BedDouble, Plane, Users, MessageCircle, FileText, ChevronLeft, ArrowRight, Check, X, CalendarCheck, ShieldCheck } from 'lucide-react'
+import { tournaments, myMatches } from '../data.js'
 import { Pill } from '../components/ui.jsx'
+
+function PayModal({ t, onClose, onPaid }) {
+  const [paying, setPaying] = useState(false)
+  const [done, setDone] = useState(false)
+  const service = 15
+  const total = t.price + service
+  const pay = () => {
+    setPaying(true)
+    setTimeout(() => { setPaying(false); setDone(true) }, 900)
+  }
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-3xl p-5" onClick={(e) => e.stopPropagation()}>
+        {done ? (
+          <div className="text-center py-4">
+            <div className="w-14 h-14 rounded-full bg-brand-light text-brand-dark flex items-center justify-center mx-auto"><Check size={26} /></div>
+            <p className="mt-3 text-lg font-extrabold text-ink">You are applied!</p>
+            <p className="mt-1 text-sm text-neutral-500 font-medium">Payment received for {t.name}. The team will confirm your spot shortly.</p>
+            <button onClick={onPaid} className="mt-5 w-full h-11 rounded-full bg-brand text-white font-semibold">Done</button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <p className="text-lg font-extrabold text-ink">Apply & pay</p>
+              <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+            </div>
+            <p className="text-sm text-neutral-500 font-medium mt-0.5">{t.name}</p>
+            <div className="mt-4 bg-page rounded-xl p-4 text-sm">
+              <div className="flex justify-between py-1 font-medium text-neutral-600"><span>Participation fee</span><span>€{t.price}</span></div>
+              <div className="flex justify-between py-1 font-medium text-neutral-600"><span>Service fee</span><span>€{service}</span></div>
+              <div className="flex justify-between pt-2 mt-1 border-t border-neutral-200 font-bold text-ink"><span>Total</span><span>€{total}</span></div>
+            </div>
+            <button onClick={pay} disabled={paying} className="mt-4 w-full h-12 rounded-full bg-brand text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60">
+              {paying ? 'Processing…' : <>Pay €{total} <ArrowRight size={17} /></>}
+            </button>
+            <p className="mt-2.5 text-[11px] text-neutral-400 font-medium flex items-center justify-center gap-1"><ShieldCheck size={13} /> Secure payment via the existing checkout</p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default function TournamentDetail() {
   const { id } = useParams()
   const nav = useNavigate()
   const [requested, setRequested] = useState(false)
+  const [pay, setPay] = useState(false)
   const t = tournaments.find((x) => x.id === id)
   if (!t) return <div className="p-6">Not found.</div>
   const showApplied = requested || t.applied
+  const matches = myMatches.filter((m) => m.tournamentId === t.id)
 
   return (
     <div className="h-full overflow-y-auto no-scrollbar pb-6">
@@ -94,6 +138,22 @@ export default function TournamentDetail() {
               <ArrowRight size={18} className="text-brand" />
             </Link>
 
+            {matches.length > 0 && (
+              <>
+                <h2 className="text-lg font-bold text-ink mt-5 mb-2">My matches</h2>
+                <button onClick={() => nav('/matches')} className="w-full text-left flex items-center gap-3 bg-white rounded-2xl p-3.5 shadow-card active:scale-[0.99]">
+                  <span className="w-9 h-9 rounded-xl bg-brand-light flex items-center justify-center">
+                    <CalendarCheck size={18} className="text-brand-dark" />
+                  </span>
+                  <span className="flex-1">
+                    <span className="block text-sm font-bold text-ink">{matches.length} matches appointed</span>
+                    <span className="block text-xs text-neutral-500 font-medium">{matches.filter((m) => m.status === 'pending').length} awaiting your response</span>
+                  </span>
+                  <ArrowRight size={18} className="text-brand" />
+                </button>
+              </>
+            )}
+
           </>
         ) : (
           <div className="mt-4 bg-white rounded-2xl p-4 shadow-card">
@@ -115,7 +175,7 @@ export default function TournamentDetail() {
 
         <div className="grid grid-cols-2 gap-3 mt-3">
           <button
-            onClick={() => setRequested(true)}
+            onClick={() => { if (!showApplied) setPay(true) }}
             className={`h-12 rounded-full font-semibold flex items-center justify-center gap-2 active:scale-[0.99] ${
               showApplied ? 'bg-brand-dark text-white' : 'bg-brand text-white'
             }`}
@@ -130,6 +190,8 @@ export default function TournamentDetail() {
           </button>
         </div>
       </div>
+
+      {pay && <PayModal t={t} onClose={() => setPay(false)} onPaid={() => { setRequested(true); setPay(false) }} />}
     </div>
   )
 }

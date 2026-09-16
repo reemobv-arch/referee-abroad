@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { Users } from 'lucide-react'
+import { Users, Sparkles } from 'lucide-react'
 import { TopBar } from '../components/ui.jsx'
 
 const convos = [
+  { id: 'assistant', name: 'Referee Abroad Assistant', kind: 'bot', last: 'Ask me anything about your tournaments 🤖', time: 'AI', unread: 0, to: '/assistant' },
   { id: 'org', name: 'Referee Abroad', kind: 'org', last: "Done 👍 Updated to L, it's set in your profile.", time: '14:32', unread: 0, to: '/chat' },
   { id: 'porto', name: 'Porto International Cup', kind: 'group', last: "Ana N.: Don't forget your yellow kit 😄", time: '09:12', unread: 2, to: '/tournament/porto/group' },
   { id: 'copenhagen', name: 'Copenhagen Cup', kind: 'group', last: 'Marco (org): Welcome everyone! 👋', time: 'Yesterday', unread: 0, to: '/tournament/copenhagen/group' },
@@ -22,6 +23,8 @@ export default function Chat() {
           >
             {c.kind === 'org' ? (
               <span className="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center font-bold flex-none">RA</span>
+            ) : c.kind === 'bot' ? (
+              <span className="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center flex-none"><Sparkles size={22} /></span>
             ) : (
               <span className="w-12 h-12 rounded-full bg-brand-light text-brand-dark flex items-center justify-center flex-none"><Users size={22} /></span>
             )}

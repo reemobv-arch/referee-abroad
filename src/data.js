@@ -134,6 +134,34 @@ export const news = [
   },
 ]
 
+// The user's match appointments, pushed from the Command Centre.
+export const myMatches = [
+  { id: 'a1', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Wed Jul 2', time: '10:00', pitch: 'Pitch C', home: 'Feyenoord U15', away: 'Milan U15', role: 'Main referee', coRefs: ['Jonas Berg'], status: 'confirmed' },
+  { id: 'a2', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Wed Jul 2', time: '13:30', pitch: 'Pitch A', home: 'Ajax U15', away: 'Porto U15', role: 'Assistant referee', coRefs: ['Ana Nogueira'], status: 'confirmed' },
+  { id: 'a3', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Thu Jul 3', time: '16:00', pitch: 'Pitch A', home: 'Braga U17', away: 'Ajax U17', role: 'Main referee', coRefs: [], status: 'pending' },
+  { id: 'a4', tournamentId: 'copenhagen', tournament: 'Copenhagen Cup', day: 'Sat Jul 12', time: '12:30', pitch: 'Field 1', home: 'FCK U17', away: 'AGF U17', role: 'Assistant referee', coRefs: ['Jonas Berg'], status: 'pending' },
+]
+
+// FAQ that grounds the in-app AI assistant.
+export const faq = [
+  { q: 'When do I get my match schedule?', a: 'Your match appointments appear under Matches in the app as soon as the tournament team publishes them, usually a few days before the tournament. You get a notification for every new or changed appointment.', tags: ['match', 'schedule', 'appointment', 'matches'] },
+  { q: 'What do I do when I arrive?', a: 'On arrival, go to accreditation at the tournament desk, then check in at your hotel. Your key times and transfer details are on each tournament page in the app.', tags: ['arrival', 'accreditation', 'check in', 'arrive'] },
+  { q: 'How do I change my kit size?', a: 'Open Profile and update your Kit size, or message the organisation in the chat. Changes made before the tournament are handled automatically.', tags: ['kit', 'size', 'shirt', 'jersey'] },
+  { q: 'How do I get to the hotel from the airport?', a: 'Your transfer details are shown on the tournament page under logistics. A Referee Abroad host meets you at arrivals with a sign.', tags: ['transfer', 'hotel', 'airport', 'pickup'] },
+  { q: 'How do I apply and pay for a tournament?', a: 'Open a tournament, tap Apply now and complete the payment. Your status then shows as applied, and moves to confirmed once the team approves you.', tags: ['apply', 'pay', 'payment', 'register', 'sign up'] },
+  { q: 'Can I bring a guest to the dinner?', a: 'Guests are sometimes possible depending on seats. Ask in the chat and the on-site host will confirm availability and any cost.', tags: ['guest', 'dinner', 'plus one', 'partner'] },
+  { q: 'What should I pack?', a: 'Bring your referee kit (yellow shirt for most tournaments), boots, whistle, and any personal documents. The exact kit colour is shown on the tournament page.', tags: ['pack', 'kit', 'bring', 'whistle', 'boots'] },
+  { q: 'How do I contact the organisation?', a: 'Use the chat in the app to message Referee Abroad directly, or your tournament group chat for questions to the whole group.', tags: ['contact', 'organisation', 'help', 'reach', 'support'] },
+]
+
+export const notifications = [
+  { id: 'n1', type: 'appointment', title: 'New match appointment', body: 'You are appointed as Main referee, Feyenoord U15 vs Milan U15, Pitch C at 10:00.', ago: '20 min ago', unread: true },
+  { id: 'n2', type: 'appointment', title: 'Appointment needs your response', body: 'Braga U17 vs Ajax U17, Thu Jul 3 at 16:00. Please accept or decline.', ago: '1 hour ago', unread: true },
+  { id: 'n3', type: 'message', title: 'Message from Referee Abroad', body: "Done 👍 Updated to L, it's set in your profile now.", ago: '2 hours ago', unread: false },
+  { id: 'n4', type: 'document', title: 'Document ready', body: 'Your travel itinerary for Porto International Cup is available.', ago: 'Yesterday', unread: false },
+  { id: 'n5', type: 'payment', title: 'Payment received', body: 'We received your payment for Porto International Cup. You are all set!', ago: '2 days ago', unread: false },
+]
+
 export const generalDocs = [
   { name: 'Referee handbook 2026', meta: 'PDF · 1.2 MB', type: 'doc' },
   { name: 'Kit sizing guide', meta: 'PDF · 480 KB', type: 'shirt' },

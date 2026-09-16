@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Trophy, UserCheck, Users, MessageSquare, Wallet, BarChart3, ArrowLeft, Bell, Plus } from 'lucide-react'
+import { Trophy, UserCheck, Users, MessageSquare, Wallet, BarChart3, ArrowLeft, Bell, Plus, ClipboardList, Inbox } from 'lucide-react'
 import {
   DashboardTournaments, DashboardReferees, DashboardStaff,
   DashboardCommunication, DashboardPnL, DashboardAnalytics,
+  DashboardAppointing, DashboardInbox,
 } from '../dashboard/sections.jsx'
 
 const MENU = [
   { key: 'tournaments', label: 'Tournaments', Icon: Trophy, title: 'Tournaments', desc: 'Plan and manage every tournament.', action: 'New tournament', Comp: DashboardTournaments },
+  { key: 'appointing', label: 'Appointing', Icon: ClipboardList, title: 'Referee appointing', desc: 'Assign referees to matches and publish.', Comp: DashboardAppointing },
   { key: 'referees', label: 'Referees', Icon: UserCheck, title: 'Referees', desc: 'Everyone in the referee pool.', Comp: DashboardReferees },
   { key: 'staff', label: 'Staff', Icon: Users, title: 'Staff', desc: 'Your team working on the tournaments.', action: 'Add staff', Comp: DashboardStaff },
+  { key: 'inbox', label: 'Inbox', Icon: Inbox, title: 'Smart inbox', desc: 'AI triages messages and drafts replies.', Comp: DashboardInbox },
   { key: 'communication', label: 'Communication', Icon: MessageSquare, title: 'Communication', desc: 'Answer tickets and broadcast to groups.', Comp: DashboardCommunication },
   { key: 'pnl', label: 'P&L', Icon: Wallet, title: 'P&L', desc: 'Revenue, costs and margins per tournament.', Comp: DashboardPnL },
   { key: 'analytics', label: 'Analytics', Icon: BarChart3, title: 'Analytics', desc: 'Insights across tournaments and referees.', Comp: DashboardAnalytics },
@@ -17,8 +20,10 @@ const MENU = [
 
 export default function Dashboard() {
   const [active, setActive] = useState('tournaments')
+  const [appointTid, setAppointTid] = useState(null)
   const current = MENU.find((m) => m.key === active)
   const Section = current.Comp
+  const goAppoint = (tid) => { setAppointTid(tid); setActive('appointing') }
 
   return (
     <div className="h-screen bg-page text-ink font-sans flex overflow-hidden">
@@ -77,7 +82,9 @@ export default function Dashboard() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-6">
-          <Section />
+          {active === 'tournaments' && <DashboardTournaments onManage={goAppoint} />}
+          {active === 'appointing' && <DashboardAppointing initialTournament={appointTid} />}
+          {active !== 'tournaments' && active !== 'appointing' && <Section />}
         </div>
       </main>
     </div>

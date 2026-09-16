@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ChevronRight, Megaphone, Bell } from 'lucide-react'
-import { user, news, tournaments } from '../data.js'
+import { ChevronRight, Megaphone, Bell, CalendarCheck, MapPin, Clock } from 'lucide-react'
+import { user, news, tournaments, myMatches, notifications } from '../data.js'
 import { SectionHeader } from '../components/ui.jsx'
 import TournamentCard from '../components/TournamentCard.jsx'
 import Logo from '../components/Logo.jsx'
@@ -8,14 +8,16 @@ import Logo from '../components/Logo.jsx'
 export default function Home() {
   const nav = useNavigate()
   const upcoming = tournaments.filter((t) => t.applied)
+  const nextMatch = myMatches[0]
+  const hasUnread = notifications.some((n) => n.unread)
   return (
     <div className="pb-4">
       <header className="sticky top-0 z-20 bg-white border-b border-neutral-200">
         <div className="h-14 flex items-center justify-between px-4">
           <Logo size={30} showText textClass="text-base" />
-          <button aria-label="Notifications" className="relative p-1">
+          <button onClick={() => nav('/notifications')} aria-label="Notifications" className="relative p-1">
             <Bell size={22} className="text-ink" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+            {hasUnread && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />}
           </button>
         </div>
       </header>
@@ -23,6 +25,20 @@ export default function Home() {
       <div className="px-4 pt-5">
         <h1 className="text-3xl font-extrabold text-ink">Hello, {user.first}!</h1>
         <p className="text-neutral-500 font-medium">Explore your refereeing world</p>
+
+        {nextMatch && (
+          <button onClick={() => nav('/matches')} className="mt-5 w-full text-left rounded-2xl bg-brand text-white p-4 shadow-card active:scale-[0.99] transition">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-white/80">
+              <CalendarCheck size={14} /> Next match
+            </div>
+            <p className="mt-1.5 font-extrabold text-lg leading-tight">{nextMatch.home} vs {nextMatch.away}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs font-medium text-white/90">
+              <span className="flex items-center gap-1"><Clock size={13} /> {nextMatch.day} · {nextMatch.time}</span>
+              <span className="flex items-center gap-1"><MapPin size={13} /> {nextMatch.pitch}</span>
+              <span className="font-semibold">{nextMatch.role}</span>
+            </div>
+          </button>
+        )}
 
         <Link
           to="/tournaments"

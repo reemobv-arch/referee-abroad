@@ -21,6 +21,9 @@ import Chat from './pages/Chat.jsx'
 import Profile from './pages/Profile.jsx'
 import ChatOrg from './pages/ChatOrg.jsx'
 import GroupChat from './pages/GroupChat.jsx'
+import Matches from './pages/Matches.jsx'
+import Assistant from './pages/Assistant.jsx'
+import Notifications from './pages/Notifications.jsx'
 
 function PhoneShell() {
   return (
@@ -59,6 +62,7 @@ export default function App() {
         <Route element={<TabLayout />}>
           <Route path="/home" element={<Home />} />
           <Route path="/tournaments" element={<Tournaments />} />
+          <Route path="/matches" element={<Matches />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/news" element={<News />} />
           <Route path="/chats" element={<Chat />} />
@@ -67,6 +71,8 @@ export default function App() {
         <Route path="/tournament/:id" element={<TournamentDetail />} />
         <Route path="/tournament/:id/group" element={<GroupChat />} />
         <Route path="/chat" element={<ChatOrg />} />
+        <Route path="/assistant" element={<Assistant />} />
+        <Route path="/notifications" element={<Notifications />} />
       </Route>
     </Routes>
   )

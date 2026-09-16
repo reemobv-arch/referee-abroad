@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Trophy, FileText, MessageCircle, User } from 'lucide-react'
+import { Home, Trophy, CalendarCheck, FileText, MessageCircle, User } from 'lucide-react'
 
 const tabs = [
   { to: '/home', label: 'Home', Icon: Home, end: true },
   { to: '/tournaments', label: 'Tournaments', Icon: Trophy },
-  { to: '/documents', label: 'Documents', Icon: FileText },
+  { to: '/matches', label: 'Matches', Icon: CalendarCheck },
+  { to: '/documents', label: 'Docs', Icon: FileText },
   { to: '/chats', label: 'Chat', Icon: MessageCircle },
   { to: '/profile', label: 'Profile', Icon: User },
 ]
@@ -18,7 +19,7 @@ export default function BottomNav() {
             key={to}
             to={to}
             end={end}
-            className="flex flex-col items-center gap-0.5 w-1/5 py-1"
+            className="flex flex-col items-center gap-0.5 flex-1 py-1"
           >
             {({ isActive }) => (
               <>
