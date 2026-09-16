@@ -54,8 +54,8 @@ export default function Profile() {
 
         <div className="space-y-2.5">
           <LinkRow icon={FileText} tint="var(--mint,#E7F4E1)" color="#1F7A3A" title="Documents" sub="Tickets, itinerary, agreement" onClick={() => nav('/documents')} />
-          <LinkRow icon={CalendarClock} tint="#E4F0FB" color="#0C447C" title="Availability" sub="Set when you can referee" onClick={() => {}} />
-          <LinkRow icon={Bell} tint="#FDEFD3" color="#7A5206" title="Notifications" sub="Push and email" onClick={() => nav('/notifications')} />
+          <LinkRow icon={CalendarClock} tint="#E4F0FB" color="#0C447C" title="Availability" sub="Set when you can referee" onClick={() => nav('/availability')} />
+          <LinkRow icon={Bell} tint="#FDEFD3" color="#7A5206" title="Notifications" sub="Push and email" onClick={() => nav('/notification-settings')} />
         </div>
 
         <div>

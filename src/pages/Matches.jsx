@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { MapPin, Clock, Users, Check, X } from 'lucide-react'
 import { TopBar } from '../components/ui.jsx'
 import { myMatches } from '../data.js'
@@ -6,6 +7,7 @@ import { myMatches } from '../data.js'
 const roleColor = (role) => role.startsWith('Main') ? 'bg-brand text-white' : 'bg-brand-light text-brand-dark'
 
 export default function Matches() {
+  const nav = useNavigate()
   const [items, setItems] = useState(() => myMatches.map((m) => ({ ...m })))
 
   const setStatus = (id, status) => setItems((prev) => prev.map((m) => m.id === id ? { ...m, status } : m))
@@ -30,7 +32,7 @@ export default function Matches() {
             <h2 className="text-xs font-bold text-neutral-500 mb-2">{tournament}</h2>
             <div className="space-y-3">
               {list.map((m) => (
-                <div key={m.id} className="bg-white rounded-3xl p-5 shadow-card">
+                <div key={m.id} onClick={() => nav(`/match/${m.id}`)} className="bg-white rounded-3xl p-5 shadow-card active:scale-[0.99] transition cursor-pointer">
                   <div className="flex items-center justify-between gap-2">
                     <span className={`text-[12px] font-bold px-3 py-1 rounded-full ${roleColor(m.role)}`}>{m.role}</span>
                     {m.status === 'confirmed'
@@ -49,10 +51,10 @@ export default function Matches() {
 
                   {m.status === 'pending' && (
                     <div className="mt-3 flex gap-2">
-                      <button onClick={() => setStatus(m.id, 'confirmed')} className="flex-1 h-10 rounded-full bg-brand text-white text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-[0.99]">
+                      <button onClick={(e) => { e.stopPropagation(); setStatus(m.id, 'confirmed') }} className="flex-1 h-10 rounded-full bg-brand text-white text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-[0.99]">
                         <Check size={15} /> Accept
                       </button>
-                      <button onClick={() => setStatus(m.id, 'declined')} className="h-10 px-4 rounded-full bg-white border border-neutral-200 text-neutral-500 text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-[0.99]">
+                      <button onClick={(e) => { e.stopPropagation(); setStatus(m.id, 'declined') }} className="h-10 px-4 rounded-full bg-white border border-neutral-200 text-neutral-500 text-sm font-semibold flex items-center justify-center gap-1.5 active:scale-[0.99]">
                         <X size={15} /> Decline
                       </button>
                     </div>

@@ -44,9 +44,9 @@ export const tournaments = [
       { d: 'Fri', label: 'Finals + banquet' },
     ],
     documents: [
-      { name: 'Travel itinerary.pdf', meta: 'Updated Jun 24 · 240 KB', type: 'pdf' },
-      { name: 'Flight ticket, LIS to OPO', meta: 'Jul 1 · 07:40', type: 'ticket' },
-      { name: 'Referee agreement.pdf', meta: 'Signed · Jun 20', type: 'doc' },
+      { name: 'Travel itinerary.pdf', meta: 'Updated Jun 24 · 240 KB', type: 'pdf', status: 'approved' },
+      { name: 'Flight ticket, LIS to OPO', meta: 'Jul 1 · 07:40', type: 'ticket', status: 'approved' },
+      { name: 'Referee agreement.pdf', meta: 'Requires your signature', type: 'doc', status: 'to sign', needsSign: true },
     ],
   },
   {
@@ -61,7 +61,7 @@ export const tournaments = [
     lodging: 'Hotel',
     price: 199,
     spotsLeft: 15,
-    status: 'pending',
+    status: 'paid',
     applied: true,
     hotel: 'Wakeup Copenhagen',
     room: 'Room 508',
@@ -77,8 +77,8 @@ export const tournaments = [
       { d: 'Sun', label: 'Knockouts + finals' },
     ],
     documents: [
-      { name: 'Welcome pack.pdf', meta: 'Updated Jul 2 · 310 KB', type: 'pdf' },
-      { name: 'Kit sizing guide', meta: 'PDF · 480 KB', type: 'doc' },
+      { name: 'Welcome pack.pdf', meta: 'Updated Jul 2 · 310 KB', type: 'pdf', status: 'approved' },
+      { name: 'Kit sizing guide', meta: 'PDF · 480 KB', type: 'doc', status: 'approved' },
     ],
   },
   {
@@ -163,9 +163,25 @@ export const notifications = [
 ]
 
 export const generalDocs = [
-  { name: 'Referee handbook 2026', meta: 'PDF · 1.2 MB', type: 'doc' },
-  { name: 'Kit sizing guide', meta: 'PDF · 480 KB', type: 'shirt' },
-  { name: 'Code of conduct', meta: 'PDF · 190 KB', type: 'doc' },
+  { name: 'Referee handbook 2026', meta: 'PDF · 1.2 MB', type: 'doc', status: 'approved' },
+  { name: 'Kit sizing guide', meta: 'PDF · 480 KB', type: 'shirt', status: 'approved' },
+  { name: 'Code of conduct', meta: 'PDF · 190 KB', type: 'doc', status: 'approved' },
+]
+
+// The referee's own uploaded documents (with review status).
+export const ownDocuments = [
+  { name: 'Passport.pdf', meta: 'Uploaded Jun 10 · 1.1 MB', type: 'doc', status: 'approved' },
+  { name: 'Referee certificate 2026', meta: 'Uploaded Jun 12 · 640 KB', type: 'doc', status: 'submitted' },
+]
+
+// Availability per month, used by the Command Centre appointing.
+export const availabilityMonths = [
+  { key: 'jun', label: 'June 2026', state: 'available' },
+  { key: 'jul', label: 'July 2026', state: 'available' },
+  { key: 'aug', label: 'August 2026', state: 'maybe' },
+  { key: 'sep', label: 'September 2026', state: 'unavailable' },
+  { key: 'oct', label: 'October 2026', state: 'available' },
+  { key: 'nov', label: 'November 2026', state: 'maybe' },
 ]
 
 export const orgChat = [

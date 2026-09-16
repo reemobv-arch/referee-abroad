@@ -22,6 +22,9 @@ import Profile from './pages/Profile.jsx'
 import ChatOrg from './pages/ChatOrg.jsx'
 import GroupChat from './pages/GroupChat.jsx'
 import Matches from './pages/Matches.jsx'
+import MatchDetail from './pages/MatchDetail.jsx'
+import Availability from './pages/Availability.jsx'
+import NotificationPrefs from './pages/NotificationPrefs.jsx'
 import Assistant from './pages/Assistant.jsx'
 import Notifications from './pages/Notifications.jsx'
 
@@ -70,9 +73,12 @@ export default function App() {
         </Route>
         <Route path="/tournament/:id" element={<TournamentDetail />} />
         <Route path="/tournament/:id/group" element={<GroupChat />} />
+        <Route path="/match/:id" element={<MatchDetail />} />
         <Route path="/chat" element={<ChatOrg />} />
         <Route path="/assistant" element={<Assistant />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/notification-settings" element={<NotificationPrefs />} />
+        <Route path="/availability" element={<Availability />} />
       </Route>
     </Routes>
   )

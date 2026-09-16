@@ -3,8 +3,12 @@ import { ChevronLeft } from 'lucide-react'
 
 export function StatusBadge({ status }) {
   const map = {
-    approved: { label: 'Approved', cls: 'bg-brand-light text-brand-dark' },
+    approved: { label: 'Confirmed', cls: 'bg-brand-light text-brand-dark' },
+    confirmed: { label: 'Confirmed', cls: 'bg-brand-light text-brand-dark' },
+    paid: { label: 'Paid', cls: 'bg-sky-100 text-sky-700' },
+    applied: { label: 'Applied', cls: 'bg-amber-100 text-amber-700' },
     pending: { label: 'Pending', cls: 'bg-amber-100 text-amber-700' },
+    waitlist: { label: 'Waitlist', cls: 'bg-neutral-100 text-neutral-500' },
     open: { label: 'Open', cls: 'bg-brand-light text-brand-dark' },
     completed: { label: 'Completed', cls: 'bg-neutral-100 text-neutral-500' },
   }

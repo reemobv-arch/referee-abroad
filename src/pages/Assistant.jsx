@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Send, Sparkles } from 'lucide-react'
+import { ChevronLeft, Send, Sparkles, MessageCircle } from 'lucide-react'
 import { faq } from '../data.js'
 
 // Tiny FAQ-grounded answer: score by shared keywords, fall back to a safe reply.
@@ -14,8 +14,8 @@ function answer(question) {
     for (const w of item.q.toLowerCase().split(/\W+/)) if (w.length > 3 && q.includes(w)) score += 1
     if (score > bestScore) { bestScore = score; best = item }
   }
-  if (best && bestScore >= 2) return best.a
-  return "I'm not sure about that one yet. I can help with match schedules, arrival, kit, transfers, applying and payments, or contacting the organisation. You can also message the Referee Abroad team directly in the chat."
+  if (best && bestScore >= 2) return { text: best.a, fallback: false }
+  return { text: "I'm not sure about that one yet. I can help with match schedules, arrival, kit, transfers, applying and payments. For anything else, the Referee Abroad team is happy to help.", fallback: true }
 }
 
 const suggestions = [
@@ -40,7 +40,10 @@ export default function Assistant() {
     if (!question) return
     setMsgs((m) => [...m, { from: 'me', text: question }])
     setText('')
-    setTimeout(() => setMsgs((m) => [...m, { from: 'bot', text: answer(question) }]), 350)
+    setTimeout(() => {
+      const a = answer(question)
+      setMsgs((m) => [...m, { from: 'bot', text: a.text, handoff: a.fallback }])
+    }, 350)
   }
 
   return (
@@ -58,12 +61,19 @@ export default function Assistant() {
 
       <div className="flex-1 min-h-0 px-3.5 py-3 space-y-2 overflow-y-auto no-scrollbar">
         {msgs.map((m, i) => (
-          <div key={i} className={`max-w-[80%] px-3.5 py-2 text-sm font-medium leading-snug ${
-            m.from === 'me'
-              ? 'ml-auto bg-brand text-white rounded-2xl rounded-br-md'
-              : 'bg-white border border-neutral-200 text-ink rounded-2xl rounded-bl-md'
-          }`}>
-            {m.text}
+          <div key={i}>
+            <div className={`max-w-[80%] px-4 py-2.5 text-[15px] font-medium leading-snug ${
+              m.from === 'me'
+                ? 'ml-auto bg-brand text-white rounded-3xl rounded-br-md'
+                : 'bg-white border border-neutral-200 text-ink rounded-3xl rounded-bl-md'
+            }`}>
+              {m.text}
+            </div>
+            {m.handoff && (
+              <button onClick={() => nav('/chat')} className="mt-2 inline-flex items-center gap-2 bg-brand-light text-brand-dark font-bold text-[13px] rounded-full px-4 py-2.5 active:scale-[0.99]">
+                <MessageCircle size={16} /> Message the team
+              </button>
+            )}
           </div>
         ))}
 

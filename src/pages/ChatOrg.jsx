@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Phone, Paperclip, Send } from 'lucide-react'
+import { ChevronLeft, Phone, Paperclip, Send, Image as ImageIcon } from 'lucide-react'
 import { orgChat } from '../data.js'
 
 export default function ChatOrg() {
@@ -13,6 +13,10 @@ export default function ChatOrg() {
     if (!text.trim()) return
     setMsgs((m) => [...m, { from: 'me', text: text.trim() }])
     setText('')
+  }
+
+  function attach() {
+    setMsgs((m) => [...m, { from: 'me', attachment: 'Match photo.jpg' }])
   }
 
   return (
@@ -32,18 +36,25 @@ export default function ChatOrg() {
       <div className="flex-1 min-h-0 px-3.5 py-3 space-y-2 overflow-y-auto no-scrollbar">
         <p className="text-center text-[11px] text-neutral-400 font-medium">Today</p>
         {msgs.map((m, i) => (
-          <div key={i} className={`max-w-[80%] px-4 py-2.5 text-[15px] font-medium leading-snug ${
-            m.from === 'me'
-              ? 'ml-auto bg-brand text-white rounded-3xl rounded-br-md'
-              : 'bg-white border border-neutral-200 text-ink rounded-3xl rounded-bl-md'
-          }`}>
-            {m.text}
-          </div>
+          m.attachment ? (
+            <div key={i} className="ml-auto max-w-[80%] bg-brand text-white rounded-3xl rounded-br-md p-2.5">
+              <div className="rounded-2xl bg-white/15 aspect-[4/3] flex items-center justify-center"><ImageIcon size={34} className="text-white/80" /></div>
+              <p className="text-[12px] font-semibold mt-1.5 px-1">{m.attachment}</p>
+            </div>
+          ) : (
+            <div key={i} className={`max-w-[80%] px-4 py-2.5 text-[15px] font-medium leading-snug ${
+              m.from === 'me'
+                ? 'ml-auto bg-brand text-white rounded-3xl rounded-br-md'
+                : 'bg-white border border-neutral-200 text-ink rounded-3xl rounded-bl-md'
+            }`}>
+              {m.text}
+            </div>
+          )
         ))}
       </div>
 
       <form onSubmit={send} className="shrink-0 bg-white border-t border-neutral-200 px-3 py-2.5 flex items-center gap-2 pb-3">
-        <Paperclip size={20} className="text-neutral-400" />
+        <button type="button" onClick={attach} aria-label="Attach photo"><Paperclip size={20} className="text-neutral-400" /></button>
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
