@@ -10,7 +10,8 @@ export default function TournamentCard({ t }) {
       className="block w-full text-left bg-white rounded-2xl overflow-hidden shadow-card active:scale-[0.99] transition-transform"
     >
       <div className="relative">
-        <img src={t.img} alt={t.name} className="w-full h-28 object-cover" />
+        <img src={t.img} alt={t.name} className="w-full h-40 object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
         <span className="absolute top-2.5 left-2.5 bg-white text-brand-dark text-[10px] font-semibold px-2.5 py-1 rounded-full">
           {t.age}
         </span>

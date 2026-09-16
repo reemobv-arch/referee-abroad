@@ -39,10 +39,10 @@ const enrolMap = {
 
 function StatCard({ label, value, sub }) {
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 p-4">
-      <p className="text-xs font-medium text-neutral-500">{label}</p>
-      <p className="mt-1 text-2xl font-extrabold text-ink">{value}</p>
-      {sub && <p className="text-xs font-medium text-brand-dark mt-0.5">{sub}</p>}
+    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 hover:shadow-md transition-shadow">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{label}</p>
+      <p className="mt-1.5 text-2xl font-extrabold text-ink leading-none">{value}</p>
+      {sub && <p className="text-xs font-semibold text-brand-dark mt-1.5">{sub}</p>}
     </div>
   )
 }
@@ -78,7 +78,7 @@ function Crumb({ children, onClick, current }) {
 function EnrolmentList({ enrol }) {
   if (enrol.length === 0) return <p className="text-sm text-neutral-400 font-medium">No enrolments yet.</p>
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100">
+    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
       {enrol.map((e, i) => {
         const r = refById[e.refId]
         return (
@@ -98,7 +98,7 @@ function EnrolmentList({ enrol }) {
 function MatchList({ matches, onManage, tid }) {
   if (matches.length === 0) return <p className="text-sm text-neutral-400 font-medium">No matches scheduled yet.</p>
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100">
+    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
       {matches.map((m) => {
         const refs = [m.main, ...m.assistants].filter(Boolean)
         return (
@@ -172,7 +172,7 @@ function TournamentView({ t, onBack, onManage }) {
               <StatCard label="Spots left" value={t.capacity - t.enrolled} />
               <StatCard label="Status" value={<span className="capitalize">{t.status}</span>} />
             </div>
-            <div className="mt-4 bg-white rounded-2xl border border-neutral-200 p-5">
+            <div className="mt-4 bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
               <h3 className="font-bold text-ink text-sm">About this tournament</h3>
               <p className="mt-1.5 text-sm text-neutral-600 font-medium leading-relaxed">
                 {t.name} takes place in {t.city}, {t.country} from {t.dates}. {t.enrolled} of {t.capacity} referee spots are filled,
@@ -258,7 +258,7 @@ export function DashboardReferees() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
         <div className="flex items-center px-4 py-2.5 border-b border-neutral-200 text-[11px] uppercase tracking-wide text-neutral-500 font-semibold">
           <span className="flex-1">Referee</span>
           <span className="w-40 hidden sm:block">Country</span>
@@ -320,7 +320,7 @@ export function DashboardStaff() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
       {dashStaff.map((s, i) => (
-        <div key={i} className="bg-white rounded-2xl border border-neutral-200 p-4">
+        <div key={i} className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
           <div className="flex items-center gap-3">
             <span className="w-11 h-11 rounded-full bg-brand text-white flex items-center justify-center font-bold text-sm">{s.initials}</span>
             <div>
@@ -396,7 +396,7 @@ export function DashboardAppointing({ initialTournament }) {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100">
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
         {list.map((m) => {
           const mainConflict = m.main && conflicts.has(`${m.id}::${m.main}`)
           return (
@@ -502,7 +502,7 @@ export function DashboardCommunication() {
   return (
     <>
     <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 items-start">
-      <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-200 flex items-center justify-between">
           <p className="font-bold text-ink text-sm">Tickets</p>
           <span className="text-xs font-medium text-neutral-400">{dashTickets.filter((t) => t.status === 'open').length} open</span>
@@ -523,7 +523,7 @@ export function DashboardCommunication() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-neutral-200 p-4">
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
         <p className="font-bold text-ink text-sm">Broadcast to a tournament</p>
         <p className="text-xs text-neutral-500 font-medium mt-0.5">Lands in the webapp group chat of every enrolled referee.</p>
         <label className="block text-xs font-semibold text-ink mt-4 mb-1">Tournament</label>
@@ -595,7 +595,7 @@ export function DashboardInbox() {
     </div>
 
     <div className="grid lg:grid-cols-[1fr_1.3fr] gap-5 items-start">
-      <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-200 flex items-center justify-between">
           <p className="font-bold text-ink text-sm">Inbox</p>
           <span className="text-xs font-medium text-neutral-400">{items.filter((x) => x.status === 'new').length} new</span>
@@ -621,7 +621,7 @@ export function DashboardInbox() {
       </div>
 
       {current && (
-        <div className="bg-white rounded-2xl border border-neutral-200 p-5">
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-bold text-ink text-base">{current.subject}</p>
@@ -673,10 +673,10 @@ export function DashboardPnL() {
         <StatCard label="Avg. per referee" value={euro(Math.round(net / dashPnl.reduce((a, b) => a + b.referees, 0)))} />
       </div>
 
-      <div className="mt-5 bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+      <div className="mt-5 bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wide text-neutral-500 border-b border-neutral-200">
+            <tr className="text-left text-[11px] uppercase tracking-wide text-neutral-500 border-b border-neutral-200 bg-page/60">
               <th className="px-4 py-3 font-semibold">Tournament</th>
               <th className="px-4 py-3 font-semibold text-right">Revenue</th>
               <th className="px-4 py-3 font-semibold text-right">Costs</th>
@@ -734,7 +734,7 @@ export function DashboardAnalytics() {
       </div>
 
       <div className="mt-5 grid lg:grid-cols-2 gap-5">
-        <div className="bg-white rounded-2xl border border-neutral-200 p-4">
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
           <p className="font-bold text-ink text-sm mb-4">Referees per tournament</p>
           <div className="flex items-end gap-3 h-40">
             {a.refereesPerTournament.map((d, i) => (
@@ -751,7 +751,7 @@ export function DashboardAnalytics() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-neutral-200 p-4">
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
           <p className="font-bold text-ink text-sm mb-2">Referee levels</p>
           <div className="flex items-center gap-5">
             <svg width="110" height="110" viewBox="0 0 100 100" className="-rotate-90">
@@ -775,7 +775,7 @@ export function DashboardAnalytics() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-neutral-200 p-4 lg:col-span-2">
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 lg:col-span-2">
           <p className="font-bold text-ink text-sm mb-2 flex items-center gap-1.5"><TrendingUp size={16} className="text-brand" /> Reports submitted over time</p>
           <svg viewBox="0 0 340 150" className="w-full h-44">
             {[0, 1, 2, 3].map((g) => <line key={g} x1="20" x2="320" y1={30 + g * 33} y2={30 + g * 33} stroke="#eee" strokeWidth="1" />)}

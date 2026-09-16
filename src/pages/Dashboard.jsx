@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Trophy, UserCheck, Users, MessageSquare, Wallet, BarChart3, ArrowLeft, Bell, Plus, ClipboardList, Inbox } from 'lucide-react'
+import { Trophy, UserCheck, Users, MessageSquare, Wallet, BarChart3, ArrowLeft, Bell, Plus, ClipboardList, Inbox, Search } from 'lucide-react'
 import {
   DashboardTournaments, DashboardReferees, DashboardStaff,
   DashboardCommunication, DashboardPnL, DashboardAnalytics,
@@ -65,19 +65,23 @@ export default function Dashboard() {
 
       {/* Main */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 shrink-0 bg-white border-b border-neutral-200 flex items-center justify-between px-6">
-          <div>
-            <h1 className="text-lg font-extrabold text-ink leading-tight">{current.title}</h1>
-            <p className="text-xs font-medium text-neutral-500">{current.desc}</p>
+        <header className="h-16 shrink-0 bg-white/80 backdrop-blur border-b border-neutral-200 flex items-center justify-between px-6 gap-4">
+          <div className="min-w-0">
+            <h1 className="text-lg font-extrabold text-ink leading-tight truncate">{current.title}</h1>
+            <p className="text-xs font-medium text-neutral-500 truncate">{current.desc}</p>
           </div>
           <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 h-9 px-3 rounded-full bg-page border border-neutral-200 w-56">
+              <Search size={15} className="text-neutral-400" />
+              <input placeholder="Search…" className="flex-1 bg-transparent outline-none text-sm font-medium placeholder:text-neutral-400" />
+            </div>
             {current.action && (
-              <button className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-9 rounded-full">
+              <button className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-9 rounded-full hover:bg-brand-dark transition shadow-sm">
                 <Plus size={15} /> {current.action}
               </button>
             )}
-            <span className="relative"><Bell size={19} className="text-neutral-500" /><span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" /></span>
-            <span className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center font-bold text-xs">SM</span>
+            <button className="relative w-9 h-9 rounded-full hover:bg-page flex items-center justify-center transition"><Bell size={19} className="text-neutral-500" /><span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" /></button>
+            <span className="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center font-bold text-xs ring-2 ring-brand-light">SM</span>
           </div>
         </header>
 
