@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight } from 'lucide-react'
+import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight, Wrench } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
 const cardCls =
@@ -65,10 +65,28 @@ export default function Hub({ showOffer = true }) {
           >
             <span className={iconCls}><FileSignature size={20} /></span>
             <span className="flex-1 min-w-0">
-              <span className="block text-sm sm:text-base font-bold leading-tight text-ink group-hover:text-white transition">Agreement</span>
+              <span className="block text-sm sm:text-base font-bold leading-tight text-ink group-hover:text-white transition">Agreement fase 1</span>
               <span className="block text-[11px] font-medium text-neutral-500 group-hover:text-white/80 transition">The rules we play by</span>
             </span>
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-dark group-hover:text-white transition">View <ArrowRight size={14} /></span>
+          </Link>
+        )}
+
+        {showOffer && (
+          <Link
+            to="/phase1"
+            className="group mt-3 flex items-center gap-5 rounded-2xl bg-brand border border-brand hover:bg-brand-dark p-6 shadow-card active:scale-[0.99] transition"
+          >
+            <span className="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center shrink-0">
+              <Wrench size={28} />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-xl sm:text-2xl font-extrabold leading-tight text-white">Fase 1</span>
+              <span className="block text-xs sm:text-sm font-medium text-white/85">Build workspace · source of truth, timeline and requirements</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-sm font-bold text-white shrink-0">
+              Open <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+            </span>
           </Link>
         )}
       </div>

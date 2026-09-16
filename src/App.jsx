@@ -6,6 +6,8 @@ import Dashboard from './pages/Dashboard.jsx'
 import Offer from './pages/Offer.jsx'
 import Contract from './pages/Contract.jsx'
 import PasswordGate from './pages/PasswordGate.jsx'
+import Phase1Hub from './pages/Phase1Hub.jsx'
+import Phase1SourceOfTruth from './pages/Phase1SourceOfTruth.jsx'
 import Login from './pages/Login.jsx'
 import Home from './pages/Home.jsx'
 import Tournaments from './pages/Tournaments.jsx'
@@ -44,6 +46,8 @@ export default function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/offer" element={<PasswordGate><Offer /></PasswordGate>} />
       <Route path="/contract" element={<PasswordGate><Contract /></PasswordGate>} />
+      <Route path="/phase1" element={<PasswordGate><Phase1Hub /></PasswordGate>} />
+      <Route path="/phase1/source-of-truth" element={<PasswordGate><Phase1SourceOfTruth /></PasswordGate>} />
       <Route element={<PhoneShell />}>
         <Route path="/login" element={<Login />} />
         <Route element={<TabLayout />}>
