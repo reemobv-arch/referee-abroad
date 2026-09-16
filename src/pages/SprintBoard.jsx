@@ -45,6 +45,21 @@ const normalise = (b) => {
   return { version: b.version, updatedAt: b.updatedAt || Date.now(), cols }
 }
 
+const allReqItems = requirements.flatMap((g) => g.items.map(([id, text]) => ({ id, text, note: g.title })))
+
+// Non-destructive: append cards for requirements not yet on the board, keeping
+// the existing arrangement. New requirement groups appear without a full reset.
+const withMissingCards = (b) => {
+  const present = new Set()
+  for (const k of ORDER) for (const c of b.cols[k]) if (c.sprint) present.add(c.sprint)
+  const missing = allReqItems.filter((r) => !present.has(r.id))
+  if (missing.length === 0) return { board: b, changed: false }
+  const cols = {}
+  for (const k of ORDER) cols[k] = [...b.cols[k]]
+  cols.todo = [...cols.todo, ...missing.map((r) => ({ id: uid(), title: r.text, sprint: r.id, note: r.note }))]
+  return { board: { ...b, version: SEED_VERSION, cols }, changed: true }
+}
+
 export default function SprintBoard() {
   const [board, setBoard] = useState(null)
   const [status, setStatus] = useState('') // '', 'saving', 'saved', 'local'
@@ -65,8 +80,10 @@ export default function SprintBoard() {
         if (!r.ok) throw new Error('no api')
         const { board: remote } = await r.json()
         if (!alive) return
-        if (remote && remote.version === SEED_VERSION) {
-          const b = normalise(remote); localAt.current = b.updatedAt; setBoard(b)
+        if (remote) {
+          const { board, changed } = withMissingCards(normalise(remote))
+          if (changed) { board.updatedAt = Date.now(); localAt.current = board.updatedAt; setBoard(board); save(board) }
+          else { localAt.current = board.updatedAt; setBoard(board) }
         } else {
           const b = seed(); localAt.current = b.updatedAt; setBoard(b); save(b)
         }
@@ -74,9 +91,11 @@ export default function SprintBoard() {
         // Local fallback (e.g. dev without the serverless function).
         try {
           const raw = localStorage.getItem(LS_KEY)
-          const parsed = raw ? JSON.parse(raw) : null
-          const b = parsed && parsed.version === SEED_VERSION ? normalise(parsed) : seed()
-          localAt.current = b.updatedAt; setBoard(b); setStatus('local')
+          const base = raw ? normalise(JSON.parse(raw)) : seed()
+          const { board, changed } = withMissingCards(base)
+          if (changed) board.updatedAt = Date.now()
+          localAt.current = board.updatedAt; setBoard(board); setStatus('local')
+          if (changed || !raw) { try { localStorage.setItem(LS_KEY, JSON.stringify(board)) } catch { /* ignore */ } }
         } catch { const b = seed(); localAt.current = b.updatedAt; setBoard(b) }
       }
     }
