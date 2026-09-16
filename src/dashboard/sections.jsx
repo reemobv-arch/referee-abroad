@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Plus, MapPin, Calendar, Users, X, Send, MessageSquare, Search, TrendingUp,
   Mail, MessageCircle, AlertTriangle, Check, Sparkles, Star, Globe, Phone, ClipboardList,
+  ChevronRight, Clock,
 } from 'lucide-react'
 import {
   dashTournaments, dashReferees, dashStaff, dashTickets, dashPnl, dashAnalytics,
@@ -69,79 +70,162 @@ function Toast({ text, onDone }) {
 }
 
 /* ---------------- Tournaments ---------------- */
-export function DashboardTournaments({ onManage }) {
-  const [open, setOpen] = useState(null)
-  const enrol = open ? (dashEnrolments[open.id] || []) : []
+function Crumb({ children, onClick, current }) {
+  if (current) return <span className="text-ink font-semibold">{children}</span>
+  return <button onClick={onClick} className="text-neutral-500 hover:text-brand-dark font-medium transition">{children}</button>
+}
+
+function EnrolmentList({ enrol }) {
+  if (enrol.length === 0) return <p className="text-sm text-neutral-400 font-medium">No enrolments yet.</p>
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100">
+      {enrol.map((e, i) => {
+        const r = refById[e.refId]
+        return (
+          <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+            <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(r.name)}</span>
+            <span className="flex-1 text-sm font-semibold text-ink truncate">{r.name}</span>
+            <span className="text-sm text-neutral-400 font-medium hidden sm:block">{r.flag} {r.country}</span>
+            <span className="w-20 flex justify-end"><LevelPill level={r.level} /></span>
+            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize w-20 text-center ${enrolMap[e.status]}`}>{e.status}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function MatchList({ matches, onManage, tid }) {
+  if (matches.length === 0) return <p className="text-sm text-neutral-400 font-medium">No matches scheduled yet.</p>
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100">
+      {matches.map((m) => {
+        const refs = [m.main, ...m.assistants].filter(Boolean)
+        return (
+          <div key={m.id} className="flex items-center gap-3 px-4 py-3 flex-wrap">
+            <span className="text-sm font-bold text-brand-dark w-14 tabular-nums flex items-center gap-1"><Clock size={13} /> {m.time}</span>
+            <span className="text-sm font-semibold text-ink flex-1 min-w-[160px]">{m.home} <span className="text-neutral-400 font-medium">vs</span> {m.away}</span>
+            <span className="text-xs font-medium text-neutral-500 w-16">{m.pitch}</span>
+            <span className="flex items-center -space-x-2">
+              {refs.length === 0
+                ? <span className="text-[11px] font-semibold text-amber-600">Unassigned</span>
+                : refs.map((r) => <span key={r} title={refById[r].name} className="w-7 h-7 rounded-full bg-brand-light text-brand-dark text-[10px] font-bold flex items-center justify-center ring-2 ring-white">{initialsOf(refById[r].name)}</span>)}
+            </span>
+          </div>
+        )
+      })}
+      <button onClick={() => onManage && onManage(tid)} className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-brand-dark hover:bg-page transition">
+        <ClipboardList size={16} /> Open in appointing
+      </button>
+    </div>
+  )
+}
+
+function TournamentView({ t, onBack, onManage }) {
+  const [tab, setTab] = useState('info')
+  const enrol = dashEnrolments[t.id] || []
+  const matches = dashMatches[t.id] || []
+  const tabs = [
+    { k: 'info', label: 'Tournament information' },
+    { k: 'enrolments', label: `Enrolments (${enrol.length})` },
+    { k: 'matches', label: `Matches (${matches.length})` },
+  ]
+  const crumbLabel = { info: 'Tournament information', enrolments: 'Enrolments', matches: 'Matches' }[tab]
 
   return (
     <div>
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        {dashTournaments.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setOpen(t)}
-            className="text-left bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:border-brand hover:shadow-card transition active:scale-[0.99]"
-          >
-            <div className="relative h-24">
-              <img src={t.img} alt={t.name} className="w-full h-full object-cover" />
-              <span className="absolute top-2 left-2"><StatusPill status={t.status} /></span>
-            </div>
-            <div className="p-3">
-              <p className="font-bold text-ink text-sm leading-tight">{t.name}</p>
-              <p className="text-xs text-neutral-500 font-medium mt-1 flex items-center gap-1"><MapPin size={12} /> {t.city}, {t.country}</p>
-              <div className="flex items-center justify-between mt-2 text-xs font-medium">
-                <span className="text-neutral-500 flex items-center gap-1"><Calendar size={12} /> {t.dates}</span>
-                <span className="text-brand-dark flex items-center gap-1"><Users size={12} /> {t.enrolled}/{t.capacity}</span>
-              </div>
-            </div>
-          </button>
-        ))}
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm mb-5">
+        <Crumb onClick={onBack}>Tournaments</Crumb>
+        <ChevronRight size={15} className="text-neutral-300" />
+        <Crumb onClick={() => setTab('info')} current={tab === 'info'}>{t.name}</Crumb>
+        {tab !== 'info' && (<><ChevronRight size={15} className="text-neutral-300" /><Crumb current>{crumbLabel}</Crumb></>)}
+      </nav>
 
-        <button className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand min-h-[180px] transition">
-          <Plus size={26} />
-          <span className="text-sm font-semibold">Create new tournament</span>
-        </button>
+      {/* Hero */}
+      <div className="relative h-56 rounded-3xl overflow-hidden shadow-sm">
+        <img src={t.img} alt={t.name} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <span className="absolute top-4 left-4"><StatusPill status={t.status} /></span>
+        <div className="absolute bottom-5 left-6 right-6 text-white">
+          <h2 className="text-3xl font-extrabold leading-tight">{t.name}</h2>
+          <p className="text-sm font-medium text-white/90 flex items-center gap-1.5 mt-1"><MapPin size={15} /> {t.city}, {t.country} · {t.dates}</p>
+        </div>
       </div>
 
-      {open && (
-        <Modal onClose={() => setOpen(null)}>
-          <div className="relative h-36">
-            <img src={open.img} alt={open.name} className="w-full h-full object-cover" />
-            <button onClick={() => setOpen(null)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center"><X size={18} /></button>
-            <span className="absolute bottom-3 left-4"><StatusPill status={open.status} /></span>
-          </div>
-          <div className="p-5">
-            <h3 className="text-xl font-extrabold text-ink">{open.name}</h3>
-            <p className="text-sm text-neutral-500 font-medium flex items-center gap-1 mt-1"><MapPin size={14} /> {open.city}, {open.country} · {open.dates}</p>
-            <div className="grid grid-cols-3 gap-3 mt-4">
-              <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Sport</p><p className="font-bold text-ink text-sm">{open.sport}</p></div>
-              <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Enrolled</p><p className="font-bold text-ink text-sm">{open.enrolled}/{open.capacity}</p></div>
-              <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Spots left</p><p className="font-bold text-ink text-sm">{open.capacity - open.enrolled}</p></div>
-            </div>
+      {/* Tabs */}
+      <div className="flex gap-1 mt-5 border-b border-neutral-200 overflow-x-auto no-scrollbar">
+        {tabs.map((x) => (
+          <button key={x.k} onClick={() => setTab(x.k)}
+            className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px transition ${tab === x.k ? 'border-brand text-brand-dark' : 'border-transparent text-neutral-500 hover:text-ink'}`}>
+            {x.label}
+          </button>
+        ))}
+      </div>
 
-            <p className="text-xs font-bold text-neutral-500 mt-5 mb-2">Enrolments</p>
-            <div className="bg-page rounded-xl divide-y divide-neutral-200/70 max-h-52 overflow-y-auto">
-              {enrol.length === 0 && <p className="text-sm text-neutral-400 font-medium p-3">No enrolments yet.</p>}
-              {enrol.map((e, i) => {
-                const r = refById[e.refId]
-                return (
-                  <div key={i} className="flex items-center gap-2 px-3 py-2">
-                    <span className="w-6 h-6 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center flex-none">{initialsOf(r.name)}</span>
-                    <span className="flex-1 text-sm font-semibold text-ink truncate">{r.name}</span>
-                    <span className="text-xs text-neutral-400 font-medium">{r.flag}</span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${enrolMap[e.status]}`}>{e.status}</span>
-                  </div>
-                )
-              })}
+      <div className="mt-5">
+        {tab === 'info' && (
+          <div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard label="Sport" value={t.sport} />
+              <StatCard label="Enrolled" value={`${t.enrolled}/${t.capacity}`} />
+              <StatCard label="Spots left" value={t.capacity - t.enrolled} />
+              <StatCard label="Status" value={<span className="capitalize">{t.status}</span>} />
             </div>
-
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => { setOpen(null); onManage && onManage(open.id) }} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><ClipboardList size={16} /> Appoint referees</button>
-              <button className="flex-1 h-11 rounded-full border-[1.5px] border-brand text-brand-dark font-semibold flex items-center justify-center gap-2"><MessageSquare size={16} /> Message group</button>
+            <div className="mt-4 bg-white rounded-2xl border border-neutral-200 p-5">
+              <h3 className="font-bold text-ink text-sm">About this tournament</h3>
+              <p className="mt-1.5 text-sm text-neutral-600 font-medium leading-relaxed">
+                {t.name} takes place in {t.city}, {t.country} from {t.dates}. {t.enrolled} of {t.capacity} referee spots are filled,
+                with {t.capacity - t.enrolled} still open. Manage enrolments, appoint referees to matches and message the group from here.
+              </p>
+              <div className="flex flex-wrap gap-3 mt-5">
+                <button onClick={() => onManage && onManage(t.id)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-brand text-white font-semibold"><ClipboardList size={16} /> Appoint referees</button>
+                <button onClick={() => setTab('enrolments')} className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><Users size={16} /> View enrolments</button>
+                <button className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><MessageSquare size={16} /> Message group</button>
+              </div>
             </div>
           </div>
-        </Modal>
-      )}
+        )}
+        {tab === 'enrolments' && <EnrolmentList enrol={enrol} />}
+        {tab === 'matches' && <MatchList matches={matches} onManage={onManage} tid={t.id} />}
+      </div>
+    </div>
+  )
+}
+
+export function DashboardTournaments({ onManage }) {
+  const [selected, setSelected] = useState(null)
+
+  if (selected) return <TournamentView t={selected} onBack={() => setSelected(null)} onManage={onManage} />
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {dashTournaments.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => setSelected(t)}
+          className="group text-left bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+        >
+          <div className="relative h-44 overflow-hidden">
+            <img src={t.img} alt={t.name} className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            <span className="absolute top-3 left-3"><StatusPill status={t.status} /></span>
+            <div className="absolute bottom-3 left-4 right-4">
+              <p className="font-extrabold text-white text-lg leading-tight drop-shadow-sm">{t.name}</p>
+              <p className="text-xs text-white/90 font-medium mt-0.5 flex items-center gap-1"><MapPin size={12} /> {t.city}, {t.country}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 text-xs font-medium">
+            <span className="text-neutral-500 flex items-center gap-1.5"><Calendar size={13} /> {t.dates}</span>
+            <span className="text-brand-dark font-semibold flex items-center gap-1.5"><Users size={13} /> {t.enrolled}/{t.capacity}</span>
+          </div>
+        </button>
+      ))}
+
+      <button className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand min-h-[240px] transition">
+        <span className="w-12 h-12 rounded-full bg-page flex items-center justify-center"><Plus size={24} /></span>
+        <span className="text-sm font-semibold">Create new tournament</span>
+      </button>
     </div>
   )
 }
