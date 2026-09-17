@@ -1,20 +1,20 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft, PackageCheck, KeyRound, Boxes, Rocket, LifeBuoy, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, PackageCheck, KeyRound, Boxes, Rocket, LifeBuoy, ShieldCheck, Check } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
 const sections = [
   {
     icon: KeyRound, kicker: 'From you', title: 'Access we need',
-    desc: 'Mostly arranged through the group chat with the WordPress admin.',
+    desc: 'Status per item. Updated 17 Sept 2026.',
     items: [
-      'Dedicated WordPress admin account for Reemo',
-      'Staging copy of the WordPress site',
-      'WordPress REST API with an application password',
-      'WooCommerce API keys with read and write access',
-      'Hosting and deploy access, and the webapp domain',
-      'LLM API key on Referee Abroad’s own account',
-      'Mailbox access for the inbox addresses',
-      'Brand assets and sample tournament data',
+      { t: 'Dedicated WordPress admin account for Reemo', status: 'received' },
+      { t: 'WordPress REST API with an application password', status: 'received' },
+      { t: 'WooCommerce API keys with read and write access', status: 'received' },
+      { t: 'Hosting and deploy access, and the webapp domain', status: 'progress', note: 'Vercel + GitHub, app subdomain — being set up' },
+      { t: 'Staging copy of the WordPress site', status: 'pending', note: 'SiteGround — awaiting the hosting owner' },
+      { t: 'LLM API key on Referee Abroad’s own account', status: 'pending' },
+      { t: 'Mailbox access for the inbox addresses', status: 'pending' },
+      { t: 'Brand assets and sample tournament data', status: 'pending' },
     ],
   },
   {
@@ -109,12 +109,26 @@ export default function Handover() {
                   </div>
                 </div>
                 <ul className="mt-3 grid sm:grid-cols-2 gap-x-4 gap-y-1.5">
-                  {s.items.map((it, i) => (
-                    <li key={i} className="flex gap-2 text-[13px] text-neutral-700 font-medium items-start">
-                      <span className="w-4 h-4 rounded-md border-2 border-brand/50 shrink-0 mt-0.5" />
-                      <span>{it}</span>
-                    </li>
-                  ))}
+                  {s.items.map((raw, i) => {
+                    const it = typeof raw === 'string' ? { t: raw } : raw
+                    const meta = {
+                      received: { chip: 'bg-brand-light text-brand-dark', label: 'Received' },
+                      progress: { chip: 'bg-amber-100 text-amber-700', label: 'In progress' },
+                      pending: { chip: 'bg-neutral-100 text-neutral-500', label: 'Pending' },
+                    }[it.status]
+                    return (
+                      <li key={i} className="flex gap-2 text-[13px] text-neutral-700 font-medium items-start">
+                        {it.status === 'received'
+                          ? <span className="w-4 h-4 rounded-md bg-brand text-white flex items-center justify-center shrink-0 mt-0.5"><Check size={11} /></span>
+                          : <span className="w-4 h-4 rounded-md border-2 border-brand/50 shrink-0 mt-0.5" />}
+                        <span className="flex-1 min-w-0">
+                          {it.t}
+                          {it.note && <span className="block text-[11px] text-neutral-400 font-medium">{it.note}</span>}
+                        </span>
+                        {meta && <span className={`text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full shrink-0 ${meta.chip}`}>{meta.label}</span>}
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             )
