@@ -1,28 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Trophy, UserCheck, Users, MessageSquare, Wallet, BarChart3, ArrowLeft, Bell, Plus,
-  ClipboardList, Inbox, Search, Sparkles, RefreshCw, Settings, CalendarCheck, CreditCard, FileText,
+  Trophy, UserCheck, Users, MessageSquare, BarChart3, ArrowLeft, Bell, Plus,
+  Search, Settings, CalendarCheck, CreditCard, FileText,
 } from 'lucide-react'
 import {
-  DashboardTournaments, DashboardReferees, DashboardStaff,
-  DashboardCommunication, DashboardPnL, DashboardAnalytics,
-  DashboardAppointing, DashboardInbox, DashboardAssistant, DashboardSync, DashboardSettings,
+  DashboardTournaments, DashboardPeople, DashboardCommunication,
+  DashboardInsights, DashboardSettingsHub,
 } from '../dashboard/sections.jsx'
 import { dashTournaments, dashReferees } from '../dashboard/data.js'
 
 const MENU = [
   { key: 'tournaments', label: 'Tournaments', Icon: Trophy, title: 'Tournaments', desc: 'Plan and manage every tournament.', action: 'New tournament' },
-  { key: 'appointing', label: 'Appointing', Icon: ClipboardList, title: 'Referee appointing', desc: 'Assign referees to matches and publish.' },
-  { key: 'referees', label: 'Referees', Icon: UserCheck, title: 'Referees', desc: 'Everyone in the referee pool.', Comp: DashboardReferees },
-  { key: 'staff', label: 'Staff', Icon: Users, title: 'Staff', desc: 'Your team working on the tournaments.', action: 'Add staff' },
-  { key: 'inbox', label: 'Inbox', Icon: Inbox, title: 'Smart inbox', desc: 'AI triages messages and drafts replies.', Comp: DashboardInbox },
-  { key: 'assistant', label: 'Assistant', Icon: Sparkles, title: 'AI assistant', desc: 'FAQ knowledge base and AI usage.', Comp: DashboardAssistant },
-  { key: 'communication', label: 'Communication', Icon: MessageSquare, title: 'Communication', desc: 'Answer tickets and broadcast to groups.', Comp: DashboardCommunication },
-  { key: 'pnl', label: 'P&L', Icon: Wallet, title: 'P&L', desc: 'Revenue, costs and margins per tournament.', Comp: DashboardPnL },
-  { key: 'analytics', label: 'Analytics', Icon: BarChart3, title: 'Analytics', desc: 'Insights across tournaments and referees.', Comp: DashboardAnalytics },
-  { key: 'sync', label: 'Sync', Icon: RefreshCw, title: 'Sync status', desc: 'Two-way sync with WordPress and WooCommerce.', Comp: DashboardSync },
-  { key: 'settings', label: 'Settings', Icon: Settings, title: 'Settings', desc: 'Organisation, integrations and roles.', Comp: DashboardSettings },
+  { key: 'people', label: 'People', Icon: Users, title: 'People', desc: 'Referees and staff in one place.', Comp: DashboardPeople },
+  { key: 'communication', label: 'Communication', Icon: MessageSquare, title: 'Communication', desc: 'Conversations, broadcasts and the AI assistant.', Comp: DashboardCommunication },
+  { key: 'insights', label: 'Insights', Icon: BarChart3, title: 'Insights', desc: 'P&L and analytics across tournaments.', Comp: DashboardInsights },
+  { key: 'settings', label: 'Settings', Icon: Settings, title: 'Settings', desc: 'Organisation, integrations and roles.', Comp: DashboardSettingsHub },
 ]
 
 const NOTIFS = [
@@ -35,21 +28,19 @@ function MessageCircleIconFallback(props) { return <MessageSquare {...props} /> 
 
 export default function Dashboard() {
   const [active, setActive] = useState('tournaments')
-  const [appointTid, setAppointTid] = useState(null)
   const [createSignal, setCreateSignal] = useState(0)
   const [focusT, setFocusT] = useState({ id: null, n: 0 })
   const [q, setQ] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const current = MENU.find((m) => m.key === active)
   const Section = current.Comp
-  const goAppoint = (tid) => { setAppointTid(tid); setActive('appointing') }
-  const onHeaderAction = () => { if (active === 'tournaments' || active === 'staff') setCreateSignal((s) => s + 1) }
+  const onHeaderAction = () => { if (active === 'tournaments') setCreateSignal((s) => s + 1) }
 
   const query = q.trim().toLowerCase()
   const tMatches = query ? dashTournaments.filter((t) => t.name.toLowerCase().includes(query)).slice(0, 4) : []
   const rMatches = query ? dashReferees.filter((r) => r.name.toLowerCase().includes(query)).slice(0, 4) : []
   const openTournament = (id) => { setActive('tournaments'); setFocusT({ id, n: focusT.n + 1 }); setQ('') }
-  const openReferees = () => { setActive('referees'); setQ('') }
+  const openReferees = () => { setActive('people'); setQ('') }
 
   return (
     <div className="h-screen bg-page text-ink font-sans flex overflow-hidden">
@@ -155,10 +146,9 @@ export default function Dashboard() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {active === 'tournaments' && <DashboardTournaments onManage={goAppoint} createSignal={createSignal} focusT={focusT} />}
-          {active === 'appointing' && <DashboardAppointing initialTournament={appointTid} />}
-          {active === 'staff' && <DashboardStaff createSignal={createSignal} />}
-          {!['tournaments', 'appointing', 'staff'].includes(active) && <Section />}
+          {active === 'tournaments'
+            ? <DashboardTournaments createSignal={createSignal} focusT={focusT} />
+            : <Section />}
         </div>
       </main>
     </div>

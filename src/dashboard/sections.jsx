@@ -105,6 +105,20 @@ function Toast({ text, onDone }) {
   )
 }
 
+// Sub-tab bar used inside the consolidated hubs (People, Communication, Insights, Settings).
+function SubTabs({ tabs, active, onChange }) {
+  return (
+    <div className="flex gap-1 mb-5 border-b border-neutral-200 overflow-x-auto no-scrollbar">
+      {tabs.map((x) => (
+        <button key={x.k} onClick={() => onChange(x.k)}
+          className={`px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px transition ${active === x.k ? 'border-brand text-brand-dark' : 'border-transparent text-neutral-500 hover:text-ink'}`}>
+          {x.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 /* ---------------- Tournaments ---------------- */
 function Crumb({ children, onClick, current }) {
   if (current) return <span className="text-ink font-semibold">{children}</span>
@@ -264,7 +278,7 @@ function ClubsTab({ teams, onOpenImport }) {
   )
 }
 
-function TournamentView({ t, onBack, onManage, onEdit }) {
+function TournamentView({ t, onBack, onEdit }) {
   const [tab, setTab] = useState('info')
   const [enrol, setEnrol] = useState(dashEnrolments[t.id] || [])
   const [staff, setStaff] = useState(() => new Set(dashStaff.filter((s) => s.tournament === t.name).map((s) => s.name)))
@@ -285,9 +299,9 @@ function TournamentView({ t, onBack, onManage, onEdit }) {
     { k: 'info', label: 'Tournament information' },
     { k: 'clubs', label: `Teams (${teams.length})` },
     { k: 'enrolments', label: `Referee enrolments (${enrol.length})` },
-    { k: 'matches', label: `Matches (${matches.length})` },
+    { k: 'appointing', label: `Appointing (${matches.length})` },
   ]
-  const crumbLabel = { info: 'Tournament information', clubs: 'Teams', enrolments: 'Referee enrolments', matches: 'Matches' }[tab]
+  const crumbLabel = { info: 'Tournament information', clubs: 'Teams', enrolments: 'Referee enrolments', appointing: 'Appointing' }[tab]
 
   return (
     <div>
@@ -340,7 +354,7 @@ function TournamentView({ t, onBack, onManage, onEdit }) {
                 {teams.length === 0 ? (
                   <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-brand text-white font-semibold"><Upload size={16} /> Import teams (CSV)</button>
                 ) : (
-                  <button onClick={() => onManage && onManage(t.id)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-brand text-white font-semibold"><ClipboardList size={16} /> Appoint referees</button>
+                  <button onClick={() => setTab('appointing')} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-brand text-white font-semibold"><ClipboardList size={16} /> Appoint referees</button>
                 )}
                 <button onClick={() => setShowStaff(true)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><UserPlus size={16} /> Appoint staff</button>
                 <button onClick={() => setTab('enrolments')} className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><Users size={16} /> Referee enrolments</button>
@@ -377,7 +391,7 @@ function TournamentView({ t, onBack, onManage, onEdit }) {
         )}
         {tab === 'clubs' && <ClubsTab teams={teams} onOpenImport={() => setShowImport(true)} />}
         {tab === 'enrolments' && <EnrolmentList enrol={enrol} onAction={onEnrolAction} />}
-        {tab === 'matches' && <MatchList matches={matches} onManage={onManage} tid={t.id} />}
+        {tab === 'appointing' && <DashboardAppointing initialTournament={t.id} lockTournament />}
       </div>
       {showStaff && <AppointStaffModal tournamentName={t.name} assigned={staff} onToggle={(name) => setStaff((prev) => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })} onClose={() => setShowStaff(false)} />}
       {showImport && <ImportTeamsModal tournamentName={t.name} existing={teams.length} onClose={() => setShowImport(false)} onImport={importTeams} />}
@@ -505,7 +519,7 @@ function TournamentFormModal({ initial, onClose, onSave }) {
   )
 }
 
-export function DashboardTournaments({ onManage, createSignal, focusT }) {
+export function DashboardTournaments({ createSignal, focusT }) {
   const [selected, setSelected] = useState(null)
   const [tournaments, setTournaments] = useState(dashTournaments)
   const [creating, setCreating] = useState(false)
@@ -528,7 +542,7 @@ export function DashboardTournaments({ onManage, createSignal, focusT }) {
 
   if (selected) return (
     <>
-      <TournamentView key={selected.id} t={selected} onBack={() => setSelected(null)} onManage={onManage} onEdit={(t) => setEditing(t)} />
+      <TournamentView key={selected.id} t={selected} onBack={() => setSelected(null)} onEdit={(t) => setEditing(t)} />
       {editing && <TournamentFormModal initial={editing} onClose={() => setEditing(null)} onSave={update} />}
     </>
   )
@@ -761,7 +775,7 @@ const SLOTS = [
 const officialsOf = (m) => SLOTS.map((s) => m[s.key]).filter(Boolean)
 const shortName = (id) => { const n = refById[id]?.name || ''; const p = n.split(' '); return p[1] ? `${p[0]} ${p[1][0]}.` : p[0] }
 
-export function DashboardAppointing({ initialTournament }) {
+export function DashboardAppointing({ initialTournament, lockTournament = false }) {
   const startTid = initialTournament || dashTournaments[0].id
   const toSlots = (data) => Object.fromEntries(Object.entries(data).map(([k, arr]) => [k, arr.map((m) => ({
     id: m.id, time: m.time, pitch: m.pitch, home: m.home, away: m.away,
@@ -815,9 +829,11 @@ export function DashboardAppointing({ initialTournament }) {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <select value={tid} onChange={(e) => setTid(e.target.value)} className="h-10 px-3 rounded-xl border border-neutral-200 text-sm font-semibold outline-none focus:border-brand bg-white">
-          {dashTournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
+        {!lockTournament && (
+          <select value={tid} onChange={(e) => setTid(e.target.value)} className="h-10 px-3 rounded-xl border border-neutral-200 text-sm font-semibold outline-none focus:border-brand bg-white">
+            {dashTournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        )}
         <span className="text-xs font-medium text-neutral-500">{teams.length === 0 ? 'Teams not imported' : `${list.length} matches · ${openSlots} without a main referee`}</span>
         {teams.length > 0 && (
           <div className="ml-auto flex items-center gap-2">
@@ -967,66 +983,46 @@ function TicketChat({ ticket, onClose }) {
 }
 
 /* ---------------- Communication ---------------- */
-export function DashboardCommunication() {
+function BroadcastPanel() {
   const [tournament, setTournament] = useState(dashTournaments[0].name)
   const [msg, setMsg] = useState('')
   const [sent, setSent] = useState(false)
-  const [openTicket, setOpenTicket] = useState(null)
-
-  const statusMap = {
-    open: 'bg-amber-100 text-amber-700',
-    answered: 'bg-sky-100 text-sky-700',
-    closed: 'bg-neutral-100 text-neutral-500',
-  }
-
   return (
-    <>
-    <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 items-start">
-      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-neutral-200 flex items-center justify-between">
-          <p className="font-bold text-ink text-sm">Tickets</p>
-          <span className="text-xs font-medium text-neutral-400">{dashTickets.filter((t) => t.status === 'open').length} open</span>
-        </div>
-        <div className="divide-y divide-neutral-100">
-          {dashTickets.map((t) => (
-            <button key={t.id} onClick={() => setOpenTicket(t)} className="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-page transition">
-              <span className="w-8 h-8 rounded-full bg-brand-light text-brand-dark flex items-center justify-center font-bold text-xs flex-none">{initialsOf(t.name)}</span>
-              <span className="flex-1 min-w-0">
-                <span className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-ink text-sm truncate">{t.subject}</span>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize flex-none ${statusMap[t.status]}`}>{t.status}</span>
-                </span>
-                <span className="block text-xs text-neutral-500 font-medium mt-0.5">{t.name} · {t.tournament} · {t.ago}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
-        <p className="font-bold text-ink text-sm">Broadcast to a tournament</p>
-        <p className="text-xs text-neutral-500 font-medium mt-0.5">Lands in the webapp group chat of every enrolled referee.</p>
-        <label className="block text-xs font-semibold text-ink mt-4 mb-1">Tournament</label>
-        <select value={tournament} onChange={(e) => { setTournament(e.target.value); setSent(false) }}
-          className="w-full h-10 px-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand">
-          {dashTournaments.map((t) => <option key={t.id}>{t.name}</option>)}
-        </select>
-        <label className="block text-xs font-semibold text-ink mt-3 mb-1">Message</label>
-        <textarea value={msg} onChange={(e) => { setMsg(e.target.value); setSent(false) }} rows={4} placeholder="Type your announcement…"
-          className="w-full p-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand resize-none" />
-        <button onClick={() => { if (msg.trim()) { setSent(true); setMsg('') } }}
-          className="mt-3 w-full h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2">
-          <Send size={16} /> Send to group
-        </button>
-        {sent && <p className="mt-3 text-xs font-semibold text-brand-dark text-center">✓ Sent, delivered to the webapp of all referees in {tournament}.</p>}
-      </div>
+    <div className="max-w-xl bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+      <p className="font-bold text-ink text-sm">Broadcast to a tournament</p>
+      <p className="text-xs text-neutral-500 font-medium mt-0.5">Lands in the webapp group chat of every enrolled referee.</p>
+      <label className="block text-xs font-semibold text-ink mt-4 mb-1">Tournament</label>
+      <select value={tournament} onChange={(e) => { setTournament(e.target.value); setSent(false) }}
+        className="w-full h-10 px-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand">
+        {dashTournaments.map((t) => <option key={t.id}>{t.name}</option>)}
+      </select>
+      <label className="block text-xs font-semibold text-ink mt-3 mb-1">Message</label>
+      <textarea value={msg} onChange={(e) => { setMsg(e.target.value); setSent(false) }} rows={4} placeholder="Type your announcement…"
+        className="w-full p-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand resize-none" />
+      <button onClick={() => { if (msg.trim()) { setSent(true); setMsg('') } }}
+        className="mt-3 w-full h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2">
+        <Send size={16} /> Send to group
+      </button>
+      {sent && <p className="mt-3 text-xs font-semibold text-brand-dark text-center">✓ Sent, delivered to the webapp of all referees in {tournament}.</p>}
     </div>
-    {openTicket && (
-      <Modal onClose={() => setOpenTicket(null)}>
-        <TicketChat ticket={openTicket} onClose={() => setOpenTicket(null)} />
-      </Modal>
-    )}
-    </>
+  )
+}
+
+// Consolidated communication hub: the AI smart inbox, group broadcasts and the
+// AI assistant knowledge base all live here as tabs.
+export function DashboardCommunication() {
+  const [tab, setTab] = useState('conversations')
+  return (
+    <div>
+      <SubTabs tabs={[
+        { k: 'conversations', label: 'Conversations' },
+        { k: 'broadcast', label: 'Broadcast' },
+        { k: 'assistant', label: 'Assistant' },
+      ]} active={tab} onChange={setTab} />
+      {tab === 'conversations' && <DashboardInbox />}
+      {tab === 'broadcast' && <BroadcastPanel />}
+      {tab === 'assistant' && <DashboardAssistant />}
+    </div>
   )
 }
 
@@ -1466,6 +1462,40 @@ export function DashboardSettings() {
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+/* ---------------- Consolidated hubs ---------------- */
+export function DashboardPeople() {
+  const [tab, setTab] = useState('referees')
+  return (
+    <div>
+      <SubTabs tabs={[{ k: 'referees', label: 'Referees' }, { k: 'staff', label: 'Staff' }]} active={tab} onChange={setTab} />
+      {tab === 'referees' && <DashboardReferees />}
+      {tab === 'staff' && <DashboardStaff />}
+    </div>
+  )
+}
+
+export function DashboardInsights() {
+  const [tab, setTab] = useState('pnl')
+  return (
+    <div>
+      <SubTabs tabs={[{ k: 'pnl', label: 'P&L' }, { k: 'analytics', label: 'Analytics' }]} active={tab} onChange={setTab} />
+      {tab === 'pnl' && <DashboardPnL />}
+      {tab === 'analytics' && <DashboardAnalytics />}
+    </div>
+  )
+}
+
+export function DashboardSettingsHub() {
+  const [tab, setTab] = useState('general')
+  return (
+    <div>
+      <SubTabs tabs={[{ k: 'general', label: 'General' }, { k: 'integrations', label: 'Integrations' }]} active={tab} onChange={setTab} />
+      {tab === 'general' && <DashboardSettings />}
+      {tab === 'integrations' && <DashboardSync />}
     </div>
   )
 }
