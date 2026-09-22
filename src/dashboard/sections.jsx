@@ -579,13 +579,8 @@ export function DashboardTournaments({ createSignal, focusT }) {
   const barCls = (status) => status === 'confirmed' ? 'bg-brand' : status === 'recruiting' ? 'bg-amber-400' : 'bg-neutral-300'
 
   return (
-    <div className="relative -m-6 p-6 min-h-[calc(100vh-4rem)]">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-cover" style={{ backgroundImage: 'url(img/hub-bg.jpg)', backgroundPosition: 'center 24%' }} />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(244,245,244,0.30) 0%, rgba(244,245,244,0.55) 260px, rgba(244,245,244,0.90) 520px, #f4f5f4 760px)' }} />
-      </div>
-
-      <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {tournaments.map((t) => {
           const pct = t.capacity ? Math.round((t.enrolled / t.capacity) * 100) : 0
           return (
