@@ -73,6 +73,32 @@ const enrolMap = {
   waitlist: 'bg-neutral-100 text-neutral-500',
 }
 
+// Which tournaments each referee enrolled for, with their status. Built from the
+// enrolments so the referee list can show it directly.
+const enrolmentsByRef = (() => {
+  const map = {}
+  for (const [tid, list] of Object.entries(dashEnrolments)) {
+    const t = dashTournaments.find((x) => x.id === tid)
+    if (!t) continue
+    for (const e of list) (map[e.refId] ||= []).push({ tid: t.id, tournament: t.name, city: t.city, status: e.status })
+  }
+  return map
+})()
+
+const EnrolChips = ({ refId, className = '' }) => {
+  const items = enrolmentsByRef[refId] || []
+  if (items.length === 0) return <span className={`text-xs text-neutral-300 font-medium ${className}`}>Not enrolled</span>
+  return (
+    <span className={`flex flex-wrap gap-1 ${className}`}>
+      {items.map((e, i) => (
+        <span key={i} className={`inline-flex items-center gap-1 text-[10px] font-semibold pl-2 pr-1.5 py-0.5 rounded-full ${enrolMap[e.status]}`}>
+          {e.city}<span className="opacity-40">·</span><span className="capitalize">{e.status}</span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
 function StatCard({ label, value, sub }) {
   return (
     <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 hover:shadow-md transition-shadow">
@@ -586,15 +612,18 @@ export function DashboardTournaments({ createSignal, focusT }) {
 export function DashboardReferees() {
   const [q, setQ] = useState('')
   const [level, setLevel] = useState('all')
+  const [tourId, setTourId] = useState('all')
   const [open, setOpen] = useState(null)
 
   const filtered = dashReferees.filter((r) => {
     const okLevel = level === 'all' || r.level === level
     const okText = !q || r.name.toLowerCase().includes(q.toLowerCase()) || r.country.toLowerCase().includes(q.toLowerCase())
-    return okLevel && okText
+    const okTour = tourId === 'all' || (enrolmentsByRef[r.id] || []).some((e) => e.tid === tourId)
+    return okLevel && okText && okTour
   })
 
   const levels = ['all', 'talent', 'medior', 'beginner']
+  const enrolledTournaments = dashTournaments.filter((t) => (dashEnrolments[t.id] || []).length > 0)
 
   return (
     <div>
@@ -603,6 +632,11 @@ export function DashboardReferees() {
           <Search size={16} className="text-neutral-400" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or country" className="flex-1 bg-transparent outline-none text-sm font-medium placeholder:text-neutral-400" />
         </div>
+        <select value={tourId} onChange={(e) => setTourId(e.target.value)}
+          className="h-10 px-3 rounded-xl border border-neutral-200 text-sm font-semibold text-ink outline-none focus:border-brand bg-white">
+          <option value="all">All tournaments</option>
+          {enrolledTournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
         <div className="flex gap-1.5">
           {levels.map((l) => (
             <button key={l} onClick={() => setLevel(l)} className={`text-xs font-semibold px-3 h-10 rounded-xl capitalize border transition ${level === l ? 'bg-brand text-white border-brand' : 'bg-white text-neutral-500 border-neutral-200 hover:border-brand'}`}>{l}</button>
@@ -612,18 +646,22 @@ export function DashboardReferees() {
 
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
         <div className="flex items-center px-4 py-2.5 border-b border-neutral-200 text-[11px] uppercase tracking-wide text-neutral-500 font-semibold">
-          <span className="flex-1">Referee</span>
-          <span className="w-40 hidden sm:block">Country</span>
-          <span className="w-20 text-right">Apps</span>
+          <span className="w-52 flex-none">Referee</span>
+          <span className="w-32 hidden lg:block">Country</span>
+          <span className="flex-1 min-w-0 hidden md:block">Enrolments</span>
+          <span className="w-16 text-right">Apps</span>
           <span className="w-24 text-right">Level</span>
         </div>
         <div className="divide-y divide-neutral-100">
           {filtered.map((r) => (
             <button key={r.id} onClick={() => setOpen(r)} className="w-full flex items-center px-4 py-2.5 hover:bg-page transition text-left">
-              <span className="w-7 h-7 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center flex-none mr-3">{initialsOf(r.name)}</span>
-              <span className="flex-1 font-semibold text-ink text-sm truncate">{r.name}</span>
-              <span className="w-40 text-sm text-neutral-500 font-medium hidden sm:block">{r.flag} {r.country}</span>
-              <span className="w-20 text-right text-sm font-medium text-neutral-500 tabular-nums">{r.apps}</span>
+              <span className="w-52 flex-none flex items-center min-w-0">
+                <span className="w-7 h-7 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center flex-none mr-3">{initialsOf(r.name)}</span>
+                <span className="font-semibold text-ink text-sm truncate">{r.name}</span>
+              </span>
+              <span className="w-32 text-sm text-neutral-500 font-medium hidden lg:block truncate">{r.flag} {r.country}</span>
+              <span className="flex-1 min-w-0 hidden md:flex"><EnrolChips refId={r.id} /></span>
+              <span className="w-16 text-right text-sm font-medium text-neutral-500 tabular-nums">{r.apps}</span>
               <span className="w-24 flex justify-end"><LevelPill level={r.level} /></span>
             </button>
           ))}
@@ -648,6 +686,22 @@ export function DashboardReferees() {
               <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Tournaments</p><p className="font-bold text-ink text-sm">{open.apps}</p></div>
               <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Reports</p><p className="font-bold text-ink text-sm">{open.reports}</p></div>
               <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Rating</p><p className="font-bold text-ink text-sm flex items-center gap-1"><Star size={13} className="text-amber-500 fill-amber-500" /> {open.rating}</p></div>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-[11px] uppercase tracking-wide text-neutral-400 font-semibold mb-2">Enrolled in</p>
+              {(enrolmentsByRef[open.id] || []).length === 0
+                ? <p className="text-sm text-neutral-400 font-medium">Not enrolled for any tournament yet.</p>
+                : (
+                  <div className="space-y-1.5">
+                    {enrolmentsByRef[open.id].map((e, i) => (
+                      <div key={i} className="flex items-center justify-between gap-2 bg-page rounded-xl px-3 py-2">
+                        <span className="text-sm font-semibold text-ink truncate">{e.tournament}</span>
+                        <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize flex-none ${enrolMap[e.status]}`}>{e.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
             </div>
 
             <div className="mt-4 space-y-2.5 text-sm">
