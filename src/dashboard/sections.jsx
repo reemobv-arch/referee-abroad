@@ -576,38 +576,52 @@ export function DashboardTournaments({ createSignal, focusT }) {
     </>
   )
 
-  return (
-    <>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {tournaments.map((t) => (
-        <button
-          key={t.id}
-          onClick={() => setSelected(t)}
-          className="group text-left bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
-        >
-          <div className="relative h-44 overflow-hidden">
-            <img src={t.img} alt={t.name} className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-            <span className="absolute top-3 left-3"><StatusPill status={t.status} /></span>
-            <div className="absolute bottom-3 left-4 right-4">
-              <p className="font-extrabold text-white text-lg leading-tight drop-shadow-sm">{t.name}</p>
-              <p className="text-xs text-white/90 font-medium mt-0.5 flex items-center gap-1"><MapPin size={12} /> {t.city}, {t.country}</p>
-            </div>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3 text-xs font-medium">
-            <span className="text-neutral-500 flex items-center gap-1.5"><Calendar size={13} /> {t.dates}</span>
-            <span className="text-brand-dark font-semibold flex items-center gap-1.5"><Users size={13} /> {t.enrolled}/{t.capacity}</span>
-          </div>
-        </button>
-      ))}
+  const barCls = (status) => status === 'confirmed' ? 'bg-brand' : status === 'recruiting' ? 'bg-amber-400' : 'bg-neutral-300'
 
-      <button onClick={() => setCreating(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand min-h-[240px] transition">
-        <span className="w-12 h-12 rounded-full bg-page flex items-center justify-center"><Plus size={24} /></span>
-        <span className="text-sm font-semibold">Create new tournament</span>
-      </button>
+  return (
+    <div className="relative -m-6 p-6 min-h-[calc(100vh-4rem)]">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-cover" style={{ backgroundImage: 'url(img/hub-bg.jpg)', backgroundPosition: 'center 24%' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(244,245,244,0.30) 0%, rgba(244,245,244,0.55) 260px, rgba(244,245,244,0.90) 520px, #f4f5f4 760px)' }} />
+      </div>
+
+      <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {tournaments.map((t) => {
+          const pct = t.capacity ? Math.round((t.enrolled / t.capacity) * 100) : 0
+          return (
+            <button
+              key={t.id}
+              onClick={() => setSelected(t)}
+              className="group relative text-left bg-white/90 backdrop-blur-sm border border-white/90 rounded-[22px] p-5 overflow-hidden shadow-[0_12px_34px_rgba(23,32,26,0.14)] hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(23,32,26,0.20)] transition-all duration-200"
+            >
+              <span className={`absolute left-0 top-0 bottom-0 w-1.5 ${barCls(t.status)}`} />
+              <div className="flex items-center justify-between mb-3">
+                <StatusPill status={t.status} />
+                <ChevronRight size={18} className="text-neutral-300 group-hover:text-brand-dark transition" />
+              </div>
+              <p className="text-[21px] font-extrabold text-ink leading-tight">{t.name}</p>
+              <p className="mt-1.5 flex items-center gap-2 text-[13px] font-semibold text-neutral-500 flex-wrap">
+                <span className="flex items-center gap-1"><MapPin size={13} /> {t.city}, {t.country}</span>
+                <span className="w-1 h-1 rounded-full bg-neutral-300" />
+                <span>{t.dates}</span>
+              </p>
+              <div className="mt-4">
+                <p className="text-[13px] font-bold text-ink mb-1.5"><span className="text-brand-dark">{t.enrolled}</span> / {t.capacity} referees</p>
+                <div className="h-2 rounded-full bg-neutral-200/80 overflow-hidden">
+                  <span className={`block h-full rounded-full ${barCls(t.status)}`} style={{ width: pct + '%' }} />
+                </div>
+              </div>
+            </button>
+          )
+        })}
+
+        <button onClick={() => setCreating(true)} className="flex flex-col items-center justify-center gap-2 rounded-[22px] border-2 border-dashed border-neutral-300 text-neutral-500 hover:text-brand-dark hover:border-brand min-h-[196px] bg-white/50 backdrop-blur-sm transition">
+          <span className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center"><Plus size={24} /></span>
+          <span className="text-sm font-semibold">Create new tournament</span>
+        </button>
+      </div>
+      {creating && <TournamentFormModal onClose={() => setCreating(false)} onSave={create} />}
     </div>
-    {creating && <TournamentFormModal onClose={() => setCreating(false)} onSave={create} />}
-    </>
   )
 }
 
