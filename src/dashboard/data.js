@@ -30,17 +30,17 @@ export const refById = Object.fromEntries(dashReferees.map((r) => [r.id, r]))
 // Enrolments per tournament: applied → paid → confirmed, plus a waitlist.
 export const dashEnrolments = {
   t1: [
-    { refId: 'r3', status: 'confirmed' }, { refId: 'r4', status: 'confirmed' }, { refId: 'r8', status: 'confirmed' },
-    { refId: 'r1', status: 'confirmed' }, { refId: 'r6', status: 'paid' }, { refId: 'r5', status: 'paid' },
-    { refId: 'r2', status: 'applied' }, { refId: 'r9', status: 'applied' }, { refId: 'r11', status: 'waitlist' },
+    { refId: 'r3', status: 'confirmed', date: '2026-04-12' }, { refId: 'r4', status: 'confirmed', date: '2026-04-15' }, { refId: 'r8', status: 'confirmed', date: '2026-04-18' },
+    { refId: 'r1', status: 'confirmed', date: '2026-04-21' }, { refId: 'r6', status: 'paid', date: '2026-05-02' }, { refId: 'r5', status: 'paid', date: '2026-05-06' },
+    { refId: 'r2', status: 'applied', date: '2026-05-19' }, { refId: 'r9', status: 'applied', date: '2026-05-24' }, { refId: 'r11', status: 'waitlist', date: '2026-06-01' },
   ],
   t2: [
-    { refId: 'r9', status: 'confirmed' }, { refId: 'r6', status: 'confirmed' }, { refId: 'r10', status: 'paid' },
-    { refId: 'r5', status: 'applied' }, { refId: 'r7', status: 'applied' }, { refId: 'r2', status: 'waitlist' },
+    { refId: 'r9', status: 'confirmed', date: '2026-04-28' }, { refId: 'r6', status: 'confirmed', date: '2026-05-03' }, { refId: 'r10', status: 'paid', date: '2026-05-14' },
+    { refId: 'r5', status: 'applied', date: '2026-05-27' }, { refId: 'r7', status: 'applied', date: '2026-06-04' }, { refId: 'r2', status: 'waitlist', date: '2026-06-10' },
   ],
   t4: [
-    { refId: 'r8', status: 'confirmed' }, { refId: 'r11', status: 'confirmed' }, { refId: 'r3', status: 'paid' },
-    { refId: 'r12', status: 'applied' }, { refId: 'r1', status: 'applied' },
+    { refId: 'r8', status: 'confirmed', date: '2026-06-08' }, { refId: 'r11', status: 'confirmed', date: '2026-06-12' }, { refId: 'r3', status: 'paid', date: '2026-06-20' },
+    { refId: 'r12', status: 'applied', date: '2026-07-01' }, { refId: 'r1', status: 'applied', date: '2026-07-05' },
   ],
 }
 

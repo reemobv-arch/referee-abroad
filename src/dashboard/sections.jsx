@@ -80,10 +80,12 @@ const enrolmentsByRef = (() => {
   for (const [tid, list] of Object.entries(dashEnrolments)) {
     const t = dashTournaments.find((x) => x.id === tid)
     if (!t) continue
-    for (const e of list) (map[e.refId] ||= []).push({ tid: t.id, tournament: t.name, city: t.city, status: e.status })
+    for (const e of list) (map[e.refId] ||= []).push({ tid: t.id, tournament: t.name, city: t.city, status: e.status, date: e.date })
   }
   return map
 })()
+
+const fmtEnrolDate = (v) => v ? new Date(v).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 
 const EnrolChips = ({ refId, className = '' }) => {
   const items = enrolmentsByRef[refId] || []
@@ -168,6 +170,7 @@ function EnrolmentList({ enrol, onAction }) {
             <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(r.name)}</span>
             <span className="flex-1 min-w-[120px] text-sm font-semibold text-ink truncate">{r.name}</span>
             <span className="text-sm text-neutral-400 font-medium hidden lg:block">{r.flag} {r.country}</span>
+            <span className="text-xs text-neutral-500 font-medium hidden sm:flex items-center gap-1 w-28"><Calendar size={12} className="text-neutral-400" /> {fmtEnrolDate(e.date)}</span>
             <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize w-20 text-center ${enrolMap[e.status]}`}>{e.status}</span>
             <span className="flex gap-1.5">
               {actionsFor(e.status).map(([act, label, cls]) => (
@@ -696,7 +699,10 @@ export function DashboardReferees() {
                   <div className="space-y-1.5">
                     {enrolmentsByRef[open.id].map((e, i) => (
                       <div key={i} className="flex items-center justify-between gap-2 bg-page rounded-xl px-3 py-2">
-                        <span className="text-sm font-semibold text-ink truncate">{e.tournament}</span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold text-ink truncate">{e.tournament}</span>
+                          <span className="block text-[11px] text-neutral-500 font-medium flex items-center gap-1"><Calendar size={11} className="text-neutral-400" /> Applied {fmtEnrolDate(e.date)}</span>
+                        </span>
                         <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize flex-none ${enrolMap[e.status]}`}>{e.status}</span>
                       </div>
                     ))}
