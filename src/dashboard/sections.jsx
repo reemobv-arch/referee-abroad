@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Plus, MapPin, Calendar, Users, X, Send, MessageSquare, Search, TrendingUp,
   Mail, MessageCircle, AlertTriangle, Check, Sparkles, Star, Globe, Phone, ClipboardList,
-  ChevronRight, Clock, Pencil, Trash2, RefreshCw, CheckCircle2, Coins, Building2, Plug, HelpCircle,
+  ChevronRight, Clock, Pencil, Trash2, RefreshCw, CheckCircle2, Coins, Building2, Plug, HelpCircle, UserPlus,
 } from 'lucide-react'
 import {
   dashTournaments, dashReferees, dashStaff, dashTickets, dashPnl, dashAnalytics,
@@ -135,6 +135,8 @@ function MatchList({ matches, onManage, tid }) {
 function TournamentView({ t, onBack, onManage, onEdit }) {
   const [tab, setTab] = useState('info')
   const [enrol, setEnrol] = useState(dashEnrolments[t.id] || [])
+  const [staff, setStaff] = useState(() => new Set(dashStaff.filter((s) => s.tournament === t.name).map((s) => s.name)))
+  const [showStaff, setShowStaff] = useState(false)
   const matches = dashMatches[t.id] || []
   const onEnrolAction = (refId, action) => setEnrol((prev) =>
     action === 'decline' ? prev.filter((e) => e.refId !== refId)
@@ -195,16 +197,71 @@ function TournamentView({ t, onBack, onManage, onEdit }) {
               </p>
               <div className="flex flex-wrap gap-3 mt-5">
                 <button onClick={() => onManage && onManage(t.id)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-brand text-white font-semibold"><ClipboardList size={16} /> Appoint referees</button>
+                <button onClick={() => setShowStaff(true)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><UserPlus size={16} /> Appoint staff</button>
                 <button onClick={() => setTab('enrolments')} className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><Users size={16} /> View enrolments</button>
                 <button className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><MessageSquare size={16} /> Message group</button>
               </div>
+            </div>
+
+            <div className="mt-4 bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-bold text-ink text-sm">Staff at this tournament <span className="text-neutral-400 font-medium">({staff.size})</span></h3>
+                <button onClick={() => setShowStaff(true)} className="text-[13px] font-bold text-brand-dark inline-flex items-center gap-1"><UserPlus size={14} /> Appoint staff</button>
+              </div>
+              {staff.size === 0 ? (
+                <p className="mt-2 text-sm text-neutral-400 font-medium">No staff appointed yet. Appoint staff so you know who is on site.</p>
+              ) : (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[...staff].map((name) => {
+                    const s = dashStaff.find((x) => x.name === name)
+                    return (
+                      <span key={name} className="inline-flex items-center gap-2 bg-page rounded-full pl-1 pr-3 py-1">
+                        <span className="w-7 h-7 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center">{initialsOf(name)}</span>
+                        <span className="text-[13px] font-semibold text-ink">{name}</span>
+                        <span className="text-[11px] font-medium text-neutral-400">{s ? s.role : 'Staff'}</span>
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}
         {tab === 'enrolments' && <EnrolmentList enrol={enrol} onAction={onEnrolAction} />}
         {tab === 'matches' && <MatchList matches={matches} onManage={onManage} tid={t.id} />}
       </div>
+      {showStaff && <AppointStaffModal tournamentName={t.name} assigned={staff} onToggle={(name) => setStaff((prev) => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })} onClose={() => setShowStaff(false)} />}
     </div>
+  )
+}
+
+function AppointStaffModal({ tournamentName, assigned, onToggle, onClose }) {
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-xl font-extrabold text-ink">Appoint staff</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+        </div>
+        <p className="text-[12px] font-medium text-neutral-500 mb-4">Select who is on site for {tournamentName}.</p>
+        <div className="space-y-2 max-h-[52vh] overflow-y-auto">
+          {dashStaff.map((s) => {
+            const on = assigned.has(s.name)
+            return (
+              <button key={s.name} onClick={() => onToggle(s.name)} className={`w-full flex items-center gap-3 rounded-2xl border p-3 text-left transition ${on ? 'border-brand bg-brand-light' : 'border-neutral-200 hover:border-brand'}`}>
+                <span className="w-9 h-9 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{s.initials}</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-bold text-ink">{s.name}</span>
+                  <span className="block text-[12px] font-medium text-neutral-500">{s.role}</span>
+                </span>
+                <span className={`w-6 h-6 rounded-lg flex items-center justify-center flex-none ${on ? 'bg-brand text-white' : 'border-2 border-neutral-300'}`}>{on && <Check size={14} />}</span>
+              </button>
+            )
+          })}
+        </div>
+        <button onClick={onClose} className="mt-4 w-full h-11 rounded-full bg-brand text-white font-semibold">Done ({assigned.size} appointed)</button>
+      </div>
+    </Modal>
   )
 }
 
@@ -533,46 +590,64 @@ function AddMatchModal({ onClose, onAdd }) {
 }
 
 /* ---------------- Appointing ---------------- */
+const SLOTS = [
+  { key: 'main', label: 'Main referee' },
+  { key: 'a1', label: 'Assistant 1' },
+  { key: 'a2', label: 'Assistant 2' },
+  { key: 'fourth', label: '4th official' },
+]
+const officialsOf = (m) => SLOTS.map((s) => m[s.key]).filter(Boolean)
+const shortName = (id) => { const n = refById[id]?.name || ''; const p = n.split(' '); return p[1] ? `${p[0]} ${p[1][0]}.` : p[0] }
+
 export function DashboardAppointing({ initialTournament }) {
-  const [tid, setTid] = useState(initialTournament || dashTournaments[0].id)
-  const [matches, setMatches] = useState(() => JSON.parse(JSON.stringify(dashMatches)))
+  const startTid = initialTournament || dashTournaments[0].id
+  const toSlots = (data) => Object.fromEntries(Object.entries(data).map(([k, arr]) => [k, arr.map((m) => ({
+    id: m.id, time: m.time, pitch: m.pitch, home: m.home, away: m.away,
+    main: m.main || null, a1: m.assistants?.[0] || null, a2: m.assistants?.[1] || null, fourth: null,
+  }))]))
+  const [tid, setTid] = useState(startTid)
+  const [matches, setMatches] = useState(() => toSlots(JSON.parse(JSON.stringify(dashMatches))))
+  const [openId, setOpenId] = useState(() => (matches[startTid] || [])[0]?.id || null)
+  const [edited, setEdited] = useState(() => new Set())
   const [addingMatch, setAddingMatch] = useState(false)
+  const [publishDirty, setPublishDirty] = useState(false)
+  const [confirmPublish, setConfirmPublish] = useState(false)
   const [toast, setToast] = useState('')
 
   const list = matches[tid] || []
 
-  const addMatch = (m) => {
-    setMatches((prev) => ({ ...prev, [tid]: [...(prev[tid] || []), { id: 'm' + Math.random().toString(36).slice(2, 7), main: null, assistants: [], ...m }] }))
-    setAddingMatch(false)
-  }
+  useEffect(() => { setOpenId((matches[tid] || [])[0]?.id || null) }, [tid]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Conflict = a referee appointed to two matches at the same time.
   const conflicts = useMemo(() => {
-    const seen = {}
-    const bad = new Set()
-    for (const m of list) {
-      const refs = [m.main, ...m.assistants].filter(Boolean)
-      for (const r of refs) {
-        const key = `${m.time}::${r}`
-        if (seen[key]) { bad.add(`${m.id}::${r}`); bad.add(`${seen[key]}::${r}`) }
-        else seen[key] = m.id
-      }
+    const seen = {}; const bad = new Set()
+    for (const m of list) for (const r of officialsOf(m)) {
+      const key = `${m.time}::${r}`
+      if (seen[key]) { bad.add(`${m.id}::${r}`); bad.add(`${seen[key]}::${r}`) } else seen[key] = m.id
     }
     return bad
   }, [list])
 
-  const setMain = (mid, ref) => setMatches((prev) => ({
-    ...prev, [tid]: prev[tid].map((m) => m.id === mid ? { ...m, main: ref || null } : m),
-  }))
-  const addAssistant = (mid, ref) => { if (!ref) return; setMatches((prev) => ({
-    ...prev, [tid]: prev[tid].map((m) => m.id === mid && !m.assistants.includes(ref) ? { ...m, assistants: [...m.assistants, ref] } : m),
-  })) }
-  const removeAssistant = (mid, ref) => setMatches((prev) => ({
-    ...prev, [tid]: prev[tid].map((m) => m.id === mid ? { ...m, assistants: m.assistants.filter((a) => a !== ref) } : m),
-  }))
+  const setSlot = (mid, slot, ref) => {
+    setEdited((p) => new Set(p).add(mid))
+    setMatches((prev) => ({ ...prev, [tid]: prev[tid].map((m) => m.id === mid ? { ...m, [slot]: ref || null } : m) }))
+  }
+  const addMatch = (m) => {
+    const id = 'm' + Math.random().toString(36).slice(2, 7)
+    setMatches((prev) => ({ ...prev, [tid]: [...(prev[tid] || []), { id, main: null, a1: null, a2: null, fourth: null, ...m }] }))
+    setAddingMatch(false)
+    setOpenId(id)
+  }
+  const saveMatch = (m, i) => {
+    if (edited.has(m.id)) { setPublishDirty(true); setEdited((p) => { const n = new Set(p); n.delete(m.id); return n }) }
+    const next = list[i + 1]
+    setOpenId(next ? next.id : null)
+  }
+  const publish = () => {
+    setToast(`Appointments published. The officials for ${dashTournaments.find((t) => t.id === tid).name} are notified in their app.`)
+    setPublishDirty(false); setEdited(new Set()); setConfirmPublish(false)
+  }
 
   const openSlots = list.filter((m) => !m.main).length
-  const refOptions = dashReferees
 
   return (
     <div>
@@ -585,7 +660,8 @@ export function DashboardAppointing({ initialTournament }) {
           <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition">
             <Plus size={15} /> Add match
           </button>
-          <button onClick={() => setToast(`Appointments published to referees for ${dashTournaments.find((t) => t.id === tid).name}.`)} className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-10 rounded-full hover:bg-brand-dark transition">
+          <button onClick={() => publishDirty && setConfirmPublish(true)} disabled={!publishDirty}
+            className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 h-10 rounded-full transition ${publishDirty ? 'bg-brand text-white hover:bg-brand-dark' : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'}`}>
             <Send size={15} /> Publish appointments
           </button>
         </div>
@@ -600,59 +676,79 @@ export function DashboardAppointing({ initialTournament }) {
       {list.length === 0 && (
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-10 text-center">
           <p className="text-sm font-semibold text-ink">No matches scheduled yet</p>
-          <p className="text-xs text-neutral-500 font-medium mt-1">Add matches to start appointing referees.</p>
+          <p className="text-xs text-neutral-500 font-medium mt-1">Add matches to start appointing officials.</p>
           <button onClick={() => setAddingMatch(true)} className="mt-4 inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-10 rounded-full"><Plus size={15} /> Add match</button>
         </div>
       )}
-      {list.length > 0 && (
-      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
-        {list.map((m) => {
-          const mainConflict = m.main && conflicts.has(`${m.id}::${m.main}`)
-          return (
-            <div key={m.id} className="p-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-sm font-bold text-brand-dark w-14 tabular-nums">{m.time}</span>
-                <span className="text-sm font-semibold text-ink flex-1 min-w-[160px]">{m.home} <span className="text-neutral-400 font-medium">vs</span> {m.away}</span>
-                <span className="text-xs font-medium text-neutral-500">{m.pitch}</span>
-              </div>
 
-              <div className="mt-3 grid sm:grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold text-neutral-500 mb-1">Main referee</p>
-                  <select
-                    value={m.main || ''}
-                    onChange={(e) => setMain(m.id, e.target.value)}
-                    className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${mainConflict ? 'border-red-300 bg-red-50 text-red-700' : m.main ? 'border-neutral-200' : 'border-amber-200 bg-amber-50 text-amber-700'}`}
-                  >
-                    <option value="">Unassigned</option>
-                    {refOptions.map((r) => <option key={r.id} value={r.id}>{r.name} ({r.level})</option>)}
-                  </select>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-neutral-500 mb-1">Assistants</p>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {m.assistants.map((a) => {
-                      const conflict = conflicts.has(`${m.id}::${a}`)
+      <div className="space-y-2.5">
+        {list.map((m, i) => {
+          const open = openId === m.id
+          const hasConflict = officialsOf(m).some((r) => conflicts.has(`${m.id}::${r}`))
+          return (
+            <div key={m.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${hasConflict ? 'border-red-200' : 'border-neutral-200'}`}>
+              <button onClick={() => setOpenId(open ? null : m.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                <span className="text-sm font-bold text-brand-dark w-12 tabular-nums">{m.time}</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-semibold text-ink truncate">{m.home} <span className="text-neutral-400 font-medium">vs</span> {m.away}</span>
+                  {!open && (
+                    <span className="block text-[12px] font-medium mt-0.5 truncate">
+                      {m.main
+                        ? <span className="text-neutral-500">{shortName(m.main)}{officialsOf(m).length > 1 ? ` +${officialsOf(m).length - 1}` : ''}</span>
+                        : <span className="text-amber-600">No main referee</span>}
+                    </span>
+                  )}
+                </span>
+                <span className="text-xs font-medium text-neutral-500 hidden sm:block">{m.pitch}</span>
+                {edited.has(m.id) && <span className="w-2 h-2 rounded-full bg-amber-400" title="Unsaved changes" />}
+                <ChevronRight size={18} className={`text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+              </button>
+
+              {open && (
+                <div className="px-4 pb-4 border-t border-neutral-100 pt-3">
+                  <p className="text-xs font-medium text-neutral-400 mb-3">{m.pitch}</p>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {SLOTS.map((slot) => {
+                      const val = m[slot.key] || ''
+                      const conflict = val && conflicts.has(`${m.id}::${val}`)
+                      const usedElsewhere = SLOTS.filter((s) => s.key !== slot.key).map((s) => m[s.key]).filter(Boolean)
+                      const isMain = slot.key === 'main'
                       return (
-                        <span key={a} className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${conflict ? 'bg-red-50 text-red-700' : 'bg-brand-light text-brand-dark'}`}>
-                          {refById[a].name.split(' ')[0]} {refById[a].name.split(' ')[1]?.[0]}.
-                          <button onClick={() => removeAssistant(m.id, a)}><X size={12} /></button>
-                        </span>
+                        <div key={slot.key}>
+                          <p className="text-[11px] font-semibold text-neutral-500 mb-1">{slot.label}</p>
+                          <select value={val} onChange={(e) => setSlot(m.id, slot.key, e.target.value)}
+                            className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${conflict ? 'border-red-300 bg-red-50 text-red-700' : val ? 'border-neutral-200' : isMain ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-neutral-200 text-neutral-400'}`}>
+                            <option value="">Unassigned</option>
+                            {dashReferees.filter((r) => !usedElsewhere.includes(r.id) || r.id === val).map((r) => <option key={r.id} value={r.id}>{r.name} ({r.level})</option>)}
+                          </select>
+                        </div>
                       )
                     })}
-                    <select value="" onChange={(e) => { addAssistant(m.id, e.target.value); e.target.value = '' }} className="h-8 px-2 rounded-lg border border-dashed border-neutral-300 text-xs font-medium text-neutral-500 outline-none focus:border-brand bg-white">
-                      <option value="">+ Add</option>
-                      {refOptions.filter((r) => !m.assistants.includes(r.id) && r.id !== m.main).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </select>
+                  </div>
+                  <div className="flex justify-end mt-4">
+                    <button onClick={() => saveMatch(m, i)} className="inline-flex items-center gap-2 h-10 px-6 rounded-full bg-brand text-white font-semibold hover:bg-brand-dark transition"><Check size={16} /> Save</button>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )
         })}
       </div>
-      )}
+
       {addingMatch && <AddMatchModal onClose={() => setAddingMatch(false)} onAdd={addMatch} />}
+      {confirmPublish && (
+        <Modal onClose={() => setConfirmPublish(false)}>
+          <div className="p-5">
+            <div className="w-11 h-11 rounded-2xl bg-brand-light text-brand-dark flex items-center justify-center"><Send size={20} /></div>
+            <h3 className="mt-3 text-xl font-extrabold text-ink">Publish appointments?</h3>
+            <p className="mt-1.5 text-sm text-neutral-600 font-medium">The saved changes are communicated to the officials for {dashTournaments.find((t) => t.id === tid).name}, and each appointed official sees their matches in their app.</p>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setConfirmPublish(false)} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+              <button onClick={publish} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><Send size={16} /> Publish</button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {toast && <Toast text={toast} onDone={() => setToast('')} />}
     </div>
   )
