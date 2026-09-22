@@ -3,15 +3,50 @@ import {
   Plus, MapPin, Calendar, Users, X, Send, MessageSquare, Search, TrendingUp,
   Mail, MessageCircle, AlertTriangle, Check, Sparkles, Star, Globe, Phone, ClipboardList,
   ChevronRight, Clock, Pencil, Trash2, RefreshCw, CheckCircle2, Coins, Building2, Plug, HelpCircle, UserPlus,
+  Upload, Lock,
 } from 'lucide-react'
 import {
   dashTournaments, dashReferees, dashStaff, dashTickets, dashPnl, dashAnalytics,
-  dashEnrolments, dashMatches, dashInbox, refById,
+  dashEnrolments, dashMatches, dashInbox, refById, dashClubs,
 } from './data.js'
 import { faq } from '../data.js'
 
 const euro = (n) => '€' + n.toLocaleString('en-US')
 const initialsOf = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
+const teamLabel = (t) => `${t.club} ${t.ageGroup}`
+
+// Parse a teams CSV: each row is one team (club + age group), so a club that
+// plays in several age groups has one row per age group. Accepts comma or
+// semicolon delimiters and an optional header row. Optional third column: pool.
+function parseTeamsCsv(text) {
+  const rows = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+  if (rows.length === 0) return []
+  // Treat the first row as a header when its second cell is not an actual age
+  // group (e.g. "age_group" / "category") rather than "U13" / "O19" / a number.
+  const firstCells = rows[0].split(/[;,\t]/).map((c) => c.trim().toLowerCase())
+  const looksLikeAge = (v) => /^[uo]?\s?\d{1,2}$/i.test(v) || /\d/.test(v)
+  const start = firstCells[1] && !looksLikeAge(firstCells[1]) ? 1 : 0
+  const out = []
+  const seen = new Set()
+  for (let i = start; i < rows.length; i++) {
+    const cells = rows[i].split(/[;,\t]/).map((c) => c.trim())
+    const club = cells[0]
+    const ageGroup = cells[1]
+    if (!club || !ageGroup) continue
+    const key = `${club}::${ageGroup}`.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(cells[2] ? { club, ageGroup, pool: cells[2] } : { club, ageGroup })
+  }
+  return out
+}
+
+const SAMPLE_TEAMS_CSV = `club,age_group,pool
+Ajax,U13,A
+Ajax,U15,A
+Benfica,U13,B
+Benfica,U15,B
+Porto,U15,A`
 
 function LevelPill({ level }) {
   const map = {
@@ -77,7 +112,7 @@ function Crumb({ children, onClick, current }) {
 }
 
 function EnrolmentList({ enrol, onAction }) {
-  if (enrol.length === 0) return <p className="text-sm text-neutral-400 font-medium">No enrolments yet.</p>
+  if (enrol.length === 0) return <p className="text-sm text-neutral-400 font-medium">No referee enrolments yet.</p>
   const actionsFor = (status) => {
     if (status === 'applied') return [['approve', 'Approve', 'bg-brand text-white'], ['decline', 'Decline', 'border border-neutral-200 text-neutral-500']]
     if (status === 'paid') return [['approve', 'Confirm', 'bg-brand text-white'], ['decline', 'Remove', 'border border-neutral-200 text-neutral-500']]
@@ -132,21 +167,127 @@ function MatchList({ matches, onManage, tid }) {
   )
 }
 
+function ImportTeamsModal({ tournamentName, existing = 0, onClose, onImport }) {
+  const [text, setText] = useState('')
+  const parsed = useMemo(() => parseTeamsCsv(text), [text])
+  const clubCount = useMemo(() => new Set(parsed.map((t) => t.club.toLowerCase())).size, [parsed])
+  const onFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setText(String(reader.result || ''))
+    reader.readAsText(file)
+  }
+  return (
+    <Modal onClose={onClose} wide>
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-xl font-extrabold text-ink">Import teams</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+        </div>
+        <p className="text-[12px] font-medium text-neutral-500 mb-4">Upload the participating teams for {tournamentName} from a CSV.</p>
+
+        <div className="rounded-2xl border border-neutral-200 bg-page p-4">
+          <p className="text-[13px] font-bold text-ink flex items-center gap-1.5"><HelpCircle size={14} className="text-brand-dark" /> How the CSV should look</p>
+          <ul className="mt-2 space-y-1 text-[12.5px] text-neutral-600 font-medium list-disc pl-4">
+            <li>One row per team. A team is a <b>club in one age group</b>.</li>
+            <li>A club that plays in several age groups gets <b>one row per age group</b> (Ajax U13 and Ajax U15 are two teams).</li>
+            <li>Columns: <code className="text-brand-dark">club</code>, <code className="text-brand-dark">age_group</code> (required) and optionally <code className="text-brand-dark">pool</code>.</li>
+            <li>Comma or semicolon separated. A header row is optional.</li>
+          </ul>
+          <pre className="mt-3 bg-white border border-neutral-200 rounded-xl p-3 text-[12px] text-ink font-mono overflow-x-auto whitespace-pre">{SAMPLE_TEAMS_CSV}</pre>
+        </div>
+
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-semibold text-ink">Paste CSV or upload a file</span>
+            <label className="inline-flex items-center gap-1.5 text-[12px] font-bold text-brand-dark cursor-pointer hover:underline">
+              <Upload size={13} /> Choose file
+              <input type="file" accept=".csv,text/csv,text/plain" onChange={onFile} className="hidden" />
+            </label>
+          </div>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6}
+            placeholder={SAMPLE_TEAMS_CSV}
+            className="w-full rounded-xl border border-neutral-200 p-3 text-[13px] font-mono outline-none focus:border-brand resize-y" />
+        </div>
+
+        {parsed.length > 0 && (
+          <p className="mt-2 text-[12.5px] font-semibold text-brand-dark">{parsed.length} teams across {clubCount} clubs detected{existing > 0 ? ` · replaces the current ${existing}` : ''}.</p>
+        )}
+
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+          <button onClick={() => parsed.length && onImport(parsed)} disabled={!parsed.length}
+            className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+            <Upload size={16} /> Import {parsed.length || ''} teams
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function ClubsTab({ teams, onOpenImport }) {
+  if (teams.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-8 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-brand-light text-brand-dark flex items-center justify-center mx-auto"><Building2 size={22} /></div>
+        <p className="mt-3 text-sm font-bold text-ink">No teams imported yet</p>
+        <p className="mt-1 text-[13px] text-neutral-500 font-medium max-w-md mx-auto">Import the participating teams first. Appointing referees stays locked until the teams are known, because you cannot build the schedule without them.</p>
+        <button onClick={onOpenImport} className="mt-4 inline-flex items-center gap-2 bg-brand text-white text-sm font-semibold px-5 h-11 rounded-full"><Upload size={16} /> Import teams (CSV)</button>
+      </div>
+    )
+  }
+  const byClub = {}
+  for (const t of teams) (byClub[t.club] ||= []).push(t.ageGroup)
+  const clubs = Object.keys(byClub).sort()
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-[13px] font-semibold text-neutral-500">{teams.length} teams · {clubs.length} clubs</p>
+        <button onClick={onOpenImport} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Upload size={15} /> Re-import CSV</button>
+      </div>
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
+        {clubs.map((club) => (
+          <div key={club} className="flex items-center gap-3 px-4 py-3 flex-wrap">
+            <span className="w-8 h-8 rounded-lg bg-brand-light text-brand-dark text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(club)}</span>
+            <span className="flex-1 min-w-[120px] text-sm font-semibold text-ink">{club}</span>
+            <span className="flex flex-wrap gap-1.5">
+              {byClub[club].sort().map((ag) => (
+                <span key={ag} className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-page text-neutral-600 border border-neutral-200">{ag}</span>
+              ))}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function TournamentView({ t, onBack, onManage, onEdit }) {
   const [tab, setTab] = useState('info')
   const [enrol, setEnrol] = useState(dashEnrolments[t.id] || [])
   const [staff, setStaff] = useState(() => new Set(dashStaff.filter((s) => s.tournament === t.name).map((s) => s.name)))
   const [showStaff, setShowStaff] = useState(false)
+  const [teams, setTeams] = useState(() => dashClubs[t.id] || [])
+  const [showImport, setShowImport] = useState(false)
   const matches = dashMatches[t.id] || []
   const onEnrolAction = (refId, action) => setEnrol((prev) =>
     action === 'decline' ? prev.filter((e) => e.refId !== refId)
       : prev.map((e) => e.refId === refId ? { ...e, status: action === 'promote' ? 'applied' : 'confirmed' } : e))
+  const importTeams = (list) => {
+    setTeams(list)
+    dashClubs[t.id] = list // share with the appointing screen
+    setShowImport(false)
+    setTab('clubs')
+  }
   const tabs = [
     { k: 'info', label: 'Tournament information' },
-    { k: 'enrolments', label: `Enrolments (${enrol.length})` },
+    { k: 'clubs', label: `Teams (${teams.length})` },
+    { k: 'enrolments', label: `Referee enrolments (${enrol.length})` },
     { k: 'matches', label: `Matches (${matches.length})` },
   ]
-  const crumbLabel = { info: 'Tournament information', enrolments: 'Enrolments', matches: 'Matches' }[tab]
+  const crumbLabel = { info: 'Tournament information', clubs: 'Teams', enrolments: 'Referee enrolments', matches: 'Matches' }[tab]
 
   return (
     <div>
@@ -185,9 +326,9 @@ function TournamentView({ t, onBack, onManage, onEdit }) {
           <div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard label="Sport" value={t.sport} />
-              <StatCard label="Enrolled" value={`${t.enrolled}/${t.capacity}`} />
-              <StatCard label="Spots left" value={t.capacity - t.enrolled} />
-              <StatCard label="Status" value={<span className="capitalize">{t.status}</span>} />
+              <StatCard label="Referees enrolled" value={`${t.enrolled}/${t.capacity}`} />
+              <StatCard label="Referee spots left" value={t.capacity - t.enrolled} />
+              <StatCard label="Teams" value={teams.length || '—'} sub={teams.length ? undefined : 'Not imported'} />
             </div>
             <div className="mt-4 bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
               <h3 className="font-bold text-ink text-sm">About this tournament</h3>
@@ -196,11 +337,18 @@ function TournamentView({ t, onBack, onManage, onEdit }) {
                 with {t.capacity - t.enrolled} still open. Manage enrolments, appoint referees to matches and message the group from here.
               </p>
               <div className="flex flex-wrap gap-3 mt-5">
-                <button onClick={() => onManage && onManage(t.id)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-brand text-white font-semibold"><ClipboardList size={16} /> Appoint referees</button>
+                {teams.length === 0 ? (
+                  <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-brand text-white font-semibold"><Upload size={16} /> Import teams (CSV)</button>
+                ) : (
+                  <button onClick={() => onManage && onManage(t.id)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-brand text-white font-semibold"><ClipboardList size={16} /> Appoint referees</button>
+                )}
                 <button onClick={() => setShowStaff(true)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><UserPlus size={16} /> Appoint staff</button>
-                <button onClick={() => setTab('enrolments')} className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><Users size={16} /> View enrolments</button>
+                <button onClick={() => setTab('enrolments')} className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><Users size={16} /> Referee enrolments</button>
                 <button className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><MessageSquare size={16} /> Message group</button>
               </div>
+              {teams.length === 0 && (
+                <p className="mt-3 text-[12.5px] font-semibold text-amber-600 flex items-center gap-1.5"><Lock size={13} /> Appointing is locked until the participating teams are imported.</p>
+              )}
             </div>
 
             <div className="mt-4 bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
@@ -227,10 +375,12 @@ function TournamentView({ t, onBack, onManage, onEdit }) {
             </div>
           </div>
         )}
+        {tab === 'clubs' && <ClubsTab teams={teams} onOpenImport={() => setShowImport(true)} />}
         {tab === 'enrolments' && <EnrolmentList enrol={enrol} onAction={onEnrolAction} />}
         {tab === 'matches' && <MatchList matches={matches} onManage={onManage} tid={t.id} />}
       </div>
       {showStaff && <AppointStaffModal tournamentName={t.name} assigned={staff} onToggle={(name) => setStaff((prev) => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })} onClose={() => setShowStaff(false)} />}
+      {showImport && <ImportTeamsModal tournamentName={t.name} existing={teams.length} onClose={() => setShowImport(false)} onImport={importTeams} />}
     </div>
   )
 }
@@ -560,10 +710,11 @@ export function DashboardStaff({ createSignal }) {
   )
 }
 
-function AddMatchModal({ onClose, onAdd }) {
+function AddMatchModal({ onClose, onAdd, teams = [] }) {
   const [f, setF] = useState({ time: '', pitch: '', home: '', away: '' })
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
-  const valid = f.time && f.home.trim() && f.away.trim()
+  const valid = f.time && f.home.trim() && f.away.trim() && f.home !== f.away
+  const options = teams.map(teamLabel).sort()
   return (
     <Modal onClose={onClose}>
       <div className="p-5">
@@ -576,8 +727,19 @@ function AddMatchModal({ onClose, onAdd }) {
             <Field label="Kick-off time"><input type="time" value={f.time} onChange={set('time')} className={inputCls} autoFocus /></Field>
             <Field label="Pitch / field"><input value={f.pitch} onChange={set('pitch')} placeholder="Pitch A" className={inputCls} /></Field>
           </div>
-          <Field label="Home team"><input value={f.home} onChange={set('home')} placeholder="Ajax U15" className={inputCls} /></Field>
-          <Field label="Away team"><input value={f.away} onChange={set('away')} placeholder="Benfica U15" className={inputCls} /></Field>
+          <Field label="Home team">
+            <select value={f.home} onChange={set('home')} className={inputCls}>
+              <option value="">Select a team…</option>
+              {options.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+          <Field label="Away team">
+            <select value={f.away} onChange={set('away')} className={inputCls}>
+              <option value="">Select a team…</option>
+              {options.filter((o) => o !== f.home).map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </Field>
+          <p className="text-[11px] font-medium text-neutral-400">Teams come from the imported CSV. Import more on the tournament page if one is missing.</p>
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
@@ -615,6 +777,7 @@ export function DashboardAppointing({ initialTournament }) {
   const [toast, setToast] = useState('')
 
   const list = matches[tid] || []
+  const teams = dashClubs[tid] || []
 
   useEffect(() => { setOpenId((matches[tid] || [])[0]?.id || null) }, [tid]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -655,25 +818,35 @@ export function DashboardAppointing({ initialTournament }) {
         <select value={tid} onChange={(e) => setTid(e.target.value)} className="h-10 px-3 rounded-xl border border-neutral-200 text-sm font-semibold outline-none focus:border-brand bg-white">
           {dashTournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
-        <span className="text-xs font-medium text-neutral-500">{list.length} matches · {openSlots} without a main referee</span>
-        <div className="ml-auto flex items-center gap-2">
-          <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition">
-            <Plus size={15} /> Add match
-          </button>
-          <button onClick={() => publishDirty && setConfirmPublish(true)} disabled={!publishDirty}
-            className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 h-10 rounded-full transition ${publishDirty ? 'bg-brand text-white hover:bg-brand-dark' : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'}`}>
-            <Send size={15} /> Publish appointments
-          </button>
-        </div>
+        <span className="text-xs font-medium text-neutral-500">{teams.length === 0 ? 'Teams not imported' : `${list.length} matches · ${openSlots} without a main referee`}</span>
+        {teams.length > 0 && (
+          <div className="ml-auto flex items-center gap-2">
+            <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition">
+              <Plus size={15} /> Add match
+            </button>
+            <button onClick={() => publishDirty && setConfirmPublish(true)} disabled={!publishDirty}
+              className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 h-10 rounded-full transition ${publishDirty ? 'bg-brand text-white hover:bg-brand-dark' : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'}`}>
+              <Send size={15} /> Publish appointments
+            </button>
+          </div>
+        )}
       </div>
 
-      {conflicts.size > 0 && (
+      {teams.length === 0 && (
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-10 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto"><Lock size={22} /></div>
+          <p className="mt-3 text-sm font-bold text-ink">Appointing is locked for {dashTournaments.find((t) => t.id === tid).name}</p>
+          <p className="mt-1 text-[13px] text-neutral-500 font-medium max-w-md mx-auto">You can only appoint referees once the participating teams are imported. Without the teams there is no schedule, so there is nothing to appoint referees to. Import the teams on the tournament page (Teams tab), then build the schedule here.</p>
+        </div>
+      )}
+
+      {teams.length > 0 && conflicts.size > 0 && (
         <div className="mb-4 flex items-center gap-2 bg-red-50 text-red-700 text-sm font-semibold px-4 py-2.5 rounded-xl border border-red-100">
           <AlertTriangle size={16} /> A referee is double-booked at the same time. Check the highlighted matches.
         </div>
       )}
 
-      {list.length === 0 && (
+      {teams.length > 0 && list.length === 0 && (
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-10 text-center">
           <p className="text-sm font-semibold text-ink">No matches scheduled yet</p>
           <p className="text-xs text-neutral-500 font-medium mt-1">Add matches to start appointing officials.</p>
@@ -735,7 +908,7 @@ export function DashboardAppointing({ initialTournament }) {
         })}
       </div>
 
-      {addingMatch && <AddMatchModal onClose={() => setAddingMatch(false)} onAdd={addMatch} />}
+      {addingMatch && <AddMatchModal onClose={() => setAddingMatch(false)} onAdd={addMatch} teams={teams} />}
       {confirmPublish && (
         <Modal onClose={() => setConfirmPublish(false)}>
           <div className="p-5">

@@ -68,6 +68,32 @@ export const dashMatches = {
   ],
 }
 
+// Participating teams per tournament. A team = a club in one age group, so
+// Ajax U13 and Ajax U15 are two separate teams of the same club. These differ
+// per tournament and are imported via CSV. t3, t5 and t6 have nothing imported
+// yet, so appointing stays locked for them until the teams are uploaded.
+export const dashClubs = {
+  t1: [
+    { club: 'Ajax', ageGroup: 'U15' }, { club: 'Ajax', ageGroup: 'U17' },
+    { club: 'Benfica', ageGroup: 'U13' }, { club: 'Benfica', ageGroup: 'U15' },
+    { club: 'Porto', ageGroup: 'U13' }, { club: 'Porto', ageGroup: 'U15' },
+    { club: 'Sporting', ageGroup: 'U13' }, { club: 'Boavista', ageGroup: 'U17' },
+    { club: 'Braga', ageGroup: 'U17' }, { club: 'Feyenoord', ageGroup: 'U15' },
+    { club: 'Milan', ageGroup: 'U15' },
+  ],
+  t2: [
+    { club: 'FCK', ageGroup: 'U15' }, { club: 'FCK', ageGroup: 'U17' },
+    { club: 'Brøndby', ageGroup: 'U13' }, { club: 'Brøndby', ageGroup: 'U15' },
+    { club: 'AGF', ageGroup: 'U13' }, { club: 'AGF', ageGroup: 'U17' },
+    { club: 'OB', ageGroup: 'U13' }, { club: 'FCN', ageGroup: 'U13' },
+  ],
+  t4: [
+    { club: 'Girona', ageGroup: 'U13' }, { club: 'Girona', ageGroup: 'U15' }, { club: 'Girona', ageGroup: 'U17' },
+    { club: 'Espanyol', ageGroup: 'U15' }, { club: 'Espanyol', ageGroup: 'U17' },
+    { club: 'Barça', ageGroup: 'U13' },
+  ],
+}
+
 // AI smart inbox: incoming messages with AI triage and drafted replies.
 export const dashInbox = [
   {
