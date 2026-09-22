@@ -548,12 +548,13 @@ function TournamentFormModal({ initial, onClose, onSave }) {
   )
 }
 
-export function DashboardTournaments({ createSignal, focusT }) {
+export function DashboardTournaments({ createSignal, focusT, onListChange }) {
   const [selected, setSelected] = useState(null)
   const [tournaments, setTournaments] = useState(dashTournaments)
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState(null)
 
+  useEffect(() => { onListChange?.(!selected) }, [selected]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (createSignal) { setSelected(null); setCreating(true) } }, [createSignal])
   useEffect(() => {
     if (focusT && focusT.id) {

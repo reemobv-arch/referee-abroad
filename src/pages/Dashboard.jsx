@@ -32,9 +32,10 @@ export default function Dashboard() {
   const [focusT, setFocusT] = useState({ id: null, n: 0 })
   const [q, setQ] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
+  const [homeList, setHomeList] = useState(true)
   const current = MENU.find((m) => m.key === active)
   const Section = current.Comp
-  const isHome = active === 'tournaments'
+  const showPhoto = active === 'tournaments' && homeList
   const onHeaderAction = () => { if (active === 'tournaments') setCreateSignal((s) => s + 1) }
 
   const query = q.trim().toLowerCase()
@@ -83,16 +84,16 @@ export default function Dashboard() {
 
       {/* Main */}
       <main className="flex-1 flex flex-col min-w-0 relative">
-        {isHome && (
+        {showPhoto && (
           <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
             <div className="absolute inset-0 bg-cover" style={{ backgroundImage: 'url(img/hub-bg.jpg)', backgroundPosition: 'center 22%' }} />
             <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(244,245,244,0.58) 0%, rgba(244,245,244,0.42) 150px, rgba(244,245,244,0.72) 460px, rgba(244,245,244,0.92) 640px, #f4f5f4 820px)' }} />
           </div>
         )}
-        <header className={`h-16 shrink-0 flex items-center justify-between px-6 gap-4 relative z-20 ${isHome ? '' : 'bg-white/80 backdrop-blur border-b border-neutral-200'}`}>
+        <header className={`h-16 shrink-0 flex items-center justify-between px-6 gap-4 relative z-20 ${showPhoto ? '' : 'bg-white/80 backdrop-blur border-b border-neutral-200'}`}>
           <div className="min-w-0">
-            <h1 className={`text-lg font-extrabold leading-tight truncate ${isHome ? 'text-ink [text-shadow:0_1px_3px_rgba(255,255,255,0.6)]' : 'text-ink'}`}>{current.title}</h1>
-            <p className={`text-xs font-medium truncate ${isHome ? 'text-neutral-600 [text-shadow:0_1px_2px_rgba(255,255,255,0.6)]' : 'text-neutral-500'}`}>{current.desc}</p>
+            <h1 className={`text-lg font-extrabold leading-tight truncate text-ink ${showPhoto ? '[text-shadow:0_1px_3px_rgba(255,255,255,0.6)]' : ''}`}>{current.title}</h1>
+            <p className={`text-xs font-medium truncate ${showPhoto ? 'text-neutral-600 [text-shadow:0_1px_2px_rgba(255,255,255,0.6)]' : 'text-neutral-500'}`}>{current.desc}</p>
           </div>
           <div className="flex items-center gap-3">
             {/* Search */}
@@ -154,7 +155,7 @@ export default function Dashboard() {
 
         <div className="flex-1 overflow-y-auto p-6 relative z-10">
           {active === 'tournaments'
-            ? <DashboardTournaments createSignal={createSignal} focusT={focusT} />
+            ? <DashboardTournaments createSignal={createSignal} focusT={focusT} onListChange={setHomeList} />
             : <Section />}
         </div>
       </main>
