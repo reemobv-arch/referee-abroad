@@ -459,6 +459,11 @@ function AppointStaffModal({ tournamentName, assigned, onToggle, onClose }) {
 }
 
 const PRESET_IMAGES = ['img/porto.jpg', 'img/copenhagen.jpg', 'img/ibercup.jpg', 'img/costabrava.jpg', 'img/malta.jpg', 'img/alpine.jpg']
+const COUNTRIES = [
+  'Austria', 'Belgium', 'Croatia', 'Czechia', 'Denmark', 'England', 'Finland', 'France', 'Germany',
+  'Greece', 'Hungary', 'Ireland', 'Italy', 'Malta', 'Netherlands', 'Norway', 'Poland', 'Portugal',
+  'Scotland', 'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 'Turkey', 'Wales',
+]
 const fmtDate = (v) => v ? new Date(v).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : ''
 
 function Field({ label, children }) {
@@ -518,7 +523,12 @@ function TournamentFormModal({ initial, onClose, onSave }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="City"><input value={f.city} onChange={set('city')} placeholder="Lisbon" className={inputCls} /></Field>
-            <Field label="Country"><input value={f.country} onChange={set('country')} placeholder="Portugal" className={inputCls} /></Field>
+            <Field label="Country">
+              <select value={f.country} onChange={set('country')} className={inputCls}>
+                <option value="">Select a country…</option>
+                {[...new Set([...(f.country ? [f.country] : []), ...COUNTRIES])].sort().map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Start date"><input type="date" value={f.start} onChange={set('start')} className={inputCls} /></Field>
