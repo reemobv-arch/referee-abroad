@@ -1,27 +1,26 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { MapPin, Clock, Users, Check, X, Star, ClipboardCheck } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { MapPin, Clock, Users, Check, Star, ClipboardCheck, Lock } from 'lucide-react'
 import { TopBar } from '../components/ui.jsx'
 import { myMatches } from '../data.js'
 
 export default function MatchDetail() {
   const { id } = useParams()
-  const nav = useNavigate()
   const m = myMatches.find((x) => x.id === id)
-  const [status, setStatus] = useState(m ? m.status : 'confirmed')
   const [score, setScore] = useState({ h: '', a: '' })
   const [rating, setRating] = useState(0)
   const [notes, setNotes] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
   if (!m) return <div className="p-6">Match not found.</div>
+  const isMain = m.role.startsWith('Main')
 
   return (
     <div className="h-full overflow-y-auto no-scrollbar pb-8">
       <TopBar title="Match" back />
       <div className="px-4 pt-4">
         <div className="rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#2FA850,#1B6E36)' }}>
-          <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${m.role.startsWith('Main') ? 'bg-white text-brand-dark' : 'bg-white/25 text-white'}`}>{m.role}</span>
+          <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${isMain ? 'bg-white text-brand-dark' : 'bg-white/25 text-white'}`}>{m.role}</span>
           <h1 className="mt-3 text-[26px] font-extrabold leading-tight">{m.home} <span className="text-white/70">vs</span> {m.away}</h1>
           <p className="mt-1 text-[14px] font-semibold text-white/90">{m.tournament}</p>
         </div>
@@ -32,21 +31,9 @@ export default function MatchDetail() {
           <div className="flex items-center gap-3 px-4 py-3"><Users size={18} className="text-brand-dark" /><span className="text-[14px] font-semibold text-ink">{m.coRefs.length ? m.coRefs.join(', ') : 'No co-referees'}</span></div>
         </div>
 
-        {status === 'pending' ? (
-          <div className="mt-4">
-            <p className="text-[13px] font-semibold text-amber-600 mb-2">This appointment needs your response.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setStatus('confirmed')} className="flex-1 h-12 rounded-full bg-brand text-white font-bold flex items-center justify-center gap-2"><Check size={17} /> Accept</button>
-              <button onClick={() => setStatus('declined')} className="h-12 px-6 rounded-full bg-white border border-neutral-200 text-neutral-500 font-bold flex items-center justify-center gap-2"><X size={17} /> Decline</button>
-            </div>
-          </div>
-        ) : (
-          <p className={`mt-4 text-[14px] font-bold flex items-center gap-1.5 ${status === 'declined' ? 'text-red-500' : 'text-brand-dark'}`}>
-            {status === 'declined' ? <><X size={16} /> You declined this match</> : <><Check size={16} /> Confirmed</>}
-          </p>
-        )}
+        <p className="mt-4 text-[14px] font-bold flex items-center gap-1.5 text-brand-dark"><Check size={16} /> Appointed</p>
 
-        {status === 'confirmed' && (
+        {isMain ? (
           <div className="mt-6">
             <h2 className="text-xl font-extrabold text-ink mb-3">Match report</h2>
             {submitted ? (
@@ -83,6 +70,14 @@ export default function MatchDetail() {
                 <button onClick={() => setSubmitted(true)} className="w-full h-12 rounded-full bg-brand text-white font-bold active:scale-[0.99]">Submit report</button>
               </div>
             )}
+          </div>
+        ) : (
+          <div className="mt-6 bg-white rounded-2xl border border-neutral-200 p-5 flex items-start gap-3">
+            <span className="w-9 h-9 rounded-xl bg-page text-neutral-400 flex items-center justify-center flex-none"><Lock size={18} /></span>
+            <div>
+              <p className="text-[15px] font-bold text-ink">Report filed by the main referee</p>
+              <p className="text-[13px] font-medium text-neutral-500 mt-0.5">As assistant referee you don’t submit the match report. The appointed main referee takes care of it.</p>
+            </div>
           </div>
         )}
       </div>

@@ -26,7 +26,10 @@ export const tournaments = [
     lodging: 'Hotel',
     price: 179,
     spotsLeft: 20,
-    status: 'approved',
+    referees: 48,
+    clubs: 24,
+    matches: 86,
+    status: 'confirmed',
     applied: true,
     hotel: 'Hotel Vila Foz',
     room: 'Room 214',
@@ -61,7 +64,10 @@ export const tournaments = [
     lodging: 'Hotel',
     price: 199,
     spotsLeft: 15,
-    status: 'paid',
+    referees: 31,
+    clubs: 18,
+    matches: 64,
+    status: 'applied',
     applied: true,
     hotel: 'Wakeup Copenhagen',
     room: 'Room 508',
@@ -93,6 +99,9 @@ export const tournaments = [
     lodging: 'Campus',
     price: 165,
     spotsLeft: 7,
+    referees: 33,
+    clubs: 20,
+    matches: 70,
     status: 'open',
     applied: false,
   },
@@ -108,6 +117,9 @@ export const tournaments = [
     lodging: 'Hotel',
     price: 189,
     spotsLeft: 12,
+    referees: 40,
+    clubs: 22,
+    matches: 72,
     status: 'open',
     applied: false,
   },
@@ -138,8 +150,8 @@ export const news = [
 export const myMatches = [
   { id: 'a1', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Wed Jul 2', time: '10:00', pitch: 'Pitch C', home: 'Feyenoord U15', away: 'Milan U15', role: 'Main referee', coRefs: ['Jonas Berg'], status: 'confirmed' },
   { id: 'a2', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Wed Jul 2', time: '13:30', pitch: 'Pitch A', home: 'Ajax U15', away: 'Porto U15', role: 'Assistant referee', coRefs: ['Ana Nogueira'], status: 'confirmed' },
-  { id: 'a3', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Thu Jul 3', time: '16:00', pitch: 'Pitch A', home: 'Braga U17', away: 'Ajax U17', role: 'Main referee', coRefs: [], status: 'pending' },
-  { id: 'a4', tournamentId: 'copenhagen', tournament: 'Copenhagen Cup', day: 'Sat Jul 12', time: '12:30', pitch: 'Field 1', home: 'FCK U17', away: 'AGF U17', role: 'Assistant referee', coRefs: ['Jonas Berg'], status: 'pending' },
+  { id: 'a3', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Thu Jul 3', time: '16:00', pitch: 'Pitch A', home: 'Braga U17', away: 'Ajax U17', role: 'Main referee', coRefs: [], status: 'appointed' },
+  { id: 'a4', tournamentId: 'copenhagen', tournament: 'Copenhagen Cup', day: 'Sat Jul 12', time: '12:30', pitch: 'Field 1', home: 'FCK U17', away: 'AGF U17', role: 'Assistant referee', coRefs: ['Jonas Berg'], status: 'appointed' },
 ]
 
 // FAQ that grounds the in-app AI assistant.
@@ -156,7 +168,7 @@ export const faq = [
 
 export const notifications = [
   { id: 'n1', type: 'appointment', title: 'New match appointment', body: 'You are appointed as Main referee, Feyenoord U15 vs Milan U15, Pitch C at 10:00.', ago: '20 min ago', unread: true },
-  { id: 'n2', type: 'appointment', title: 'Appointment needs your response', body: 'Braga U17 vs Ajax U17, Thu Jul 3 at 16:00. Please accept or decline.', ago: '1 hour ago', unread: true },
+  { id: 'n2', type: 'appointment', title: 'New match appointment', body: 'You are appointed as Main referee, Braga U17 vs Ajax U17, Pitch A on Thu Jul 3 at 16:00.', ago: '1 hour ago', unread: true },
   { id: 'n3', type: 'message', title: 'Message from Referee Abroad', body: "Done 👍 Updated to L, it's set in your profile now.", ago: '2 hours ago', unread: false },
   { id: 'n4', type: 'document', title: 'Document ready', body: 'Your travel itinerary for Porto International Cup is available.', ago: 'Yesterday', unread: false },
   { id: 'n5', type: 'payment', title: 'Payment received', body: 'We received your payment for Porto International Cup. You are all set!', ago: '2 days ago', unread: false },

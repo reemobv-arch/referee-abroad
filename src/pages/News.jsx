@@ -5,7 +5,7 @@ import { news } from '../data.js'
 export default function News() {
   return (
     <div className="pb-4">
-      <TopBar title="News" />
+      <TopBar title="News" back />
       <div className="px-4 pt-4 space-y-3">
         {news.map((n) => (
           <article key={n.id} className="bg-white rounded-2xl p-4 shadow-card">

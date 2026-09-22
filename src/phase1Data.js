@@ -47,6 +47,11 @@ export const requirements = [
       ['D8', 'Direct message to the organisation'],
       ['D9', 'Unread badge on chat'],
       ['D10', 'Mobile-first layout for common phone sizes'],
+      ['D11', 'A referee sees only their own match appointments, not other referees’ matches'],
+      ['D12', 'Submit a match report (final score, fair play rating, notes)'],
+      ['D13', 'Only the assigned main referee can open and submit the match report; server-enforced, assistants and visitors have no access'],
+      ['D14', 'Tournament application status is clear per tournament: open, applied (awaiting), or confirmed (going)'],
+      ['D15', 'Referees are appointed to matches directly (no accept or decline step)'],
     ],
   },
   {

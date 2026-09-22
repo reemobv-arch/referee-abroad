@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { MapPin, Clock, BedDouble, Plane, Users, MessageCircle, FileText, ChevronLeft, ArrowRight, Check, X, CalendarCheck, ShieldCheck } from 'lucide-react'
+import { MapPin, Clock, BedDouble, Plane, Users, MessageCircle, FileText, ChevronLeft, ArrowRight, Check, X, CalendarCheck, ShieldCheck, Shield } from 'lucide-react'
 import { tournaments, myMatches } from '../data.js'
 import { Pill } from '../components/ui.jsx'
 
@@ -82,8 +82,9 @@ export default function TournamentDetail() {
       <div className="px-4 -mt-1">
         <div className="flex flex-wrap gap-1.5 mt-3">
           <Pill>⚽ {t.sport}</Pill>
-          <Pill>Referee</Pill>
-          <Pill>Kit: Yellow</Pill>
+          {t.referees != null && <Pill><Users size={12} /> {t.referees} referees</Pill>}
+          {t.clubs != null && <Pill><Shield size={12} /> {t.clubs} clubs</Pill>}
+          {t.matches != null && <Pill><CalendarCheck size={12} /> {t.matches} matches</Pill>}
         </div>
 
         {t.applied ? (

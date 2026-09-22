@@ -7,8 +7,10 @@ import { tournaments } from '../data.js'
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'open', label: 'Open' },
-  { key: 'applied', label: 'My applications' },
+  { key: 'applied', label: 'Applied' },
+  { key: 'going', label: "Going" },
 ]
+const isConfirmed = (t) => t.status === 'confirmed' || t.status === 'approved'
 
 export default function Tournaments() {
   const [q, setQ] = useState('')
@@ -16,7 +18,11 @@ export default function Tournaments() {
 
   const query = q.trim().toLowerCase()
   const list = tournaments.filter((t) => {
-    const okFilter = filter === 'all' || (filter === 'applied' ? t.applied : !t.applied)
+    const okFilter =
+      filter === 'all' ? true
+      : filter === 'open' ? !t.applied
+      : filter === 'going' ? (t.applied && isConfirmed(t))
+      : /* applied */ (t.applied && !isConfirmed(t))
     const okText = !query || `${t.name} ${t.city} ${t.country}`.toLowerCase().includes(query)
     return okFilter && okText
   })

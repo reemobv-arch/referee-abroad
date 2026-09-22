@@ -31,9 +31,12 @@ export default function Assistant() {
     { from: 'bot', text: "Hi! I'm the Referee Abroad assistant 🤖 Ask me anything about your tournaments, travel or kit." },
   ])
   const [text, setText] = useState('')
-  const endRef = useRef(null)
+  const listRef = useRef(null)
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs])
+  useEffect(() => {
+    const el = listRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [msgs])
 
   const ask = (q) => {
     const question = (q ?? text).trim()
@@ -59,7 +62,7 @@ export default function Assistant() {
         </div>
       </header>
 
-      <div className="flex-1 min-h-0 px-3.5 py-3 space-y-2 overflow-y-auto no-scrollbar">
+      <div ref={listRef} className="flex-1 min-h-0 px-3.5 py-3 space-y-2 overflow-y-auto no-scrollbar">
         {msgs.map((m, i) => (
           <div key={i}>
             <div className={`max-w-[80%] px-4 py-2.5 text-[15px] font-medium leading-snug ${
@@ -87,7 +90,6 @@ export default function Assistant() {
             ))}
           </div>
         )}
-        <div ref={endRef} />
       </div>
 
       <form onSubmit={(e) => { e.preventDefault(); ask() }} className="shrink-0 bg-white border-t border-neutral-200 px-3 py-2.5 flex items-center gap-2 pb-3">

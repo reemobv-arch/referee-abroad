@@ -1,8 +1,18 @@
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Calendar, ArrowRight, Check } from 'lucide-react'
+import { MapPin, Calendar, ArrowRight, Check, Clock } from 'lucide-react'
+
+const appliedChip = {
+  confirmed: { label: "You're in", cls: 'bg-brand text-white', Icon: Check },
+  approved: { label: "You're in", cls: 'bg-brand text-white', Icon: Check },
+  applied: { label: 'Applied', cls: 'bg-amber-500 text-white', Icon: Clock },
+  paid: { label: 'Applied', cls: 'bg-amber-500 text-white', Icon: Clock },
+  pending: { label: 'Applied', cls: 'bg-amber-500 text-white', Icon: Clock },
+}
 
 export default function TournamentCard({ t }) {
   const nav = useNavigate()
+  const chip = t.applied ? (appliedChip[t.status] || appliedChip.applied) : null
+  const ChipIcon = chip && chip.Icon
   return (
     <button
       onClick={() => nav(`/tournament/${t.id}`)}
@@ -12,8 +22,8 @@ export default function TournamentCard({ t }) {
         <img src={t.img} alt={t.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
         <span className="absolute top-3 left-3 bg-white/95 text-brand-dark text-[11px] font-bold px-3 py-1 rounded-full">{t.age}</span>
-        {t.applied
-          ? <span className="absolute top-3 right-3 bg-brand text-white text-[11px] font-bold px-3 py-1 rounded-full inline-flex items-center gap-1"><Check size={12} /> Applied</span>
+        {chip
+          ? <span className={`absolute top-3 right-3 ${chip.cls} text-[11px] font-bold px-3 py-1 rounded-full inline-flex items-center gap-1`}><ChipIcon size={12} /> {chip.label}</span>
           : t.spotsLeft != null && <span className="absolute top-3 right-3 bg-black/55 text-white text-[11px] font-bold px-3 py-1 rounded-full">{t.spotsLeft} spots left</span>}
         <div className="absolute bottom-3 left-4 right-4 text-white">
           <h3 className="text-xl font-extrabold leading-tight drop-shadow-sm">{t.name}</h3>
