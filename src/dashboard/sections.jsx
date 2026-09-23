@@ -13,40 +13,132 @@ import { faq } from '../data.js'
 
 const euro = (n) => '€' + n.toLocaleString('en-US')
 const initialsOf = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
-const teamLabel = (t) => `${t.club} ${t.ageGroup}`
+const GENDER_SHORT = { Boys: 'B', Girls: 'G', Mixed: 'M' }
+const teamLabel = (t) => `${t.club} ${t.ageGroup}${t.gender ? ' ' + (GENDER_SHORT[t.gender] || '') : ''}`
 
-// Parse a teams CSV: each row is one team (club + age group), so a club that
-// plays in several age groups has one row per age group. Accepts comma or
-// semicolon delimiters and an optional header row. Optional third column: pool.
-function parseTeamsCsv(text) {
-  const rows = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
-  if (rows.length === 0) return []
-  // Treat the first row as a header when its second cell is not an actual age
-  // group (e.g. "age_group" / "category") rather than "U13" / "O19" / a number.
-  const firstCells = rows[0].split(/[;,\t]/).map((c) => c.trim().toLowerCase())
-  const looksLikeAge = (v) => /^[uo]?\s?\d{1,2}$/i.test(v) || /\d/.test(v)
-  const start = firstCells[1] && !looksLikeAge(firstCells[1]) ? 1 : 0
-  const out = []
-  const seen = new Set()
-  for (let i = start; i < rows.length; i++) {
-    const cells = rows[i].split(/[;,\t]/).map((c) => c.trim())
-    const club = cells[0]
-    const ageGroup = cells[1]
-    if (!club || !ageGroup) continue
-    const key = `${club}::${ageGroup}`.toLowerCase()
-    if (seen.has(key)) continue
-    seen.add(key)
-    out.push(cells[2] ? { club, ageGroup, pool: cells[2] } : { club, ageGroup })
+/* ---- Smart import: parse any file, map columns, normalise age + gender ---- */
+const CURRENT_SEASON_YEAR = 2026
+
+function splitLine(line, d) {
+  const out = []; let cur = ''; let q = false
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]
+    if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++ } else q = false } else cur += c }
+    else { if (c === '"') q = true; else if (c === d) { out.push(cur); cur = '' } else cur += c }
   }
-  return out
+  out.push(cur); return out.map((s) => s.trim())
+}
+function detectDelimiter(line) {
+  const c = { ',': (line.match(/,/g) || []).length, ';': (line.match(/;/g) || []).length, '\t': (line.match(/\t/g) || []).length }
+  return Object.entries(c).sort((a, b) => b[1] - a[1])[0][1] > 0 ? Object.entries(c).sort((a, b) => b[1] - a[1])[0][0] : ','
+}
+// Parse arbitrary CSV/TSV into { header, rows }, auto-detecting the header row
+// (it is not always the first row: some exports start with summary blocks).
+function parseTable(text) {
+  const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n').filter((l) => l.trim() !== '')
+  if (!lines.length) return { header: [], rows: [] }
+  const dLine = lines.find((l) => /[,;\t]/.test(l)) || lines[0]
+  const d = detectDelimiter(dLine)
+  const all = lines.map((l) => splitLine(l, d))
+  let hi = 0, best = -1
+  for (let i = 0; i < Math.min(all.length, 12); i++) {
+    const n = all[i].filter((c) => c && isNaN(Number(c))).length
+    if (n > best) { best = n; hi = i }
+  }
+  return { header: all[hi], rows: all.slice(hi + 1).filter((r) => r.some((c) => c !== '')) }
 }
 
-const SAMPLE_TEAMS_CSV = `club,age_group,pool
-Ajax,U13,A
-Ajax,U15,A
-Benfica,U13,B
-Benfica,U15,B
-Porto,U15,A`
+const FIELD_SYNONYMS = {
+  home: ['home', 'hemmalag', 'team a', 'thuis', 'local'],
+  away: ['away', 'bortalag', 'team b', 'uit', 'visitor', 'gäst'],
+  team: ['team', 'lag', 'equipo', 'club'],
+  category: ['category', 'team_type', 'team type', 'grupp', 'group', 'klass', 'division', 'cat', 'age group', 'age'],
+  date: ['date', 'dag', 'day', 'datum', 'fecha', 'data'],
+  time: ['time', 'tid', 'hour', 'kickoff', 'kick-off', 'hora', 'uur'],
+  field: ['field', 'venue', 'spelplan', 'pitch', 'plan', 'court', 'ground', 'campo'],
+  main: ['huvuddomare', 'referee 1', 'referee', 'main', 'scheidsrechter', 'centre', 'arbitro', 'árbitro'],
+  ar1: ['assisterande 1', 'ar1', 'ar 1', 'referee 2', 'assistant 1', 'lineman 1'],
+  ar2: ['assisterande 2', 'ar2', 'ar 2', 'referee 3', 'assistant 2', 'lineman 2'],
+  fourth: ['fjärdedomare', '4th', 'fourth', 'referee 4', 'fourth official'],
+}
+const FIELD_LABELS = {
+  home: 'Home team', away: 'Away team', team: 'Team (if no home/away)', category: 'Category (age / gender)',
+  date: 'Date', time: 'Time', field: 'Field / pitch', main: 'Main referee', ar1: 'Assistant 1', ar2: 'Assistant 2', fourth: '4th official',
+}
+const FIELD_ORDER = ['home', 'away', 'team', 'category', 'date', 'time', 'field', 'main', 'ar1', 'ar2', 'fourth']
+
+function autoMap(header) {
+  const map = {}; const used = new Set()
+  const norm = header.map((h) => String(h || '').toLowerCase().trim())
+  for (const field of FIELD_ORDER) {
+    for (let i = 0; i < norm.length; i++) {
+      if (used.has(i) || !norm[i]) continue
+      if (FIELD_SYNONYMS[field].some((s) => norm[i] === s || norm[i].includes(s))) { map[field] = i; used.add(i); break }
+    }
+  }
+  return map
+}
+
+// Read gender + age from tokens like "U13 Boys", "G18", "u14girls", "U-13-11",
+// "Cat BI11 - 2013" (birth year) or a bare "14".
+function parseAgeGender(text) {
+  const low = String(text || '').toLowerCase()
+  let gender = null
+  if (/girl|meisje|flick|female|\bwomen\b|\bg\s?-?\s?\d/.test(low)) gender = 'Girls'
+  else if (/boy|jongen|pojk|\bmale\b|\bmen\b|\bb\s?-?\s?\d/.test(low)) gender = 'Boys'
+  else if (/mix|coed|co-ed/.test(low)) gender = 'Mixed'
+  let age = null
+  let m = low.match(/\b[uo]\s?-?\s?(\d{1,2})\b/)
+  if (m) age = 'U' + m[1]
+  if (!age && (m = low.match(/\b[gb]\s?-?\s?(\d{2})\b/))) age = 'U' + m[1]
+  if (!age && (m = low.match(/\b(20\d{2})\b/))) age = 'U' + (CURRENT_SEASON_YEAR - Number(m[1]))
+  if (!age && (m = low.match(/\b(\d{2})\b/))) age = 'U' + m[1]
+  return { age, gender }
+}
+function extractClub(name) {
+  let s = String(name || '').trim()
+  s = s.replace(/\bu\s?-?\s?\d{1,2}(\s?-\s?\d{1,2})?\b/ig, '')
+  s = s.replace(/\b[gb]\s?-?\s?\d{2}\b/ig, '')
+  s = s.replace(/\b(boys?|girls?|mixed|meisjes|jongens|flickor|pojkar)\b/ig, '')
+  s = s.replace(/\b20\d{2}\b/g, '')
+  s = s.replace(/[-–]+\s*$/, '').replace(/\s{2,}/g, ' ').trim()
+  return s || String(name || '').trim()
+}
+
+// Turn a parsed table + a column mapping into { teams, matches }.
+function buildImport(table, map) {
+  const val = (r, f) => (map[f] != null ? (r[map[f]] ?? '') : '').toString().trim()
+  const hasHomeAway = map.home != null && map.away != null
+  const teams = new Map()
+  const addTeam = (rawName, catText) => {
+    if (!rawName) return
+    const a = parseAgeGender(catText); const b = parseAgeGender(rawName)
+    const ageGroup = a.age || b.age || 'U?'
+    const gender = a.gender || b.gender || 'Mixed'
+    const club = extractClub(rawName)
+    const key = `${club}::${ageGroup}::${gender}`.toLowerCase()
+    if (!teams.has(key)) teams.set(key, { club, ageGroup, gender })
+  }
+  const matches = []
+  for (const r of table.rows) {
+    const cat = val(r, 'category')
+    if (hasHomeAway) {
+      const home = val(r, 'home'); const away = val(r, 'away')
+      if (!home && !away) continue
+      addTeam(home, cat); addTeam(away, cat)
+      matches.push({ id: 'm' + Math.random().toString(36).slice(2, 8), time: val(r, 'time') || 'TBD', pitch: val(r, 'field') || 'TBD', home, away, main: null, assistants: [] })
+    } else {
+      addTeam(val(r, 'team') || val(r, 'home'), cat)
+    }
+  }
+  return { teams: [...teams.values()], matches }
+}
+
+const SAMPLE_TEAMS_CSV = `club,age_group,gender
+Ajax,U13,Boys
+Ajax,U15,Girls
+Benfica,U13,Boys
+Benfica,U15,Girls`
 
 function LevelPill({ level }) {
   const map = {
@@ -184,87 +276,123 @@ function EnrolmentList({ enrol, onAction }) {
   )
 }
 
-function MatchList({ matches, onManage, tid }) {
-  if (matches.length === 0) return <p className="text-sm text-neutral-400 font-medium">No matches scheduled yet.</p>
-  return (
-    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
-      {matches.map((m) => {
-        const refs = [m.main, ...m.assistants].filter(Boolean)
-        return (
-          <div key={m.id} className="flex items-center gap-3 px-4 py-3 flex-wrap">
-            <span className="text-sm font-bold text-brand-dark w-14 tabular-nums flex items-center gap-1"><Clock size={13} /> {m.time}</span>
-            <span className="text-sm font-semibold text-ink flex-1 min-w-[160px]">{m.home} <span className="text-neutral-400 font-medium">vs</span> {m.away}</span>
-            <span className="text-xs font-medium text-neutral-500 w-16">{m.pitch}</span>
-            <span className="flex items-center -space-x-2">
-              {refs.length === 0
-                ? <span className="text-[11px] font-semibold text-amber-600">Unassigned</span>
-                : refs.map((r) => <span key={r} title={refById[r].name} className="w-7 h-7 rounded-full bg-brand-light text-brand-dark text-[10px] font-bold flex items-center justify-center ring-2 ring-white">{initialsOf(refById[r].name)}</span>)}
-            </span>
-          </div>
-        )
-      })}
-      <button onClick={() => onManage && onManage(tid)} className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-brand-dark hover:bg-page transition">
-        <ClipboardList size={16} /> Open in appointing
-      </button>
-    </div>
-  )
-}
+const genderPill = (g) => g === 'Girls' ? 'bg-pink-100 text-pink-700' : g === 'Boys' ? 'bg-sky-100 text-sky-700' : 'bg-neutral-100 text-neutral-500'
 
-function ImportTeamsModal({ tournamentName, existing = 0, onClose, onImport }) {
+function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
+  const [step, setStep] = useState('input')
   const [text, setText] = useState('')
-  const parsed = useMemo(() => parseTeamsCsv(text), [text])
-  const clubCount = useMemo(() => new Set(parsed.map((t) => t.club.toLowerCase())).size, [parsed])
+  const [map, setMap] = useState({})
+  const table = useMemo(() => parseTable(text), [text])
+  const result = useMemo(() => step === 'preview' ? buildImport(table, map) : { teams: [], matches: [] }, [step, table, map])
+  const clubCount = useMemo(() => new Set(result.teams.map((t) => t.club.toLowerCase())).size, [result])
+  const apptCols = ['main', 'ar1', 'ar2', 'fourth'].filter((f) => map[f] != null).length
+
   const onFile = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0]; if (!file) return
     const reader = new FileReader()
     reader.onload = () => setText(String(reader.result || ''))
     reader.readAsText(file)
   }
+  const toMap = () => { setMap(autoMap(table.header)); setStep('map') }
+  const setField = (f) => (e) => setMap((m) => ({ ...m, [f]: e.target.value === '' ? null : Number(e.target.value) }))
+
   return (
     <Modal onClose={onClose} wide>
       <div className="p-5">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-xl font-extrabold text-ink">Import teams</h3>
+          <h3 className="text-xl font-extrabold text-ink">Import teams & fixtures</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
         </div>
-        <p className="text-[12px] font-medium text-neutral-500 mb-4">Upload the participating teams for {tournamentName} from a CSV.</p>
+        <p className="text-[12px] font-medium text-neutral-500 mb-4">
+          {step === 'input' && `Upload the schedule for ${tournamentName}. Any organiser format works, we map the columns in the next step.`}
+          {step === 'map' && 'Check the detected columns. We read age and gender from the team names or the category column.'}
+          {step === 'preview' && 'Review what will be imported, then confirm.'}
+        </p>
 
-        <div className="rounded-2xl border border-neutral-200 bg-page p-4">
-          <p className="text-[13px] font-bold text-ink flex items-center gap-1.5"><HelpCircle size={14} className="text-brand-dark" /> How the CSV should look</p>
-          <ul className="mt-2 space-y-1 text-[12.5px] text-neutral-600 font-medium list-disc pl-4">
-            <li>One row per team. A team is a <b>club in one age group</b>.</li>
-            <li>A club that plays in several age groups gets <b>one row per age group</b> (Ajax U13 and Ajax U15 are two teams).</li>
-            <li>Columns: <code className="text-brand-dark">club</code>, <code className="text-brand-dark">age_group</code> (required) and optionally <code className="text-brand-dark">pool</code>.</li>
-            <li>Comma or semicolon separated. A header row is optional.</li>
-          </ul>
-          <pre className="mt-3 bg-white border border-neutral-200 rounded-xl p-3 text-[12px] text-ink font-mono overflow-x-auto whitespace-pre">{SAMPLE_TEAMS_CSV}</pre>
-        </div>
-
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-ink">Paste CSV or upload a file</span>
-            <label className="inline-flex items-center gap-1.5 text-[12px] font-bold text-brand-dark cursor-pointer hover:underline">
-              <Upload size={13} /> Choose file
-              <input type="file" accept=".csv,text/csv,text/plain" onChange={onFile} className="hidden" />
-            </label>
-          </div>
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6}
-            placeholder={SAMPLE_TEAMS_CSV}
-            className="w-full rounded-xl border border-neutral-200 p-3 text-[13px] font-mono outline-none focus:border-brand resize-y" />
-        </div>
-
-        {parsed.length > 0 && (
-          <p className="mt-2 text-[12.5px] font-semibold text-brand-dark">{parsed.length} teams across {clubCount} clubs detected{existing > 0 ? ` · replaces the current ${existing}` : ''}.</p>
+        {step === 'input' && (
+          <>
+            <div className="rounded-2xl border border-neutral-200 bg-page p-4">
+              <p className="text-[13px] font-bold text-ink flex items-center gap-1.5"><HelpCircle size={14} className="text-brand-dark" /> Works with any file</p>
+              <ul className="mt-2 space-y-1 text-[12.5px] text-neutral-600 font-medium list-disc pl-4">
+                <li>Paste or upload a CSV / Excel export from the organiser. Columns can be in any language.</li>
+                <li>We detect the header row and auto-map the fields, then you confirm.</li>
+                <li>Age and gender are read from the team names or a category column (e.g. u14girls, G18, birth year 2013).</li>
+              </ul>
+              <p className="mt-3 text-[12px] font-semibold text-ink">No export system? Use this simple template:</p>
+              <pre className="mt-1 bg-white border border-neutral-200 rounded-xl p-3 text-[12px] text-ink font-mono overflow-x-auto whitespace-pre">{SAMPLE_TEAMS_CSV}</pre>
+            </div>
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold text-ink">Paste data or upload a file</span>
+                <label className="inline-flex items-center gap-1.5 text-[12px] font-bold text-brand-dark cursor-pointer hover:underline">
+                  <Upload size={13} /> Choose file
+                  <input type="file" accept=".csv,.tsv,text/csv,text/plain" onChange={onFile} className="hidden" />
+                </label>
+              </div>
+              <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} placeholder={SAMPLE_TEAMS_CSV}
+                className="w-full rounded-xl border border-neutral-200 p-3 text-[13px] font-mono outline-none focus:border-brand resize-y" />
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+              <button onClick={toMap} disabled={!table.header.length}
+                className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                Continue <ChevronRight size={16} />
+              </button>
+            </div>
+          </>
         )}
 
-        <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
-          <button onClick={() => parsed.length && onImport(parsed)} disabled={!parsed.length}
-            className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
-            <Upload size={16} /> Import {parsed.length || ''} teams
-          </button>
-        </div>
+        {step === 'map' && (
+          <>
+            <div className="grid sm:grid-cols-2 gap-3 max-h-[46vh] overflow-y-auto pr-1">
+              {FIELD_ORDER.map((f) => (
+                <div key={f}>
+                  <p className="text-[11px] font-semibold text-neutral-500 mb-1">{FIELD_LABELS[f]}</p>
+                  <select value={map[f] ?? ''} onChange={setField(f)}
+                    className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${map[f] != null ? 'border-neutral-200' : 'border-neutral-200 text-neutral-400'}`}>
+                    <option value="">— not in file —</option>
+                    {table.header.map((h, i) => <option key={i} value={i}>{h || `Column ${i + 1}`}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-[12px] font-medium text-neutral-500">Detected {table.rows.length} rows. Appointment columns found: {apptCols}. In the real build these referee names map to your pool; here the matches import unassigned.</p>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setStep('input')} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Back</button>
+              <button onClick={() => setStep('preview')} disabled={map.home == null && map.team == null}
+                className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                Preview <ChevronRight size={16} />
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 'preview' && (
+          <>
+            <div className="flex flex-wrap gap-3 mb-3">
+              <div className="bg-page rounded-xl px-4 py-2.5"><p className="text-[11px] text-neutral-500 font-medium">Teams</p><p className="font-bold text-ink text-lg leading-none">{result.teams.length}</p></div>
+              <div className="bg-page rounded-xl px-4 py-2.5"><p className="text-[11px] text-neutral-500 font-medium">Clubs</p><p className="font-bold text-ink text-lg leading-none">{clubCount}</p></div>
+              <div className="bg-page rounded-xl px-4 py-2.5"><p className="text-[11px] text-neutral-500 font-medium">Matches</p><p className="font-bold text-ink text-lg leading-none">{result.matches.length}</p></div>
+            </div>
+            <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100 max-h-[40vh] overflow-y-auto">
+              {result.teams.slice(0, 40).map((t, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-2">
+                  <span className="flex-1 text-sm font-semibold text-ink truncate">{t.club}</span>
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-page text-neutral-600 border border-neutral-200">{t.ageGroup}</span>
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${genderPill(t.gender)}`}>{t.gender}</span>
+                </div>
+              ))}
+              {result.teams.length === 0 && <p className="p-4 text-sm text-neutral-400 font-medium">Nothing detected. Go back and check the column mapping.</p>}
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setStep('map')} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Back</button>
+              <button onClick={() => result.teams.length && onImport(result)} disabled={!result.teams.length}
+                className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                <Upload size={16} /> Import{existing > 0 ? ` (replaces ${existing})` : ''}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </Modal>
   )
@@ -277,18 +405,18 @@ function ClubsTab({ teams, onOpenImport }) {
         <div className="w-12 h-12 rounded-2xl bg-brand-light text-brand-dark flex items-center justify-center mx-auto"><Building2 size={22} /></div>
         <p className="mt-3 text-sm font-bold text-ink">No teams imported yet</p>
         <p className="mt-1 text-[13px] text-neutral-500 font-medium max-w-md mx-auto">Import the participating teams first. Appointing referees stays locked until the teams are known, because you cannot build the schedule without them.</p>
-        <button onClick={onOpenImport} className="mt-4 inline-flex items-center gap-2 bg-brand text-white text-sm font-semibold px-5 h-11 rounded-full"><Upload size={16} /> Import teams (CSV)</button>
+        <button onClick={onOpenImport} className="mt-4 inline-flex items-center gap-2 bg-brand text-white text-sm font-semibold px-5 h-11 rounded-full"><Upload size={16} /> Import teams</button>
       </div>
     )
   }
   const byClub = {}
-  for (const t of teams) (byClub[t.club] ||= []).push(t.ageGroup)
+  for (const t of teams) (byClub[t.club] ||= []).push(t)
   const clubs = Object.keys(byClub).sort()
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-3">
         <p className="text-[13px] font-semibold text-neutral-500">{teams.length} teams · {clubs.length} clubs</p>
-        <button onClick={onOpenImport} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Upload size={15} /> Re-import CSV</button>
+        <button onClick={onOpenImport} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Upload size={15} /> Re-import</button>
       </div>
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
         {clubs.map((club) => (
@@ -296,8 +424,8 @@ function ClubsTab({ teams, onOpenImport }) {
             <span className="w-8 h-8 rounded-lg bg-brand-light text-brand-dark text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(club)}</span>
             <span className="flex-1 min-w-[120px] text-sm font-semibold text-ink">{club}</span>
             <span className="flex flex-wrap gap-1.5">
-              {byClub[club].sort().map((ag) => (
-                <span key={ag} className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-page text-neutral-600 border border-neutral-200">{ag}</span>
+              {byClub[club].slice().sort((a, b) => a.ageGroup.localeCompare(b.ageGroup)).map((tm, i) => (
+                <span key={i} className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${genderPill(tm.gender)}`}>{tm.ageGroup} {GENDER_SHORT[tm.gender] || ''}</span>
               ))}
             </span>
           </div>
@@ -314,13 +442,14 @@ function TournamentView({ t, onBack, onEdit }) {
   const [showStaff, setShowStaff] = useState(false)
   const [teams, setTeams] = useState(() => dashClubs[t.id] || [])
   const [showImport, setShowImport] = useState(false)
-  const matches = dashMatches[t.id] || []
+  const [matchCount, setMatchCount] = useState((dashMatches[t.id] || []).length)
   const onEnrolAction = (refId, action) => setEnrol((prev) =>
     action === 'decline' ? prev.filter((e) => e.refId !== refId)
       : prev.map((e) => e.refId === refId ? { ...e, status: action === 'promote' ? 'applied' : 'confirmed' } : e))
-  const importTeams = (list) => {
+  const importTeams = ({ teams: list, matches: fixtures }) => {
     setTeams(list)
     dashClubs[t.id] = list // share with the appointing screen
+    if (fixtures && fixtures.length) { dashMatches[t.id] = fixtures; setMatchCount(fixtures.length) }
     setShowImport(false)
     setTab('clubs')
   }
@@ -328,7 +457,7 @@ function TournamentView({ t, onBack, onEdit }) {
     { k: 'info', label: 'Tournament information' },
     { k: 'clubs', label: `Teams (${teams.length})` },
     { k: 'enrolments', label: `Referee enrolments (${enrol.length})` },
-    { k: 'appointing', label: `Appointing (${matches.length})` },
+    { k: 'appointing', label: `Appointing (${matchCount})` },
   ]
   const crumbLabel = { info: 'Tournament information', clubs: 'Teams', enrolments: 'Referee enrolments', appointing: 'Appointing' }[tab]
 
@@ -423,7 +552,7 @@ function TournamentView({ t, onBack, onEdit }) {
         {tab === 'appointing' && <DashboardAppointing initialTournament={t.id} lockTournament />}
       </div>
       {showStaff && <AppointStaffModal tournamentName={t.name} assigned={staff} onToggle={(name) => setStaff((prev) => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })} onClose={() => setShowStaff(false)} />}
-      {showImport && <ImportTeamsModal tournamentName={t.name} existing={teams.length} onClose={() => setShowImport(false)} onImport={importTeams} />}
+      {showImport && <SmartImportModal tournamentName={t.name} existing={teams.length} onClose={() => setShowImport(false)} onImport={importTeams} />}
     </div>
   )
 }

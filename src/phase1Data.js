@@ -70,6 +70,19 @@ export const requirements = [
     ],
   },
   {
+    id: 'I', title: 'Team & fixture import (CSV / Excel)', items: [
+      ['I1', 'Import teams and fixtures from an uploaded file (CSV or Excel)'],
+      ['I2', 'Accept any provider format and detect the header row automatically'],
+      ['I3', 'Auto-map columns to fields (home, away, category, date, time, field, referees) with multilingual synonyms'],
+      ['I4', 'Normalise age and gender from team names or a category field (e.g. u14girls, G18, birth year 2013)'],
+      ['I5', 'Confirmation step to review and correct the mapping before import'],
+      ['I6', 'Save a reusable mapping profile per organiser / source'],
+      ['I7', 'Support fixtures that already include appointment columns (main, AR1, AR2, 4th)'],
+      ['I8', 'Teams carry gender (boys, girls, mixed) alongside the age group'],
+      ['I9', 'Recommended CSV template for organisers without an export system'],
+    ],
+  },
+  {
     id: 'U', title: 'User interface & design build', items: [
       ['U1', 'Design system built in code: colours, typography and spacing tokens'],
       ['U2', 'Reusable component library: buttons, cards, inputs, chips, modals'],
