@@ -453,6 +453,33 @@ function TournamentView({ t, onBack, onEdit }) {
     setShowImport(false)
     setTab('clubs')
   }
+  const matchesArr = dashMatches[t.id] || []
+  const appointedCount = matchesArr.filter((m) => m.main).length
+  const appliedCount = enrol.filter((e) => e.status === 'applied').length
+  const clubCount = new Set(teams.map((x) => x.club)).size
+  const steps = [
+    { title: 'Teams imported', status: teams.length ? 'done' : 'todo',
+      metric: teams.length ? `${teams.length} teams across ${clubCount} clubs` : 'Not imported yet',
+      onClick: () => teams.length ? setTab('clubs') : setShowImport(true) },
+    { title: 'Referee enrolments', status: enrol.length === 0 ? 'todo' : (t.enrolled >= t.capacity ? 'done' : 'progress'),
+      metric: `${t.enrolled} of ${t.capacity} spots filled${appliedCount ? ` · ${appliedCount} awaiting approval` : ''}`,
+      onClick: () => setTab('enrolments') },
+    { title: 'Match schedule', status: teams.length === 0 ? 'todo' : (matchesArr.length ? 'done' : 'todo'),
+      metric: teams.length === 0 ? 'Import the teams first' : (matchesArr.length ? `${matchesArr.length} matches scheduled` : 'No matches yet'),
+      onClick: () => teams.length ? setTab('appointing') : setShowImport(true) },
+    { title: 'Referees appointed', status: matchesArr.length === 0 ? 'todo' : (appointedCount >= matchesArr.length ? 'done' : 'progress'),
+      metric: matchesArr.length === 0 ? 'Add matches first' : `${appointedCount} of ${matchesArr.length} matches have a main referee`,
+      pill: matchesArr.length && appointedCount < matchesArr.length ? `${matchesArr.length - appointedCount} open` : null,
+      onClick: () => setTab('appointing') },
+    { title: 'On-site staff', status: staff.size ? 'done' : 'todo',
+      metric: staff.size ? `${staff.size} staff assigned` : 'No staff yet',
+      onClick: () => setShowStaff(true) },
+    { title: 'Publish appointments', status: 'todo', publish: true,
+      metric: 'Communicate the saved changes to the officials',
+      onClick: () => setTab('appointing') },
+  ]
+  const doneCount = steps.filter((s) => s.status === 'done').length
+
   const tabs = [
     { k: 'info', label: 'Tournament information' },
     { k: 'clubs', label: `Teams (${teams.length})` },
@@ -495,55 +522,84 @@ function TournamentView({ t, onBack, onEdit }) {
 
       <div className="mt-5">
         {tab === 'info' && (
-          <div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard label="Sport" value={t.sport} />
-              <StatCard label="Referees enrolled" value={`${t.enrolled}/${t.capacity}`} />
-              <StatCard label="Referee spots left" value={t.capacity - t.enrolled} />
-              <StatCard label="Teams" value={teams.length || '—'} sub={teams.length ? undefined : 'Not imported'} />
-            </div>
-            <div className="mt-4 bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
-              <h3 className="font-bold text-ink text-sm">About this tournament</h3>
-              <p className="mt-1.5 text-sm text-neutral-600 font-medium leading-relaxed">
-                {t.name} takes place in {t.city}, {t.country} from {t.dates}. {t.enrolled} of {t.capacity} referee spots are filled,
-                with {t.capacity - t.enrolled} still open. Manage enrolments, appoint referees to matches and message the group from here.
-              </p>
-              <div className="flex flex-wrap gap-3 mt-5">
-                {teams.length === 0 ? (
-                  <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-brand text-white font-semibold"><Upload size={16} /> Import teams (CSV)</button>
-                ) : (
-                  <button onClick={() => setTab('appointing')} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-brand text-white font-semibold"><ClipboardList size={16} /> Appoint referees</button>
-                )}
-                <button onClick={() => setShowStaff(true)} className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><UserPlus size={16} /> Appoint staff</button>
-                <button onClick={() => setTab('enrolments')} className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><Users size={16} /> Referee enrolments</button>
-                <button className="inline-flex items-center gap-2 h-11 px-5 rounded-full border-[1.5px] border-neutral-200 text-ink font-semibold hover:border-brand"><MessageSquare size={16} /> Message group</button>
+          <div className="grid lg:grid-cols-[1.7fr_1fr] gap-4 items-start">
+            {/* Setup checklist */}
+            <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <h3 className="font-bold text-ink text-sm">Tournament setup</h3>
+                  <p className="text-[12.5px] text-neutral-500 font-medium">What is done and what still needs attention</p>
+                </div>
+                <span className="text-[13px] font-bold text-brand-dark whitespace-nowrap">{doneCount} / {steps.length} done</span>
               </div>
-              {teams.length === 0 && (
-                <p className="mt-3 text-[12.5px] font-semibold text-amber-600 flex items-center gap-1.5"><Lock size={13} /> Appointing is locked until the participating teams are imported.</p>
-              )}
+              <div className="h-2 rounded-full bg-neutral-200/80 overflow-hidden mb-2">
+                <span className="block h-full rounded-full bg-brand transition-all" style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }} />
+              </div>
+              <div>
+                {steps.map((s, i) => {
+                  const ic = s.status === 'done' ? 'bg-brand text-white' : s.status === 'progress' ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-400 border border-dashed border-neutral-300'
+                  const pillTxt = s.pill || (s.status === 'done' ? 'Done' : s.status === 'progress' ? 'In progress' : 'To do')
+                  const pillCls = s.status === 'done' ? 'bg-brand-light text-brand-dark' : (s.status === 'progress' || s.pill) ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-500'
+                  return (
+                    <button key={i} onClick={s.onClick} className="w-full flex items-center gap-3.5 py-3 border-t border-neutral-100 first:border-t-0 text-left hover:bg-page/60 -mx-2 px-2 rounded-lg transition">
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center flex-none ${ic}`}>
+                        {s.status === 'done' ? <Check size={16} /> : s.status === 'progress' ? <Clock size={15} /> : s.publish ? <Send size={14} /> : <span className="w-2 h-2 rounded-full bg-neutral-300" />}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[14.5px] font-bold text-ink">{s.title}</span>
+                        <span className="block text-[12.5px] font-medium text-neutral-500">{s.metric}</span>
+                      </span>
+                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${pillCls}`}>{pillTxt}</span>
+                      <ChevronRight size={18} className="text-neutral-300 flex-none" />
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
-            <div className="mt-4 bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="font-bold text-ink text-sm">Staff at this tournament <span className="text-neutral-400 font-medium">({staff.size})</span></h3>
-                <button onClick={() => setShowStaff(true)} className="text-[13px] font-bold text-brand-dark inline-flex items-center gap-1"><UserPlus size={14} /> Appoint staff</button>
-              </div>
-              {staff.size === 0 ? (
-                <p className="mt-2 text-sm text-neutral-400 font-medium">No staff appointed yet. Appoint staff so you know who is on site.</p>
-              ) : (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[...staff].map((name) => {
-                    const s = dashStaff.find((x) => x.name === name)
-                    return (
-                      <span key={name} className="inline-flex items-center gap-2 bg-page rounded-full pl-1 pr-3 py-1">
-                        <span className="w-7 h-7 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center">{initialsOf(name)}</span>
-                        <span className="text-[13px] font-semibold text-ink">{name}</span>
-                        <span className="text-[11px] font-medium text-neutral-400">{s ? s.role : 'Staff'}</span>
-                      </span>
-                    )
-                  })}
+            {/* Right column */}
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+                <h3 className="font-bold text-ink text-sm mb-3">At a glance</h3>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Sport</p><p className="text-base font-extrabold text-ink mt-0.5">{t.sport}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Dates</p><p className="text-sm font-extrabold text-ink mt-0.5">{t.dates}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Referees</p><p className="text-base font-extrabold text-ink mt-0.5">{t.enrolled}/{t.capacity}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Teams</p><p className="text-base font-extrabold text-ink mt-0.5">{teams.length || '—'}</p></div>
                 </div>
-              )}
+              </div>
+
+              <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-bold text-ink text-sm">Staff on site <span className="text-neutral-400 font-medium">({staff.size})</span></h3>
+                  <button onClick={() => setShowStaff(true)} className="text-[13px] font-bold text-brand-dark inline-flex items-center gap-1"><UserPlus size={14} /> Appoint</button>
+                </div>
+                {staff.size === 0 ? (
+                  <p className="mt-2 text-[13px] text-neutral-400 font-medium">No staff assigned yet.</p>
+                ) : (
+                  <div className="mt-3 space-y-2">
+                    {[...staff].map((name) => {
+                      const s = dashStaff.find((x) => x.name === name)
+                      return (
+                        <div key={name} className="flex items-center gap-2.5">
+                          <span className="w-8 h-8 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center flex-none">{initialsOf(name)}</span>
+                          <span className="min-w-0"><span className="block text-[13px] font-bold text-ink truncate">{name}</span><span className="block text-[11.5px] font-medium text-neutral-500">{s ? s.role : 'Staff'}</span></span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+                <h3 className="font-bold text-ink text-sm mb-2.5">Quick actions</h3>
+                <div className="flex flex-col gap-1">
+                  <button onClick={() => teams.length ? setTab('clubs') : setShowImport(true)} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><Upload size={15} /> {teams.length ? 'Manage teams' : 'Import teams'}</button>
+                  <button onClick={() => setTab('appointing')} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><ClipboardList size={15} /> Appoint referees</button>
+                  <button onClick={() => setTab('enrolments')} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><Users size={15} /> Referee enrolments</button>
+                  <button className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><MessageSquare size={15} /> Message the group</button>
+                </div>
+              </div>
             </div>
           </div>
         )}
