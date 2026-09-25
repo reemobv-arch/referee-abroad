@@ -1,7 +1,18 @@
 import { useState } from 'react'
-import { Download, FileText, Ticket, Shirt, FileType, PenLine, Check, Upload, Plus } from 'lucide-react'
+import { Download, FileText, Ticket, Shirt, FileType, PenLine, Check, Upload, Plus, CalendarClock } from 'lucide-react'
 import { TopBar } from '../components/ui.jsx'
 import { tournaments, generalDocs, ownDocuments } from '../data.js'
+
+const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 }
+// Parse a start date like "Jul 1 to Jul 5" (season year 2026).
+function parseStart(dates) {
+  const m = String(dates || '').match(/([A-Za-z]{3})\s*(\d{1,2})/)
+  if (!m) return null
+  const mon = MONTHS[m[1].toLowerCase()]
+  if (mon == null) return null
+  return new Date(2026, mon, Number(m[2]))
+}
+const fmtDate = (d) => d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 
 const iconFor = {
   pdf: { Icon: FileType, cls: 'bg-red-50 text-red-600' },
@@ -58,10 +69,35 @@ export default function Documents() {
   const applyStatus = (d) => (d.needsSign && signed[d.name] ? { ...d, status: 'signed' } : d)
   const upload = () => setOwn((o) => [...o, { name: `Document ${o.length + 1}.pdf`, meta: 'Uploaded just now', type: 'doc', status: 'submitted' }])
 
+  const applied = tournaments.filter((t) => t.applied)
+
   return (
     <div className="pb-6">
       <TopBar title="Documents" back />
       <div className="px-4 pt-4 space-y-6">
+        {applied.length > 0 && (
+          <section>
+            <h2 className="text-sm font-extrabold text-ink mb-2.5">Upload deadlines</h2>
+            <div className="space-y-2.5">
+              {applied.map((t) => {
+                const start = parseStart(t.dates)
+                const deadline = start ? new Date(start.getTime() - 56 * 864e5) : null
+                const done = (t.documents || []).every((d) => d.status === 'approved' || d.status === 'signed')
+                return (
+                  <div key={t.id} className="bg-white rounded-2xl border border-neutral-200 p-3.5 flex items-center gap-3.5">
+                    <span className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-none ${done ? 'bg-brand-light text-brand-dark' : 'bg-amber-100 text-amber-700'}`}><CalendarClock size={20} /></span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[15px] font-bold text-ink truncate">{t.name}</p>
+                      <p className="text-[12px] font-semibold text-neutral-500">Travel documents due {fmtDate(deadline)} · 8 weeks before the start</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${done ? 'bg-brand-light text-brand-dark' : 'bg-amber-100 text-amber-700'}`}>{done ? 'Complete' : 'Action needed'}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
         {withDocs.map((t) => (
           <section key={t.id}>
             <h2 className="text-sm font-extrabold text-ink mb-2.5">{t.name}</h2>

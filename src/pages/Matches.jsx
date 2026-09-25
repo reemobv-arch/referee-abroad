@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Clock, Users, Check, ChevronRight } from 'lucide-react'
+import { MapPin, Clock, Users, Check, ChevronRight, MessageCircle } from 'lucide-react'
 import { TopBar } from '../components/ui.jsx'
 import { myMatches } from '../data.js'
 
@@ -39,8 +39,18 @@ export default function Matches() {
                     {m.coRefs.length > 0 && <span className="flex items-center gap-1"><Users size={13} /> {m.coRefs.join(', ')}</span>}
                   </div>
 
-                  <div className="mt-3 flex items-center justify-end text-[13px] font-bold text-brand-dark">
-                    {m.role.startsWith('Main') ? 'Open report' : 'View details'} <ChevronRight size={16} />
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.stopPropagation(); nav('/chat', { state: { team: { title: `${m.home} vs ${m.away}`, tournament: m.tournament, members: ['You', ...m.coRefs] } } }) }}
+                      className="inline-flex items-center gap-1.5 text-[13px] font-bold text-brand-dark bg-brand-light rounded-full px-3.5 py-1.5 active:scale-[0.98]"
+                    >
+                      <MessageCircle size={15} /> Chat with team
+                    </span>
+                    <span className="flex items-center text-[13px] font-bold text-brand-dark">
+                      {m.role.startsWith('Main') ? 'Open report' : 'View details'} <ChevronRight size={16} />
+                    </span>
                   </div>
                 </button>
               ))}

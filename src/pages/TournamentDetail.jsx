@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { MapPin, Clock, BedDouble, Plane, Users, MessageCircle, FileText, ChevronLeft, ArrowRight, Check, X, CalendarCheck, ShieldCheck, Shield } from 'lucide-react'
+import { MapPin, Clock, BedDouble, Plane, Users, MessageCircle, FileText, ChevronLeft, ArrowRight, Check, X, CalendarCheck, ShieldCheck, Shield, Upload } from 'lucide-react'
 import { tournaments, myMatches } from '../data.js'
 import { Pill } from '../components/ui.jsx'
 
@@ -51,6 +51,7 @@ export default function TournamentDetail() {
   const nav = useNavigate()
   const [requested, setRequested] = useState(false)
   const [pay, setPay] = useState(false)
+  const [docsUploaded, setDocsUploaded] = useState(false)
   const t = tournaments.find((x) => x.id === id)
   if (!t) return <div className="p-6">Not found.</div>
   const showApplied = requested || t.applied
@@ -157,12 +158,30 @@ export default function TournamentDetail() {
 
           </>
         ) : (
+          <>
           <div className="mt-4 bg-white rounded-2xl p-4 shadow-card">
             <p className="text-[15px] text-neutral-500 font-medium">
               Apply for this tournament to unlock logistics, agenda, documents and the group chat.
             </p>
             <p className="text-brand-dark text-[30px] font-extrabold mt-3">€{t.price}</p>
           </div>
+
+          <div className="mt-3 bg-white rounded-2xl p-4 shadow-card">
+            <div className="flex items-start gap-3">
+              <span className="w-9 h-9 rounded-xl bg-brand-light flex items-center justify-center flex-none"><FileText size={18} className="text-brand-dark" /></span>
+              <div className="flex-1">
+                <p className="text-[15px] font-bold text-ink">Get a head start on your travel documents</p>
+                <p className="text-[13px] text-neutral-500 font-medium mt-0.5">You can already upload your passport, certificate and travel details before you pay. They stay with your profile.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setDocsUploaded(true)}
+              className={`mt-3 w-full h-11 rounded-full font-semibold flex items-center justify-center gap-2 active:scale-[0.99] ${docsUploaded ? 'bg-brand-light text-brand-dark' : 'bg-white border-[1.5px] border-brand text-brand-dark'}`}
+            >
+              {docsUploaded ? (<><Check size={16} /> Documents uploaded</>) : (<><Upload size={16} /> Upload travel documents</>)}
+            </button>
+          </div>
+          </>
         )}
 
         {t.applied && (

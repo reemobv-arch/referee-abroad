@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { MapPin, Clock, Users, Check, Star, ClipboardCheck, Lock } from 'lucide-react'
+import { MapPin, Clock, Users, Check, Star, ClipboardCheck, Lock, Eye } from 'lucide-react'
 import { TopBar } from '../components/ui.jsx'
 import { myMatches } from '../data.js'
+
+const CardIcon = ({ color }) => <span className="inline-block w-3.5 h-5 rounded-[3px] align-middle" style={{ background: color }} />
 
 export default function MatchDetail() {
   const { id } = useParams()
   const m = myMatches.find((x) => x.id === id)
   const [score, setScore] = useState({ h: '', a: '' })
   const [rating, setRating] = useState(0)
+  const [cards, setCards] = useState({ y: '', r: '' })
   const [notes, setNotes] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
@@ -29,6 +32,12 @@ export default function MatchDetail() {
           <div className="flex items-center gap-3 px-4 py-3"><Clock size={18} className="text-brand-dark" /><span className="text-[14px] font-semibold text-ink">{m.day} · {m.time}</span></div>
           <div className="flex items-center gap-3 px-4 py-3"><MapPin size={18} className="text-brand-dark" /><span className="text-[14px] font-semibold text-ink">{m.pitch}</span></div>
           <div className="flex items-center gap-3 px-4 py-3"><Users size={18} className="text-brand-dark" /><span className="text-[14px] font-semibold text-ink">{m.coRefs.length ? m.coRefs.join(', ') : 'No co-referees'}</span></div>
+          <div className="flex items-center gap-3 px-4 py-3">
+            <Eye size={18} className="text-brand-dark" />
+            {m.observer
+              ? <span className="text-[14px] font-semibold text-ink">{m.observer} <span className="text-neutral-400 font-medium">· observer</span></span>
+              : <span className="text-[14px] font-medium text-neutral-400">No observer appointed</span>}
+          </div>
         </div>
 
         <p className="mt-4 text-[14px] font-bold flex items-center gap-1.5 text-brand-dark"><Check size={16} /> Appointed</p>
@@ -40,7 +49,7 @@ export default function MatchDetail() {
               <div className="bg-brand-light rounded-2xl p-5 text-center">
                 <div className="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center mx-auto"><ClipboardCheck size={24} /></div>
                 <p className="mt-2 text-[15px] font-extrabold text-brand-dark">Report submitted</p>
-                <p className="text-[13px] font-semibold text-brand-dark/80">Final score {score.h || 0} - {score.a || 0}. Thanks!</p>
+                <p className="text-[13px] font-semibold text-brand-dark/80">Final score {score.h || 0} - {score.a || 0} · {cards.y || 0} yellow, {cards.r || 0} red. Thanks!</p>
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-neutral-200 p-4 space-y-4">
@@ -51,6 +60,21 @@ export default function MatchDetail() {
                     <span className="text-neutral-400 font-bold">–</span>
                     <input inputMode="numeric" value={score.a} onChange={(e) => setScore((s) => ({ ...s, a: e.target.value.replace(/\D/g, '') }))} placeholder="0" className="w-16 h-14 text-center text-2xl font-extrabold rounded-2xl border border-neutral-200 outline-none focus:border-brand" />
                     <div className="flex-1 text-right text-[12px] font-semibold text-neutral-400 leading-tight">{m.home}<br />{m.away}</div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[12px] font-bold uppercase tracking-wide text-neutral-400 mb-2">Cards</p>
+                  <div className="flex items-center gap-5">
+                    <div className="flex items-center gap-2">
+                      <CardIcon color="#F4C400" />
+                      <input inputMode="numeric" value={cards.y} onChange={(e) => setCards((c) => ({ ...c, y: e.target.value.replace(/\D/g, '') }))} placeholder="0" aria-label="Yellow cards" className="w-14 h-11 text-center text-lg font-extrabold rounded-xl border border-neutral-200 outline-none focus:border-brand" />
+                      <span className="text-[12px] font-semibold text-neutral-400">yellow</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CardIcon color="#E03131" />
+                      <input inputMode="numeric" value={cards.r} onChange={(e) => setCards((c) => ({ ...c, r: e.target.value.replace(/\D/g, '') }))} placeholder="0" aria-label="Red cards" className="w-14 h-11 text-center text-lg font-extrabold rounded-xl border border-neutral-200 outline-none focus:border-brand" />
+                      <span className="text-[12px] font-semibold text-neutral-400">red</span>
+                    </div>
                   </div>
                 </div>
                 <div>

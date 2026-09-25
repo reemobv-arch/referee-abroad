@@ -148,10 +148,10 @@ export const news = [
 
 // The user's match appointments, pushed from the Command Centre.
 export const myMatches = [
-  { id: 'a1', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Wed Jul 2', time: '10:00', pitch: 'Pitch C', home: 'Feyenoord U15', away: 'Milan U15', role: 'Main referee', coRefs: ['Jonas Berg'], status: 'confirmed' },
-  { id: 'a2', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Wed Jul 2', time: '13:30', pitch: 'Pitch A', home: 'Ajax U15', away: 'Porto U15', role: 'Assistant referee', coRefs: ['Ana Nogueira'], status: 'confirmed' },
-  { id: 'a3', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Thu Jul 3', time: '16:00', pitch: 'Pitch A', home: 'Braga U17', away: 'Ajax U17', role: 'Main referee', coRefs: [], status: 'appointed' },
-  { id: 'a4', tournamentId: 'copenhagen', tournament: 'Copenhagen Cup', day: 'Sat Jul 12', time: '12:30', pitch: 'Field 1', home: 'FCK U17', away: 'AGF U17', role: 'Assistant referee', coRefs: ['Jonas Berg'], status: 'appointed' },
+  { id: 'a1', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Wed Jul 2', time: '10:00', pitch: 'Pitch C', home: 'Feyenoord U15', away: 'Milan U15', role: 'Main referee', coRefs: ['Jonas Berg'], observer: 'Giorgio Bruno', status: 'confirmed' },
+  { id: 'a2', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Wed Jul 2', time: '13:30', pitch: 'Pitch A', home: 'Ajax U15', away: 'Porto U15', role: 'Assistant referee', coRefs: ['Ana Nogueira'], observer: null, status: 'confirmed' },
+  { id: 'a3', tournamentId: 'porto', tournament: 'Porto International Cup', day: 'Thu Jul 3', time: '16:00', pitch: 'Pitch A', home: 'Braga U17', away: 'Ajax U17', role: 'Main referee', coRefs: [], observer: 'Helena Vik', status: 'appointed' },
+  { id: 'a4', tournamentId: 'copenhagen', tournament: 'Copenhagen Cup', day: 'Sat Jul 12', time: '12:30', pitch: 'Field 1', home: 'FCK U17', away: 'AGF U17', role: 'Assistant referee', coRefs: ['Jonas Berg'], observer: null, status: 'appointed' },
 ]
 
 // FAQ that grounds the in-app AI assistant.
