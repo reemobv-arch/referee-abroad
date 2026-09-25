@@ -127,7 +127,7 @@ function buildImport(table, map) {
       const home = val(r, 'home'); const away = val(r, 'away')
       if (!home && !away) continue
       addTeam(home, cat); addTeam(away, cat)
-      matches.push({ id: 'm' + Math.random().toString(36).slice(2, 8), time: val(r, 'time') || 'TBD', pitch: val(r, 'field') || 'TBD', home, away, main: null, assistants: [] })
+      matches.push({ id: 'm' + Math.random().toString(36).slice(2, 8), day: val(r, 'date') || 'Day 1', time: val(r, 'time') || 'TBD', pitch: val(r, 'field') || 'TBD', home, away, main: null, assistants: [] })
     } else {
       addTeam(val(r, 'team') || val(r, 'home'), cat)
     }
@@ -1203,6 +1203,114 @@ function AppointAiModal({ onClose, onRun }) {
   )
 }
 
+const mkey = (m) => `${(m.home || '').trim().toLowerCase()}|${(m.away || '').trim().toLowerCase()}`
+const slotShape = (f) => ({ id: f.id || 'm' + Math.random().toString(36).slice(2, 8), day: f.day || DAY_FALLBACK, time: f.time || 'TBD', pitch: f.pitch || 'TBD', home: f.home, away: f.away, main: null, a1: null, a2: null, fourth: null, observer: null })
+
+function RevisedScheduleModal({ current, onClose, onApply }) {
+  const [text, setText] = useState('')
+  const [analysed, setAnalysed] = useState(null)
+  const hasAppointments = current.some((m) => m.main || m.a1 || m.a2 || m.fourth || m.observer)
+
+  const analyse = () => {
+    const table = parseTable(text)
+    const fixtures = buildImport(table, autoMap(table.header)).matches
+    if (!fixtures.length) { setAnalysed({ empty: true }); return }
+    const curByKey = {}; current.forEach((m) => { curByKey[mkey(m)] = m })
+    const newKeys = new Set(fixtures.map(mkey))
+    const merged = fixtures.map((f) => {
+      const c = curByKey[mkey(f)]
+      return c ? { ...slotShape(f), id: c.id, main: c.main, a1: c.a1, a2: c.a2, fourth: c.fourth, observer: c.observer } : slotShape(f)
+    })
+    const added = fixtures.filter((f) => !curByKey[mkey(f)])
+    const removed = current.filter((m) => !newKeys.has(mkey(m)))
+    const changed = fixtures.filter((f) => { const c = curByKey[mkey(f)]; return c && (c.day !== (f.day || DAY_FALLBACK) || c.time !== f.time || c.pitch !== f.pitch) })
+    const noRef = merged.filter((m) => !m.main)
+    const seen = {}; const dbl = new Set()
+    for (const m of merged) for (const r of [m.main, m.a1, m.a2, m.fourth].filter(Boolean)) { const k = `${m.time}::${r}`; if (seen[k]) { dbl.add(k) } else seen[k] = 1 }
+    const removedWithRefs = removed.filter((m) => m.main || m.a1 || m.a2 || m.fourth)
+    setAnalysed({ merged, added, removed, changed, noRef, dbl: dbl.size, removedWithRefs })
+  }
+
+  // No appointments yet → straight overwrite.
+  const applyOverwrite = () => {
+    const table = parseTable(text)
+    const fixtures = buildImport(table, autoMap(table.header)).matches
+    if (fixtures.length) onApply(fixtures.map(slotShape), 'replaced')
+  }
+
+  return (
+    <Modal onClose={onClose} wide>
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-xl font-extrabold text-ink">Upload revised schedule</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+        </div>
+        <p className="text-[12.5px] font-medium text-neutral-500 mb-3">
+          {hasAppointments
+            ? 'Appointments already exist, so we compare the new schedule and flag conflicts before you apply.'
+            : 'No appointments made yet, so the new schedule simply replaces the current one.'}
+        </p>
+
+        {!analysed && (
+          <>
+            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6}
+              placeholder={'date,time,field,home,away\nDay 1,09:00,Pitch A,Ajax U15,Benfica U15'}
+              className="w-full rounded-xl border border-neutral-200 p-3 text-[13px] font-mono outline-none focus:border-brand resize-y" />
+            <div className="flex gap-3 mt-4">
+              <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+              {hasAppointments
+                ? <button onClick={analyse} disabled={!text.trim()} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">Compare changes <ChevronRight size={16} /></button>
+                : <button onClick={applyOverwrite} disabled={!text.trim()} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"><Upload size={16} /> Replace schedule</button>}
+            </div>
+          </>
+        )}
+
+        {analysed && analysed.empty && (
+          <>
+            <p className="text-sm font-semibold text-red-600">No matches detected in that file. Check the columns and try again.</p>
+            <div className="flex justify-end mt-4"><button onClick={() => setAnalysed(null)} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Back</button></div>
+          </>
+        )}
+
+        {analysed && !analysed.empty && (
+          <>
+            <div className="flex flex-wrap gap-2.5 mb-3">
+              <span className="text-[12px] font-semibold px-3 py-1.5 rounded-xl bg-brand-light text-brand-dark">{analysed.added.length} added</span>
+              <span className="text-[12px] font-semibold px-3 py-1.5 rounded-xl bg-amber-100 text-amber-700">{analysed.changed.length} changed</span>
+              <span className="text-[12px] font-semibold px-3 py-1.5 rounded-xl bg-neutral-100 text-neutral-600">{analysed.removed.length} removed</span>
+            </div>
+            {(analysed.noRef.length > 0 || analysed.dbl > 0 || analysed.removedWithRefs.length > 0) && (
+              <div className="rounded-xl border border-red-100 bg-red-50 p-3 mb-3 space-y-1.5">
+                <p className="text-[12.5px] font-bold text-red-700 flex items-center gap-1.5"><AlertTriangle size={14} /> Needs attention</p>
+                {analysed.noRef.length > 0 && <p className="text-[12.5px] font-medium text-red-700">{analysed.noRef.length} matches without a main referee</p>}
+                {analysed.dbl > 0 && <p className="text-[12.5px] font-medium text-red-700">{analysed.dbl} double bookings at the same time</p>}
+                {analysed.removedWithRefs.length > 0 && <p className="text-[12.5px] font-medium text-red-700">{analysed.removedWithRefs.length} removed matches had appointments (they will be lost)</p>}
+              </div>
+            )}
+            <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden divide-y divide-neutral-100 max-h-[34vh] overflow-y-auto">
+              {analysed.changed.map((f, i) => {
+                const c = current.find((m) => mkey(m) === mkey(f))
+                return (
+                  <div key={'c' + i} className="px-3 py-2 text-[12.5px]">
+                    <span className="font-semibold text-ink">{f.home} vs {f.away}</span>
+                    <span className="text-amber-700 font-medium"> · {c.day} {c.time} {c.pitch} → {f.day || DAY_FALLBACK} {f.time} {f.pitch}</span>
+                  </div>
+                )
+              })}
+              {analysed.added.map((f, i) => <div key={'a' + i} className="px-3 py-2 text-[12.5px]"><span className="font-semibold text-ink">{f.home} vs {f.away}</span><span className="text-brand-dark font-medium"> · new · {f.day || DAY_FALLBACK} {f.time} {f.pitch}</span></div>)}
+              {analysed.removed.map((m, i) => <div key={'r' + i} className="px-3 py-2 text-[12.5px]"><span className="font-semibold text-neutral-500 line-through">{m.home} vs {m.away}</span><span className="text-neutral-400 font-medium"> · removed</span></div>)}
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setAnalysed(null)} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Back</button>
+              <button onClick={() => onApply(analysed.merged, 'merged')} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><Check size={16} /> Apply changes</button>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
+  )
+}
+
 export function DashboardAppointing({ initialTournament, lockTournament = false }) {
   const startTid = initialTournament || dashTournaments[0].id
   const toSlots = (data) => Object.fromEntries(Object.entries(data).map(([k, arr]) => [k, arr.map((m) => ({
@@ -1218,6 +1326,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
   const [publishDirty, setPublishDirty] = useState(false)
   const [confirmPublish, setConfirmPublish] = useState(false)
   const [showAI, setShowAI] = useState(false)
+  const [showRevised, setShowRevised] = useState(false)
   const [toast, setToast] = useState('')
 
   const list = matches[tid] || []
@@ -1287,6 +1396,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
         {teams.length > 0 && list.length > 0 && (
           <div className="ml-auto flex items-center gap-2 flex-wrap">
             <button onClick={() => setShowAI(true)} className="inline-flex items-center gap-1.5 border border-brand text-brand-dark text-sm font-semibold px-4 h-10 rounded-full hover:bg-brand-light transition"><Sparkles size={15} /> Appoint with AI</button>
+            <button onClick={() => setShowRevised(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><RefreshCw size={15} /> Revised schedule</button>
             <button onClick={exportCsv} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><FileText size={15} /> Export CSV</button>
             <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Plus size={15} /> Add match</button>
             <button onClick={() => publishDirty && setConfirmPublish(true)} disabled={!publishDirty}
@@ -1375,7 +1485,28 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
 
                   {open && (
                     <div className="px-4 pb-4 border-t border-neutral-100 pt-3">
-                      <p className="text-xs font-medium text-neutral-400 mb-3">{m.pitch}</p>
+                      <div className="grid sm:grid-cols-3 gap-3 mb-3 pb-3 border-b border-neutral-100">
+                        <div>
+                          <p className="text-[11px] font-semibold text-neutral-500 mb-1">Day</p>
+                          <select value={m.day || DAY_FALLBACK} onChange={(e) => setSlot(m.id, 'day', e.target.value)} className="w-full h-9 px-2.5 rounded-lg border border-neutral-200 text-sm font-medium outline-none focus:border-brand">
+                            {days.map((d) => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-semibold text-neutral-500 mb-1">Kick-off</p>
+                          <input type="time" value={m.time || ''} onChange={(e) => setSlot(m.id, 'time', e.target.value)} className="w-full h-9 px-2.5 rounded-lg border border-neutral-200 text-sm font-medium outline-none focus:border-brand" />
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-semibold text-neutral-500 mb-1">Field</p>
+                          {fields.length ? (
+                            <select value={m.pitch || ''} onChange={(e) => setSlot(m.id, 'pitch', e.target.value)} className="w-full h-9 px-2.5 rounded-lg border border-neutral-200 text-sm font-medium outline-none focus:border-brand">
+                              {fields.map((fl) => <option key={fl} value={fl}>{fl}</option>)}
+                            </select>
+                          ) : (
+                            <input value={m.pitch || ''} onChange={(e) => setSlot(m.id, 'pitch', e.target.value)} className="w-full h-9 px-2.5 rounded-lg border border-neutral-200 text-sm font-medium outline-none focus:border-brand" />
+                          )}
+                        </div>
+                      </div>
                       <div className="grid sm:grid-cols-2 gap-3">
                         {SLOTS.map((slot) => {
                           const val = m[slot.key] || ''
@@ -1416,6 +1547,11 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
 
       {addingMatch && <AddMatchModal onClose={() => setAddingMatch(false)} onAdd={addMatch} teams={teams} fields={fields} />}
       {showAI && <AppointAiModal onClose={() => setShowAI(false)} onRun={runAI} />}
+      {showRevised && <RevisedScheduleModal current={list} onClose={() => setShowRevised(false)} onApply={(merged, mode) => {
+        setMatches((prev) => ({ ...prev, [tid]: merged }))
+        setShowRevised(false); setOpenDay(null); setOpenId(null); setPublishDirty(true)
+        setToast(mode === 'replaced' ? 'Schedule replaced.' : 'Revised schedule applied. Review the flags and publish.')
+      }} />}
       {confirmPublish && (
         <Modal onClose={() => setConfirmPublish(false)}>
           <div className="p-5">
