@@ -3,11 +3,12 @@ import {
   Plus, MapPin, Calendar, Users, X, Send, MessageSquare, Search, TrendingUp,
   Mail, MessageCircle, AlertTriangle, Check, Sparkles, Star, Globe, Phone, ClipboardList,
   ChevronRight, Clock, Pencil, Trash2, RefreshCw, CheckCircle2, Coins, Building2, Plug, HelpCircle, UserPlus,
-  Upload, Lock,
+  Upload, Lock, FileText,
 } from 'lucide-react'
 import {
   dashTournaments, dashReferees, dashStaff, dashTickets, dashPnl, dashAnalytics,
   dashEnrolments, dashMatches, dashInbox, refById, dashClubs,
+  dashFields, dashObservers, dashGuests, obsById,
 } from './data.js'
 import { faq } from '../data.js'
 
@@ -254,24 +255,35 @@ function EnrolmentList({ enrol, onAction }) {
     return [['decline', 'Remove', 'border border-neutral-200 text-neutral-500']]
   }
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
-      {enrol.map((e, i) => {
-        const r = refById[e.refId]
-        return (
-          <div key={i} className="flex items-center gap-3 px-4 py-2.5 flex-wrap">
-            <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(r.name)}</span>
-            <span className="flex-1 min-w-[120px] text-sm font-semibold text-ink truncate">{r.name}</span>
-            <span className="text-sm text-neutral-400 font-medium hidden lg:block">{r.flag} {r.country}</span>
-            <span className="text-xs text-neutral-500 font-medium hidden sm:flex items-center gap-1 w-28"><Calendar size={12} className="text-neutral-400" /> {fmtEnrolDate(e.date)}</span>
-            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize w-20 text-center ${enrolMap[e.status]}`}>{e.status}</span>
-            <span className="flex gap-1.5">
-              {actionsFor(e.status).map(([act, label, cls]) => (
-                <button key={act} onClick={() => onAction(e.refId, act)} className={`text-[11px] font-semibold px-2.5 h-7 rounded-full ${cls}`}>{label}</button>
-              ))}
-            </span>
-          </div>
-        )
-      })}
+    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+      <div className="flex items-center px-4 py-2.5 border-b border-neutral-200 text-[11px] uppercase tracking-wide text-neutral-500 font-semibold">
+        <span className="w-56 flex-none">Referee</span>
+        <span className="w-40 hidden md:block">Country</span>
+        <span className="w-32 hidden sm:block">Applied</span>
+        <span className="w-24">Status</span>
+        <span className="flex-1 text-right">Actions</span>
+      </div>
+      <div className="divide-y divide-neutral-100">
+        {enrol.map((e, i) => {
+          const r = refById[e.refId]
+          return (
+            <div key={i} className="flex items-center px-4 py-2.5">
+              <span className="w-56 flex-none flex items-center gap-3 min-w-0">
+                <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(r.name)}</span>
+                <span className="text-sm font-semibold text-ink truncate">{r.name}</span>
+              </span>
+              <span className="w-40 text-sm text-neutral-500 font-medium hidden md:block truncate">{r.flag} {r.country}</span>
+              <span className="w-32 text-xs text-neutral-500 font-medium hidden sm:flex items-center gap-1">{fmtEnrolDate(e.date)}</span>
+              <span className="w-24"><span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${enrolMap[e.status]}`}>{e.status}</span></span>
+              <span className="flex-1 flex gap-1.5 justify-end">
+                {actionsFor(e.status).map(([act, label, cls]) => (
+                  <button key={act} onClick={() => onAction(e.refId, act)} className={`text-[11px] font-semibold px-2.5 h-7 rounded-full ${cls}`}>{label}</button>
+                ))}
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -442,6 +454,8 @@ function TournamentView({ t, onBack, onEdit }) {
   const [showStaff, setShowStaff] = useState(false)
   const [teams, setTeams] = useState(() => dashClubs[t.id] || [])
   const [showImport, setShowImport] = useState(false)
+  const [fields, setFields] = useState(() => dashFields[t.id] || [])
+  const [showFields, setShowFields] = useState(false)
   const [matchCount, setMatchCount] = useState((dashMatches[t.id] || []).length)
   const onEnrolAction = (refId, action) => setEnrol((prev) =>
     action === 'decline' ? prev.filter((e) => e.refId !== refId)
@@ -464,6 +478,9 @@ function TournamentView({ t, onBack, onEdit }) {
     { title: 'Referee enrolments', status: enrol.length === 0 ? 'todo' : (t.enrolled >= t.capacity ? 'done' : 'progress'),
       metric: `${t.enrolled} of ${t.capacity} spots filled${appliedCount ? ` · ${appliedCount} awaiting approval` : ''}`,
       onClick: () => setTab('enrolments') },
+    { title: 'Fields uploaded', status: fields.length ? 'done' : 'todo',
+      metric: fields.length ? `${fields.length} fields` : 'No fields yet',
+      onClick: () => setShowFields(true) },
     { title: 'Match schedule', status: teams.length === 0 ? 'todo' : (matchesArr.length ? 'done' : 'todo'),
       metric: teams.length === 0 ? 'Import the teams first' : (matchesArr.length ? `${matchesArr.length} matches scheduled` : 'No matches yet'),
       onClick: () => teams.length ? setTab('appointing') : setShowImport(true) },
@@ -527,7 +544,7 @@ function TournamentView({ t, onBack, onEdit }) {
             <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
-                  <h3 className="font-bold text-ink text-sm">Tournament setup</h3>
+                  <h3 className="font-bold text-ink text-sm">Tournament readiness</h3>
                   <p className="text-[12.5px] text-neutral-500 font-medium">What is done and what still needs attention</p>
                 </div>
                 <span className="text-[13px] font-bold text-brand-dark whitespace-nowrap">{doneCount} / {steps.length} done</span>
@@ -595,6 +612,7 @@ function TournamentView({ t, onBack, onEdit }) {
                 <h3 className="font-bold text-ink text-sm mb-2.5">Quick actions</h3>
                 <div className="flex flex-col gap-1">
                   <button onClick={() => teams.length ? setTab('clubs') : setShowImport(true)} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><Upload size={15} /> {teams.length ? 'Manage teams' : 'Import teams'}</button>
+                  <button onClick={() => setShowFields(true)} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><MapPin size={15} /> Manage fields</button>
                   <button onClick={() => setTab('appointing')} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><ClipboardList size={15} /> Appoint referees</button>
                   <button onClick={() => setTab('enrolments')} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><Users size={15} /> Referee enrolments</button>
                   <button className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><MessageSquare size={15} /> Message the group</button>
@@ -609,6 +627,7 @@ function TournamentView({ t, onBack, onEdit }) {
       </div>
       {showStaff && <AppointStaffModal tournamentName={t.name} assigned={staff} onToggle={(name) => setStaff((prev) => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })} onClose={() => setShowStaff(false)} />}
       {showImport && <SmartImportModal tournamentName={t.name} existing={teams.length} onClose={() => setShowImport(false)} onImport={importTeams} />}
+      {showFields && <FieldsModal tournamentName={t.name} initial={fields} onClose={() => setShowFields(false)} onSave={(list) => { setFields(list); dashFields[t.id] = list; setShowFields(false) }} />}
     </div>
   )
 }
@@ -660,6 +679,30 @@ function Field({ label, children }) {
   )
 }
 const inputCls = 'w-full h-10 px-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand bg-white'
+
+function FieldsModal({ tournamentName, initial, onClose, onSave }) {
+  const [text, setText] = useState((initial || []).join('\n'))
+  const list = text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-xl font-extrabold text-ink">Playing fields</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+        </div>
+        <p className="text-[12.5px] font-medium text-neutral-500 mb-3">One field per line for {tournamentName}. Some tournaments have 20 or more. These feed the field picker when you add matches.</p>
+        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={8}
+          placeholder={'Pitch A\nPitch B\nPitch C'}
+          className="w-full rounded-xl border border-neutral-200 p-3 text-sm font-medium outline-none focus:border-brand resize-y" />
+        <p className="mt-2 text-[12.5px] font-semibold text-brand-dark">{list.length} fields</p>
+        <div className="flex gap-3 mt-4">
+          <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+          <button onClick={() => onSave(list)} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><Check size={16} /> Save fields</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
 
 function TournamentFormModal({ initial, onClose, onSave }) {
   const edit = !!initial
@@ -989,8 +1032,68 @@ export function DashboardStaff({ createSignal }) {
   )
 }
 
-function AddMatchModal({ onClose, onAdd, teams = [] }) {
-  const [f, setF] = useState({ time: '', pitch: '', home: '', away: '' })
+/* ---------------- Observers & Guests / VIP ---------------- */
+function AddPersonModal({ title, roles, cta, onClose, onAdd }) {
+  const [f, setF] = useState({ name: '', role: roles[0], tournament: dashTournaments[0].name })
+  const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-extrabold text-ink">{title}</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+        </div>
+        <div className="space-y-3">
+          <Field label="Full name"><input value={f.name} onChange={set('name')} placeholder="e.g. Giorgio Bruno" className={inputCls} autoFocus /></Field>
+          <Field label="Role"><select value={f.role} onChange={set('role')} className={inputCls}>{roles.map((r) => <option key={r}>{r}</option>)}</select></Field>
+          <Field label="Assigned to"><select value={f.tournament} onChange={set('tournament')} className={inputCls}>{dashTournaments.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+          <button onClick={() => f.name.trim() && onAdd({ name: f.name.trim(), role: f.role, tournament: f.tournament, initials: initialsOf(f.name.trim()) })}
+            disabled={!f.name.trim()} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"><Plus size={16} /> {cta}</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function PeopleGrid({ seed, roles, addTitle, addCta, emptyAdd }) {
+  const [people, setPeople] = useState(seed)
+  const [adding, setAdding] = useState(false)
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      {people.map((s, i) => (
+        <div key={i} className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-full bg-brand text-white flex items-center justify-center font-bold text-sm">{s.initials}</span>
+            <div className="min-w-0">
+              <p className="font-bold text-ink text-sm truncate">{s.name}</p>
+              <p className="text-xs text-neutral-500 font-medium">{s.role}</p>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-neutral-100 text-xs font-medium text-neutral-500">
+            <span className="text-neutral-400">{s.org ? 'Organisation' : 'Assigned to'}</span><br />{s.org || s.tournament || '—'}
+          </div>
+        </div>
+      ))}
+      <button onClick={() => setAdding(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand min-h-[128px] transition">
+        <Plus size={24} /><span className="text-sm font-semibold">{emptyAdd}</span>
+      </button>
+      {adding && <AddPersonModal title={addTitle} roles={roles} cta={addCta} onClose={() => setAdding(false)} onAdd={(p) => { setPeople((prev) => [...prev, p]); setAdding(false) }} />}
+    </div>
+  )
+}
+
+export function DashboardObservers() {
+  return <PeopleGrid seed={dashObservers} roles={['Observer', 'Referee mentor', 'Assessor']} addTitle="Add observer" addCta="Add observer" emptyAdd="Add observer" />
+}
+export function DashboardGuests() {
+  return <PeopleGrid seed={dashGuests} roles={['VIP guest', 'Sponsor', 'Federation', 'Press']} addTitle="Add guest / VIP" addCta="Add guest" emptyAdd="Add guest / VIP" />
+}
+
+function AddMatchModal({ onClose, onAdd, teams = [], fields = [] }) {
+  const [f, setF] = useState({ time: '', pitch: fields[0] || '', home: '', away: '' })
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
   const valid = f.time && f.home.trim() && f.away.trim() && f.home !== f.away
   const options = teams.map(teamLabel).sort()
@@ -1004,7 +1107,15 @@ function AddMatchModal({ onClose, onAdd, teams = [] }) {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Kick-off time"><input type="time" value={f.time} onChange={set('time')} className={inputCls} autoFocus /></Field>
-            <Field label="Pitch / field"><input value={f.pitch} onChange={set('pitch')} placeholder="Pitch A" className={inputCls} /></Field>
+            <Field label="Field">
+              {fields.length ? (
+                <select value={f.pitch} onChange={set('pitch')} className={inputCls}>
+                  {fields.map((fl) => <option key={fl} value={fl}>{fl}</option>)}
+                </select>
+              ) : (
+                <input value={f.pitch} onChange={set('pitch')} placeholder="Pitch A" className={inputCls} />
+              )}
+            </Field>
           </div>
           <Field label="Home team">
             <select value={f.home} onChange={set('home')} className={inputCls}>
@@ -1037,28 +1148,85 @@ const SLOTS = [
   { key: 'a2', label: 'Assistant 2' },
   { key: 'fourth', label: '4th official' },
 ]
+const DAY_FALLBACK = 'Day 1'
 const officialsOf = (m) => SLOTS.map((s) => m[s.key]).filter(Boolean)
 const shortName = (id) => { const n = refById[id]?.name || ''; const p = n.split(' '); return p[1] ? `${p[0]} ${p[1][0]}.` : p[0] }
+
+// Greedy, conflict-aware auto-appointment honouring a free-text requirement prompt.
+function autoAppoint(list, prompt) {
+  const p = (prompt || '').toLowerCase()
+  const noBeginner = /no beginner|geen beginner|experienced|minimum medior|min medior/.test(p)
+  const preferTalent = /talent|best|top|senior|highest/.test(p)
+  let pool = dashReferees.slice()
+  if (preferTalent) pool.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+  const busy = {}
+  const mark = (t, id) => { (busy[t] ||= new Set()).add(id) }
+  const isBusy = (t, id) => busy[t]?.has(id)
+  for (const m of list) for (const k of ['main', 'a1', 'a2', 'fourth']) if (m[k]) mark(m.time, m[k])
+  const next = list.map((m) => ({ ...m }))
+  let filled = 0
+  for (const m of next) {
+    for (const slot of ['main', 'a1', 'a2']) {
+      if (m[slot]) continue
+      const used = ['main', 'a1', 'a2', 'fourth'].map((k) => m[k]).filter(Boolean)
+      const cand = pool.find((r) => !used.includes(r.id) && !isBusy(m.time, r.id) && !(slot === 'main' && noBeginner && r.level === 'beginner'))
+      if (cand) { m[slot] = cand.id; mark(m.time, cand.id); filled++ }
+    }
+  }
+  return { next, filled }
+}
+
+function AppointAiModal({ onClose, onRun }) {
+  const [prompt, setPrompt] = useState('')
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-xl font-extrabold text-ink flex items-center gap-2"><Sparkles size={18} className="text-brand" /> Appoint with AI</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+        </div>
+        <p className="text-[12.5px] font-medium text-neutral-500 mb-3">The AI fills every open slot, avoiding double bookings. Add any requirements below.</p>
+        <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={4}
+          placeholder={'e.g. Only talent and medior referees for U17 finals, no beginners as main referee, spread the workload evenly.'}
+          className="w-full rounded-xl border border-neutral-200 p-3 text-sm font-medium outline-none focus:border-brand resize-y" />
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {['No beginners as main', 'Prefer talent for finals', 'Spread evenly'].map((s) => (
+            <button key={s} onClick={() => setPrompt((v) => v ? v + ' ' + s + '.' : s + '.')} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-page text-neutral-600 border border-neutral-200 hover:border-brand">{s}</button>
+          ))}
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+          <button onClick={() => onRun(prompt)} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><Sparkles size={16} /> Fill appointments</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
 
 export function DashboardAppointing({ initialTournament, lockTournament = false }) {
   const startTid = initialTournament || dashTournaments[0].id
   const toSlots = (data) => Object.fromEntries(Object.entries(data).map(([k, arr]) => [k, arr.map((m) => ({
-    id: m.id, time: m.time, pitch: m.pitch, home: m.home, away: m.away,
-    main: m.main || null, a1: m.assistants?.[0] || null, a2: m.assistants?.[1] || null, fourth: null,
+    id: m.id, day: m.day || DAY_FALLBACK, time: m.time, pitch: m.pitch, home: m.home, away: m.away,
+    main: m.main || null, a1: m.assistants?.[0] || null, a2: m.assistants?.[1] || null, fourth: null, observer: m.observer || null,
   }))]))
   const [tid, setTid] = useState(startTid)
   const [matches, setMatches] = useState(() => toSlots(JSON.parse(JSON.stringify(dashMatches))))
-  const [openId, setOpenId] = useState(() => (matches[startTid] || [])[0]?.id || null)
+  const [openDay, setOpenDay] = useState(null)
+  const [openId, setOpenId] = useState(null)
   const [edited, setEdited] = useState(() => new Set())
   const [addingMatch, setAddingMatch] = useState(false)
   const [publishDirty, setPublishDirty] = useState(false)
   const [confirmPublish, setConfirmPublish] = useState(false)
+  const [showAI, setShowAI] = useState(false)
   const [toast, setToast] = useState('')
 
   const list = matches[tid] || []
   const teams = dashClubs[tid] || []
+  const fields = dashFields[tid] || []
+  const days = useMemo(() => { const seen = []; for (const m of list) { const d = m.day || DAY_FALLBACK; if (!seen.includes(d)) seen.push(d) } return seen }, [list])
+  const dayList = openDay ? list.filter((m) => (m.day || DAY_FALLBACK) === openDay) : []
 
-  useEffect(() => { setOpenId((matches[tid] || [])[0]?.id || null) }, [tid]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setOpenDay(null); setOpenId(null) }, [tid])
 
   const conflicts = useMemo(() => {
     const seen = {}; const bad = new Set()
@@ -1075,18 +1243,34 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
   }
   const addMatch = (m) => {
     const id = 'm' + Math.random().toString(36).slice(2, 7)
-    setMatches((prev) => ({ ...prev, [tid]: [...(prev[tid] || []), { id, main: null, a1: null, a2: null, fourth: null, ...m }] }))
+    setMatches((prev) => ({ ...prev, [tid]: [...(prev[tid] || []), { id, day: openDay || days[0] || DAY_FALLBACK, main: null, a1: null, a2: null, fourth: null, observer: null, ...m }] }))
     setAddingMatch(false)
     setOpenId(id)
   }
   const saveMatch = (m, i) => {
     if (edited.has(m.id)) { setPublishDirty(true); setEdited((p) => { const n = new Set(p); n.delete(m.id); return n }) }
-    const next = list[i + 1]
+    const next = dayList[i + 1]
     setOpenId(next ? next.id : null)
   }
   const publish = () => {
     setToast(`Appointments published. The officials for ${dashTournaments.find((t) => t.id === tid).name} are notified in their app.`)
     setPublishDirty(false); setEdited(new Set()); setConfirmPublish(false)
+  }
+  const runAI = (prompt) => {
+    const { next, filled } = autoAppoint(list, prompt)
+    setMatches((prev) => ({ ...prev, [tid]: next }))
+    setShowAI(false)
+    if (filled > 0) { setPublishDirty(true); setToast(`AI filled ${filled} open slot${filled === 1 ? '' : 's'}. Review and publish.`) }
+    else setToast('No open slots to fill.')
+  }
+  const exportCsv = () => {
+    const head = ['Day', 'Time', 'Field', 'Home', 'Away', 'Main referee', 'Assistant 1', 'Assistant 2', '4th official', 'Observer']
+    const rows = [head, ...list.map((m) => [m.day || '', m.time || '', m.pitch || '', m.home || '', m.away || '',
+      refById[m.main]?.name || '', refById[m.a1]?.name || '', refById[m.a2]?.name || '', refById[m.fourth]?.name || '', obsById[m.observer]?.name || ''])]
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const a = document.createElement('a'); a.href = url; a.download = `${dashTournaments.find((t) => t.id === tid).name} - appointments.csv`; a.click(); URL.revokeObjectURL(url)
+    setToast('Appointments exported as CSV.')
   }
 
   const openSlots = list.filter((m) => !m.main).length
@@ -1100,14 +1284,14 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
           </select>
         )}
         <span className="text-xs font-medium text-neutral-500">{teams.length === 0 ? 'Teams not imported' : `${list.length} matches · ${openSlots} without a main referee`}</span>
-        {teams.length > 0 && (
-          <div className="ml-auto flex items-center gap-2">
-            <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition">
-              <Plus size={15} /> Add match
-            </button>
+        {teams.length > 0 && list.length > 0 && (
+          <div className="ml-auto flex items-center gap-2 flex-wrap">
+            <button onClick={() => setShowAI(true)} className="inline-flex items-center gap-1.5 border border-brand text-brand-dark text-sm font-semibold px-4 h-10 rounded-full hover:bg-brand-light transition"><Sparkles size={15} /> Appoint with AI</button>
+            <button onClick={exportCsv} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><FileText size={15} /> Export CSV</button>
+            <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Plus size={15} /> Add match</button>
             <button onClick={() => publishDirty && setConfirmPublish(true)} disabled={!publishDirty}
               className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 h-10 rounded-full transition ${publishDirty ? 'bg-brand text-white hover:bg-brand-dark' : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'}`}>
-              <Send size={15} /> Publish appointments
+              <Send size={15} /> Publish
             </button>
           </div>
         )}
@@ -1117,7 +1301,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-10 text-center">
           <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto"><Lock size={22} /></div>
           <p className="mt-3 text-sm font-bold text-ink">Appointing is locked for {dashTournaments.find((t) => t.id === tid).name}</p>
-          <p className="mt-1 text-[13px] text-neutral-500 font-medium max-w-md mx-auto">You can only appoint referees once the participating teams are imported. Without the teams there is no schedule, so there is nothing to appoint referees to. Import the teams on the tournament page (Teams tab), then build the schedule here.</p>
+          <p className="mt-1 text-[13px] text-neutral-500 font-medium max-w-md mx-auto">You can only appoint referees once the participating teams are imported. Import the teams on the tournament page (Teams tab), then build the schedule here.</p>
         </div>
       )}
 
@@ -1135,61 +1319,103 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
         </div>
       )}
 
-      <div className="space-y-2.5">
-        {list.map((m, i) => {
-          const open = openId === m.id
-          const hasConflict = officialsOf(m).some((r) => conflicts.has(`${m.id}::${r}`))
-          return (
-            <div key={m.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${hasConflict ? 'border-red-200' : 'border-neutral-200'}`}>
-              <button onClick={() => setOpenId(open ? null : m.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
-                <span className="text-sm font-bold text-brand-dark w-12 tabular-nums">{m.time}</span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-semibold text-ink truncate">{m.home} <span className="text-neutral-400 font-medium">vs</span> {m.away}</span>
-                  {!open && (
-                    <span className="block text-[12px] font-medium mt-0.5 truncate">
-                      {m.main
-                        ? <span className="text-neutral-500">{shortName(m.main)}{officialsOf(m).length > 1 ? ` +${officialsOf(m).length - 1}` : ''}</span>
-                        : <span className="text-amber-600">No main referee</span>}
-                    </span>
-                  )}
-                </span>
-                <span className="text-xs font-medium text-neutral-500 hidden sm:block">{m.pitch}</span>
-                {edited.has(m.id) && <span className="w-2 h-2 rounded-full bg-amber-400" title="Unsaved changes" />}
-                <ChevronRight size={18} className={`text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+      {/* Day blocks */}
+      {teams.length > 0 && list.length > 0 && !openDay && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {days.map((day, di) => {
+            const dm = list.filter((m) => (m.day || DAY_FALLBACK) === day)
+            const appointed = dm.filter((m) => m.main).length
+            const hasConf = dm.some((m) => officialsOf(m).some((r) => conflicts.has(`${m.id}::${r}`)))
+            const allDone = appointed === dm.length
+            return (
+              <button key={day} onClick={() => { setOpenDay(day); setOpenId(dm[0]?.id || null) }}
+                className="group text-left bg-white rounded-2xl border border-neutral-200 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition">
+                <div className="flex items-center justify-between">
+                  <span className="w-10 h-10 rounded-xl bg-brand-light text-brand-dark flex items-center justify-center font-extrabold">{di + 1}</span>
+                  {hasConf ? <span className="text-[11px] font-semibold text-red-600 flex items-center gap-1"><AlertTriangle size={13} /> conflict</span>
+                    : allDone ? <span className="text-[11px] font-semibold text-brand-dark flex items-center gap-1"><Check size={13} /> complete</span>
+                    : <span className="text-[11px] font-semibold text-amber-600">{dm.length - appointed} open</span>}
+                </div>
+                <p className="mt-3 text-lg font-extrabold text-ink">{day}</p>
+                <p className="text-[13px] font-semibold text-neutral-500">{dm.length} matches · {appointed}/{dm.length} appointed</p>
+                <div className="mt-3 h-1.5 rounded-full bg-neutral-200 overflow-hidden"><span className="block h-full bg-brand" style={{ width: `${Math.round((appointed / dm.length) * 100)}%` }} /></div>
               </button>
+            )
+          })}
+        </div>
+      )}
 
-              {open && (
-                <div className="px-4 pb-4 border-t border-neutral-100 pt-3">
-                  <p className="text-xs font-medium text-neutral-400 mb-3">{m.pitch}</p>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {SLOTS.map((slot) => {
-                      const val = m[slot.key] || ''
-                      const conflict = val && conflicts.has(`${m.id}::${val}`)
-                      const usedElsewhere = SLOTS.filter((s) => s.key !== slot.key).map((s) => m[s.key]).filter(Boolean)
-                      const isMain = slot.key === 'main'
-                      return (
-                        <div key={slot.key}>
-                          <p className="text-[11px] font-semibold text-neutral-500 mb-1">{slot.label}</p>
-                          <select value={val} onChange={(e) => setSlot(m.id, slot.key, e.target.value)}
-                            className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${conflict ? 'border-red-300 bg-red-50 text-red-700' : val ? 'border-neutral-200' : isMain ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-neutral-200 text-neutral-400'}`}>
-                            <option value="">Unassigned</option>
-                            {dashReferees.filter((r) => !usedElsewhere.includes(r.id) || r.id === val).map((r) => <option key={r.id} value={r.id}>{r.name} ({r.level})</option>)}
+      {/* Matches for the selected day */}
+      {teams.length > 0 && openDay && (
+        <>
+          <button onClick={() => { setOpenDay(null); setOpenId(null) }} className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-dark mb-3"><ChevronRight size={16} className="rotate-180" /> All days</button>
+          <p className="text-sm font-extrabold text-ink mb-2">{openDay} <span className="text-neutral-400 font-medium">· {dayList.length} matches</span></p>
+          <div className="space-y-2.5">
+            {dayList.map((m, i) => {
+              const open = openId === m.id
+              const hasConflict = officialsOf(m).some((r) => conflicts.has(`${m.id}::${r}`))
+              return (
+                <div key={m.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${hasConflict ? 'border-red-200' : 'border-neutral-200'}`}>
+                  <button onClick={() => setOpenId(open ? null : m.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
+                    <span className="text-sm font-bold text-brand-dark w-12 tabular-nums">{m.time}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-semibold text-ink truncate">{m.home} <span className="text-neutral-400 font-medium">vs</span> {m.away}</span>
+                      {!open && (
+                        <span className="block text-[12px] font-medium mt-0.5 truncate">
+                          {m.main
+                            ? <span className="text-neutral-500">{shortName(m.main)}{officialsOf(m).length > 1 ? ` +${officialsOf(m).length - 1}` : ''}</span>
+                            : <span className="text-amber-600">No main referee</span>}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-xs font-medium text-neutral-500 hidden sm:block">{m.pitch}</span>
+                    {edited.has(m.id) && <span className="w-2 h-2 rounded-full bg-amber-400" title="Unsaved changes" />}
+                    <ChevronRight size={18} className={`text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+                  </button>
+
+                  {open && (
+                    <div className="px-4 pb-4 border-t border-neutral-100 pt-3">
+                      <p className="text-xs font-medium text-neutral-400 mb-3">{m.pitch}</p>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {SLOTS.map((slot) => {
+                          const val = m[slot.key] || ''
+                          const conflict = val && conflicts.has(`${m.id}::${val}`)
+                          const usedElsewhere = SLOTS.filter((s) => s.key !== slot.key).map((s) => m[s.key]).filter(Boolean)
+                          const isMain = slot.key === 'main'
+                          return (
+                            <div key={slot.key}>
+                              <p className="text-[11px] font-semibold text-neutral-500 mb-1">{slot.label}</p>
+                              <select value={val} onChange={(e) => setSlot(m.id, slot.key, e.target.value)}
+                                className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${conflict ? 'border-red-300 bg-red-50 text-red-700' : val ? 'border-neutral-200' : isMain ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-neutral-200 text-neutral-400'}`}>
+                                <option value="">Unassigned</option>
+                                {dashReferees.filter((r) => !usedElsewhere.includes(r.id) || r.id === val).map((r) => <option key={r.id} value={r.id}>{r.name} ({r.level})</option>)}
+                              </select>
+                            </div>
+                          )
+                        })}
+                        <div>
+                          <p className="text-[11px] font-semibold text-neutral-500 mb-1">Observer</p>
+                          <select value={m.observer || ''} onChange={(e) => setSlot(m.id, 'observer', e.target.value)}
+                            className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${m.observer ? 'border-neutral-200' : 'border-neutral-200 text-neutral-400'}`}>
+                            <option value="">No observer</option>
+                            {dashObservers.map((o) => <option key={o.id} value={o.id}>{o.name} ({o.role})</option>)}
                           </select>
                         </div>
-                      )
-                    })}
-                  </div>
-                  <div className="flex justify-end mt-4">
-                    <button onClick={() => saveMatch(m, i)} className="inline-flex items-center gap-2 h-10 px-6 rounded-full bg-brand text-white font-semibold hover:bg-brand-dark transition"><Check size={16} /> Save</button>
-                  </div>
+                      </div>
+                      <div className="flex justify-end mt-4">
+                        <button onClick={() => saveMatch(m, i)} className="inline-flex items-center gap-2 h-10 px-6 rounded-full bg-brand text-white font-semibold hover:bg-brand-dark transition"><Check size={16} /> Save</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+              )
+            })}
+          </div>
+        </>
+      )}
 
-      {addingMatch && <AddMatchModal onClose={() => setAddingMatch(false)} onAdd={addMatch} teams={teams} />}
+      {addingMatch && <AddMatchModal onClose={() => setAddingMatch(false)} onAdd={addMatch} teams={teams} fields={fields} />}
+      {showAI && <AppointAiModal onClose={() => setShowAI(false)} onRun={runAI} />}
       {confirmPublish && (
         <Modal onClose={() => setConfirmPublish(false)}>
           <div className="p-5">
@@ -1736,9 +1962,16 @@ export function DashboardPeople() {
   const [tab, setTab] = useState('referees')
   return (
     <div>
-      <SubTabs tabs={[{ k: 'referees', label: 'Referees' }, { k: 'staff', label: 'Staff' }]} active={tab} onChange={setTab} />
+      <SubTabs tabs={[
+        { k: 'referees', label: 'Referees' },
+        { k: 'staff', label: 'Staff' },
+        { k: 'observers', label: 'Observers' },
+        { k: 'guests', label: 'Guests / VIP' },
+      ]} active={tab} onChange={setTab} />
       {tab === 'referees' && <DashboardReferees />}
       {tab === 'staff' && <DashboardStaff />}
+      {tab === 'observers' && <DashboardObservers />}
+      {tab === 'guests' && <DashboardGuests />}
     </div>
   )
 }

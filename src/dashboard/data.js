@@ -45,28 +45,49 @@ export const dashEnrolments = {
 }
 
 // Match schedule per tournament. main / assistants hold referee ids (or null).
+// day groups the fixtures; observer holds an observer id (or null).
 export const dashMatches = {
   t1: [
-    { id: 'm1', time: '09:00', pitch: 'Pitch A', home: 'Ajax U15', away: 'Benfica U15', main: 'r3', assistants: ['r4'] },
-    { id: 'm2', time: '09:00', pitch: 'Pitch B', home: 'Porto U13', away: 'Sporting U13', main: 'r8', assistants: ['r5'] },
-    { id: 'm3', time: '11:00', pitch: 'Pitch A', home: 'Boavista U17', away: 'Braga U17', main: 'r2', assistants: ['r4'] },
-    { id: 'm4', time: '11:00', pitch: 'Pitch C', home: 'Feyenoord U15', away: 'Milan U15', main: 'r1', assistants: ['r6'] },
-    { id: 'm5', time: '13:30', pitch: 'Pitch A', home: 'Ajax U15', away: 'Porto U15', main: 'r3', assistants: ['r5'] },
-    { id: 'm6', time: '13:30', pitch: 'Pitch B', home: 'Benfica U13', away: 'Sporting U13', main: null, assistants: ['r3'] },
-    { id: 'm7', time: '16:00', pitch: 'Pitch A', home: 'Braga U17', away: 'Ajax U17', main: null, assistants: [] },
+    { id: 'm1', day: 'Day 1', time: '09:00', pitch: 'Pitch A', home: 'Ajax U15', away: 'Benfica U15', main: 'r3', assistants: ['r4'], observer: 'o1' },
+    { id: 'm2', day: 'Day 1', time: '09:00', pitch: 'Pitch B', home: 'Porto U13', away: 'Sporting U13', main: 'r8', assistants: ['r5'], observer: null },
+    { id: 'm3', day: 'Day 1', time: '11:00', pitch: 'Pitch A', home: 'Boavista U17', away: 'Braga U17', main: 'r2', assistants: ['r4'], observer: 'o2' },
+    { id: 'm4', day: 'Day 1', time: '11:00', pitch: 'Pitch C', home: 'Feyenoord U15', away: 'Milan U15', main: 'r1', assistants: ['r6'], observer: null },
+    { id: 'm5', day: 'Day 2', time: '13:30', pitch: 'Pitch A', home: 'Ajax U15', away: 'Porto U15', main: 'r3', assistants: ['r5'], observer: null },
+    { id: 'm6', day: 'Day 2', time: '13:30', pitch: 'Pitch B', home: 'Benfica U13', away: 'Sporting U13', main: null, assistants: ['r3'], observer: null },
+    { id: 'm7', day: 'Day 3', time: '16:00', pitch: 'Pitch A', home: 'Braga U17', away: 'Ajax U17', main: null, assistants: [], observer: null },
   ],
   t2: [
-    { id: 'm8', time: '10:00', pitch: 'Field 1', home: 'FCK U15', away: 'Brøndby U15', main: 'r9', assistants: ['r6'] },
-    { id: 'm9', time: '10:00', pitch: 'Field 2', home: 'AGF U13', away: 'OB U13', main: null, assistants: [] },
-    { id: 'm10', time: '12:30', pitch: 'Field 1', home: 'FCK U17', away: 'AGF U17', main: 'r6', assistants: [] },
-    { id: 'm11', time: '12:30', pitch: 'Field 3', home: 'Brøndby U13', away: 'FCN U13', main: null, assistants: [] },
+    { id: 'm8', day: 'Day 1', time: '10:00', pitch: 'Field 1', home: 'FCK U15', away: 'Brøndby U15', main: 'r9', assistants: ['r6'], observer: null },
+    { id: 'm9', day: 'Day 1', time: '10:00', pitch: 'Field 2', home: 'AGF U13', away: 'OB U13', main: null, assistants: [], observer: null },
+    { id: 'm10', day: 'Day 2', time: '12:30', pitch: 'Field 1', home: 'FCK U17', away: 'AGF U17', main: 'r6', assistants: [], observer: null },
+    { id: 'm11', day: 'Day 2', time: '12:30', pitch: 'Field 3', home: 'Brøndby U13', away: 'FCN U13', main: null, assistants: [], observer: null },
   ],
   t4: [
-    { id: 'm12', time: '09:30', pitch: 'Camp 1', home: 'Girona U15', away: 'Espanyol U15', main: 'r8', assistants: ['r11'] },
-    { id: 'm13', time: '09:30', pitch: 'Camp 2', home: 'Barça U13', away: 'Girona U13', main: null, assistants: [] },
-    { id: 'm14', time: '12:00', pitch: 'Camp 1', home: 'Espanyol U17', away: 'Girona U17', main: 'r11', assistants: [] },
+    { id: 'm12', day: 'Day 1', time: '09:30', pitch: 'Camp 1', home: 'Girona U15', away: 'Espanyol U15', main: 'r8', assistants: ['r11'], observer: null },
+    { id: 'm13', day: 'Day 1', time: '09:30', pitch: 'Camp 2', home: 'Barça U13', away: 'Girona U13', main: null, assistants: [], observer: null },
+    { id: 'm14', day: 'Day 2', time: '12:00', pitch: 'Camp 1', home: 'Espanyol U17', away: 'Girona U17', main: 'r11', assistants: [], observer: null },
   ],
 }
+
+// Playing fields per tournament, uploaded per tournament (some have many).
+export const dashFields = {
+  t1: ['Pitch A', 'Pitch B', 'Pitch C'],
+  t2: ['Field 1', 'Field 2', 'Field 3'],
+  t4: ['Camp 1', 'Camp 2'],
+}
+
+// Observer pool (match observers / mentors) and guest / VIP pool.
+export const dashObservers = [
+  { id: 'o1', name: 'Giorgio Bruno', role: 'Observer', initials: 'GB', country: 'Italy', flag: '🇮🇹' },
+  { id: 'o2', name: 'Helena Vik', role: 'Observer', initials: 'HV', country: 'Norway', flag: '🇳🇴' },
+  { id: 'o3', name: 'Paul Ainsworth', role: 'Referee mentor', initials: 'PA', country: 'England', flag: '🏴' },
+]
+export const obsById = Object.fromEntries(dashObservers.map((o) => [o.id, o]))
+
+export const dashGuests = [
+  { id: 'g1', name: 'Maria Santos', role: 'VIP guest', initials: 'MS', org: 'Macron', country: 'Portugal', flag: '🇵🇹' },
+  { id: 'g2', name: 'Tom De Vries', role: 'Sponsor', initials: 'TD', org: 'KNVB', country: 'Netherlands', flag: '🇳🇱' },
+]
 
 // Participating teams per tournament. A team = a club in one age group, so
 // Ajax U13 and Ajax U15 are two separate teams of the same club. These differ
