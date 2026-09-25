@@ -83,6 +83,24 @@ export const requirements = [
     ],
   },
   {
+    id: 'J', title: 'Tournament operations & scheduling', items: [
+      ['J1', 'Rename the tournament setup card to “Tournament readiness” (dashboard and app)'],
+      ['J2', 'Referees can upload travel documents before paying for a tournament'],
+      ['J3', 'People: add Observers and Guests / VIP as manageable groups next to Staff and Referees (add and appoint)'],
+      ['J4', 'Export a tournament’s appointments to CSV / Excel'],
+      ['J5', 'Appoint with AI: a button that pre-fills all matches from admin-provided requirements (free-text prompt)'],
+      ['J6', 'Upload the tournament’s fields / pitches (supports many, e.g. 20) for use in appointing'],
+      ['J7', 'Appointing organised per day: day blocks first, then the match rows for the selected day'],
+      ['J8', 'Referee enrolments: left-align the referee info columns instead of crowding them to the right'],
+      ['J9', 'Match report: capture yellow and red card counts with card icons'],
+      ['J10', 'Match details show the appointed observer (empty row when none)'],
+      ['J11', 'Matches: “Chat with team” opens a chat with the assigned referees’ team'],
+      ['J12', 'App: show document upload deadlines (e.g. 8 weeks before start) in Profile → Docs'],
+      ['J13', 'Upload a revised schedule: overwrite when no appointments exist; otherwise show a diff with flagged conflicts (double bookings, invalid situations, matches without a referee)'],
+      ['J14', 'Reschedule matches to another day (e.g. weather) with conflicts re-checked'],
+    ],
+  },
+  {
     id: 'U', title: 'User interface & design build', items: [
       ['U1', 'Design system built in code: colours, typography and spacing tokens'],
       ['U2', 'Reusable component library: buttons, cards, inputs, chips, modals'],
