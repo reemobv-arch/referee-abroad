@@ -1431,7 +1431,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
 
       {/* Day blocks */}
       {teams.length > 0 && list.length > 0 && !openDay && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {days.map((day, di) => {
             const dm = list.filter((m) => (m.day || DAY_FALLBACK) === day)
             const appointed = dm.filter((m) => m.main).length
@@ -1439,16 +1439,18 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
             const allDone = appointed === dm.length
             return (
               <button key={day} onClick={() => { setOpenDay(day); setOpenId(dm[0]?.id || null) }}
-                className="group text-left bg-white rounded-2xl border border-neutral-200 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition">
+                className="group aspect-square flex flex-col text-left bg-white rounded-2xl border border-neutral-200 shadow-sm p-5 hover:bg-brand hover:border-brand transition">
                 <div className="flex items-center justify-between">
-                  <span className="w-10 h-10 rounded-xl bg-brand-light text-brand-dark flex items-center justify-center font-extrabold">{di + 1}</span>
-                  {hasConf ? <span className="text-[11px] font-semibold text-red-600 flex items-center gap-1"><AlertTriangle size={13} /> conflict</span>
-                    : allDone ? <span className="text-[11px] font-semibold text-brand-dark flex items-center gap-1"><Check size={13} /> complete</span>
-                    : <span className="text-[11px] font-semibold text-amber-600">{dm.length - appointed} open</span>}
+                  <span className="w-10 h-10 rounded-xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center font-extrabold transition">{di + 1}</span>
+                  {hasConf ? <span className="text-[11px] font-semibold text-red-600 group-hover:text-white flex items-center gap-1"><AlertTriangle size={13} /> conflict</span>
+                    : allDone ? <span className="text-[11px] font-semibold text-brand-dark group-hover:text-white flex items-center gap-1"><Check size={13} /> complete</span>
+                    : <span className="text-[11px] font-semibold text-amber-600 group-hover:text-white">{dm.length - appointed} open</span>}
                 </div>
-                <p className="mt-3 text-lg font-extrabold text-ink">{day}</p>
-                <p className="text-[13px] font-semibold text-neutral-500">{dm.length} matches · {appointed}/{dm.length} appointed</p>
-                <div className="mt-3 h-1.5 rounded-full bg-neutral-200 overflow-hidden"><span className="block h-full bg-brand" style={{ width: `${Math.round((appointed / dm.length) * 100)}%` }} /></div>
+                <div className="mt-auto">
+                  <p className="text-lg font-extrabold text-ink group-hover:text-white transition">{day}</p>
+                  <p className="text-[13px] font-semibold text-neutral-500 group-hover:text-white/85 transition">{dm.length} matches · {appointed}/{dm.length} appointed</p>
+                  <div className="mt-2.5 h-1.5 rounded-full bg-neutral-200 group-hover:bg-white/30 overflow-hidden transition"><span className="block h-full bg-brand group-hover:bg-white transition" style={{ width: `${Math.round((appointed / dm.length) * 100)}%` }} /></div>
+                </div>
               </button>
             )
           })}
