@@ -69,6 +69,13 @@ export const dashMatches = {
   ],
 }
 
+// Submitted match reports (from the referee app), keyed by match id.
+export const dashReports = {
+  m1: { score: { h: 2, a: 1 }, yellow: 3, red: 0, fair: 4, notes: 'Clean game, one late tackle near the end.', by: 'Ana Nogueira', at: 'Jul 1, 10:52' },
+  m2: { score: { h: 0, a: 0 }, yellow: 1, red: 0, fair: 5, notes: 'Well played, no incidents.', by: 'Tomás Ruiz', at: 'Jul 1, 10:55' },
+  m3: { score: { h: 3, a: 2 }, yellow: 4, red: 1, fair: 3, notes: 'Heated second half, one red for a professional foul.', by: 'Lucas Bianchi', at: 'Jul 1, 12:48' },
+}
+
 // Playing fields per tournament, uploaded per tournament (some have many).
 export const dashFields = {
   t1: ['Pitch A', 'Pitch B', 'Pitch C'],

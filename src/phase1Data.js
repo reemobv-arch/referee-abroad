@@ -98,6 +98,7 @@ export const requirements = [
       ['J12', 'App: show document upload deadlines (e.g. 8 weeks before start) in Profile → Docs'],
       ['J13', 'Upload a revised schedule: overwrite when no appointments exist; otherwise show a diff with flagged conflicts (double bookings, invalid situations, matches without a referee)'],
       ['J14', 'Reschedule matches to another day (e.g. weather) with conflicts re-checked'],
+      ['J15', 'Admin sees submitted match reports (score, yellow/red cards, fair play, notes) inline in appointing'],
     ],
   },
   {

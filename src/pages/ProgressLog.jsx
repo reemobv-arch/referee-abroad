@@ -11,6 +11,7 @@ const tagStyles = {
 
 /* Reverse chronological build log. */
 const log = [
+  { date: '28 Sep 2026', tag: 'Shipped', title: 'Match reports visible to the admin', body: 'Submitted match reports (score, yellow/red cards, fair play, notes, submitter) now show inline under each match in appointing, with a report badge on the row.' },
   { date: '25 Sep 2026', tag: 'Shipped', title: 'Tournament operations requirements added', body: 'New batch from client review: tournament readiness rename, observers and guests/VIP, per-day appointing, fields upload, AI appointing, appointment export, card counts, chat with team, doc deadlines and revised-schedule handling. Captured as group J and queued on the sprint board.' },
   { date: '23 Sep 2026', tag: 'Shipped', title: 'Smart team & fixture import', body: 'Import any organiser CSV/Excel with auto column mapping and age/gender detection; teams now carry gender. Added as requirement group I.' },
   { date: '16 Sep 2026', tag: 'Milestone', title: 'Fase 1 build workspace live', body: 'Source of truth published: architecture timeline with action points, the design system and 80 fine-grained requirements.' },

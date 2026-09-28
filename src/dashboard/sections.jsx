@@ -8,7 +8,7 @@ import {
 import {
   dashTournaments, dashReferees, dashStaff, dashTickets, dashPnl, dashAnalytics,
   dashEnrolments, dashMatches, dashInbox, refById, dashClubs,
-  dashFields, dashObservers, dashGuests, obsById,
+  dashFields, dashObservers, dashGuests, obsById, dashReports,
 } from './data.js'
 import { faq } from '../data.js'
 
@@ -1203,6 +1203,26 @@ function AppointAiModal({ onClose, onRun }) {
   )
 }
 
+const CardChip = ({ color, n }) => <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-ink"><span className="inline-block w-3 h-4 rounded-[2px]" style={{ background: color }} /> {n}</span>
+
+function MatchReport({ r }) {
+  return (
+    <div className="mt-3 rounded-xl border border-brand-light bg-brand-light/40 p-3.5">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-brand-dark flex items-center gap-1.5"><CheckCircle2 size={14} /> Match report</p>
+        <span className="text-[11px] font-medium text-neutral-500">by {r.by} · {r.at}</span>
+      </div>
+      <div className="flex items-center gap-5 mt-2.5">
+        <span className="text-xl font-extrabold text-ink tabular-nums">{r.score.h} – {r.score.a}</span>
+        <CardChip color="#F4C400" n={r.yellow} />
+        <CardChip color="#E03131" n={r.red} />
+        <span className="flex items-center gap-0.5">{[1, 2, 3, 4, 5].map((n) => <Star key={n} size={15} className={n <= r.fair ? 'text-amber-400 fill-amber-400' : 'text-neutral-200 fill-neutral-200'} />)}</span>
+      </div>
+      {r.notes && <p className="text-[13px] text-neutral-600 font-medium mt-2 leading-snug">{r.notes}</p>}
+    </div>
+  )
+}
+
 const mkey = (m) => `${(m.home || '').trim().toLowerCase()}|${(m.away || '').trim().toLowerCase()}`
 const slotShape = (f) => ({ id: f.id || 'm' + Math.random().toString(36).slice(2, 8), day: f.day || DAY_FALLBACK, time: f.time || 'TBD', pitch: f.pitch || 'TBD', home: f.home, away: f.away, main: null, a1: null, a2: null, fourth: null, observer: null })
 
@@ -1481,6 +1501,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
                       )}
                     </span>
                     <span className="text-xs font-medium text-neutral-500 hidden sm:block">{m.pitch}</span>
+                    {dashReports[m.id] && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-light text-brand-dark flex items-center gap-1"><CheckCircle2 size={11} /> Report</span>}
                     {edited.has(m.id) && <span className="w-2 h-2 rounded-full bg-amber-400" title="Unsaved changes" />}
                     <ChevronRight size={18} className={`text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`} />
                   </button>
@@ -1538,6 +1559,9 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
                       <div className="flex justify-end mt-4">
                         <button onClick={() => saveMatch(m, i)} className="inline-flex items-center gap-2 h-10 px-6 rounded-full bg-brand text-white font-semibold hover:bg-brand-dark transition"><Check size={16} /> Save</button>
                       </div>
+                      {dashReports[m.id]
+                        ? <MatchReport r={dashReports[m.id]} />
+                        : m.main && <p className="mt-3 text-[12.5px] font-medium text-neutral-400 flex items-center gap-1.5"><Clock size={13} /> Awaiting the main referee’s match report.</p>}
                     </div>
                   )}
                 </div>
