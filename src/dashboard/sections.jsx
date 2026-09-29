@@ -247,7 +247,7 @@ function Crumb({ children, onClick, current }) {
 }
 
 function EnrolmentList({ enrol, onAction }) {
-  if (enrol.length === 0) return <p className="text-sm text-neutral-400 font-medium">No referee enrolments yet.</p>
+  if (enrol.length === 0) return <p className="text-sm text-neutral-400 font-medium">No participants yet.</p>
   const actionsFor = (status) => {
     if (status === 'applied') return [['approve', 'Approve', 'bg-brand text-white'], ['decline', 'Decline', 'border border-neutral-200 text-neutral-500']]
     if (status === 'paid') return [['approve', 'Confirm', 'bg-brand text-white'], ['decline', 'Remove', 'border border-neutral-200 text-neutral-500']]
@@ -475,7 +475,7 @@ function TournamentView({ t, onBack, onEdit }) {
     { title: 'Teams imported', status: teams.length ? 'done' : 'todo',
       metric: teams.length ? `${teams.length} teams across ${clubCount} clubs` : 'Not imported yet',
       onClick: () => teams.length ? setTab('clubs') : setShowImport(true) },
-    { title: 'Referee enrolments', status: enrol.length === 0 ? 'todo' : (t.enrolled >= t.capacity ? 'done' : 'progress'),
+    { title: 'Participants', status: enrol.length === 0 ? 'todo' : (t.enrolled >= t.capacity ? 'done' : 'progress'),
       metric: `${t.enrolled} of ${t.capacity} spots filled${appliedCount ? ` · ${appliedCount} awaiting approval` : ''}`,
       onClick: () => setTab('enrolments') },
     { title: 'Fields uploaded', status: fields.length ? 'done' : 'todo',
@@ -500,10 +500,10 @@ function TournamentView({ t, onBack, onEdit }) {
   const tabs = [
     { k: 'info', label: 'Tournament information' },
     { k: 'clubs', label: `Teams (${teams.length})` },
-    { k: 'enrolments', label: `Referee enrolments (${enrol.length})` },
+    { k: 'enrolments', label: `Participants (${enrol.length})` },
     { k: 'appointing', label: `Appointing (${matchCount})` },
   ]
-  const crumbLabel = { info: 'Tournament information', clubs: 'Teams', enrolments: 'Referee enrolments', appointing: 'Appointing' }[tab]
+  const crumbLabel = { info: 'Tournament information', clubs: 'Teams', enrolments: 'Participants', appointing: 'Appointing' }[tab]
 
   return (
     <div>
@@ -614,7 +614,7 @@ function TournamentView({ t, onBack, onEdit }) {
                   <button onClick={() => teams.length ? setTab('clubs') : setShowImport(true)} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><Upload size={15} /> {teams.length ? 'Manage teams' : 'Import teams'}</button>
                   <button onClick={() => setShowFields(true)} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><MapPin size={15} /> Manage fields</button>
                   <button onClick={() => setTab('appointing')} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><ClipboardList size={15} /> Appoint referees</button>
-                  <button onClick={() => setTab('enrolments')} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><Users size={15} /> Referee enrolments</button>
+                  <button onClick={() => setTab('enrolments')} className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><Users size={15} /> Participants</button>
                   <button className="flex items-center gap-2 py-1.5 text-[13.5px] font-semibold text-brand-dark"><MessageSquare size={15} /> Message the group</button>
                 </div>
               </div>
@@ -708,18 +708,23 @@ function TournamentFormModal({ initial, onClose, onSave }) {
   const edit = !!initial
   const [f, setF] = useState({
     name: initial?.name || '', sport: initial?.sport || 'Football', city: initial?.city || '', country: initial?.country || '',
-    start: '', end: '', capacity: initial?.capacity ?? 40, status: initial?.status || 'planned', img: initial?.img || PRESET_IMAGES[0],
+    start: '', end: '', firstMatch: '', lastMatch: '', capacity: initial?.capacity ?? 40, status: initial?.status || 'planned', img: initial?.img || PRESET_IMAGES[0],
   })
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
   const valid = f.name.trim() && f.city.trim() && f.country.trim()
 
   const submit = () => {
     if (!valid) return
+    // "dates" shows the arrival to departure window on cards.
     const dates = f.start && f.end ? `${fmtDate(f.start)} to ${fmtDate(f.end)}` : (f.start ? fmtDate(f.start) : (initial?.dates || 'Dates to be set'))
     onSave({
       id: initial?.id || ('t' + Math.random().toString(36).slice(2, 7)),
       name: f.name.trim(), city: f.city.trim(), country: f.country.trim(),
       sport: f.sport, dates, status: f.status,
+      arrivalDate: f.start || initial?.arrivalDate || null,
+      departureDate: f.end || initial?.departureDate || null,
+      firstMatchDate: f.firstMatch || initial?.firstMatchDate || null,
+      lastMatchDate: f.lastMatch || initial?.lastMatchDate || null,
       enrolled: initial?.enrolled ?? 0, capacity: Number(f.capacity) || 0, img: f.img,
     })
   }
@@ -759,8 +764,12 @@ function TournamentFormModal({ initial, onClose, onSave }) {
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Start date"><input type="date" value={f.start} onChange={set('start')} className={inputCls} /></Field>
-            <Field label="End date"><input type="date" value={f.end} onChange={set('end')} className={inputCls} /></Field>
+            <Field label="Arrival date"><input type="date" value={f.start} onChange={set('start')} className={inputCls} /></Field>
+            <Field label="Departure date"><input type="date" value={f.end} onChange={set('end')} className={inputCls} /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="First match date (optional)"><input type="date" value={f.firstMatch} onChange={set('firstMatch')} className={inputCls} /></Field>
+            <Field label="Last match date (optional)"><input type="date" value={f.lastMatch} onChange={set('lastMatch')} className={inputCls} /></Field>
           </div>
           <Field label="Referee capacity"><input type="number" min="0" value={f.capacity} onChange={set('capacity')} className={inputCls} /></Field>
           <Field label="Cover image">
