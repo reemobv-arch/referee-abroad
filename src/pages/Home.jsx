@@ -1,8 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { Megaphone, Bell, Plane, Users, Award, Heart, ChevronDown } from 'lucide-react'
-import { user, news, tournaments, myMatches, notifications } from '../data.js'
+import { Megaphone, Bell, Plane, Users, Award, Heart, ChevronDown, MapPin } from 'lucide-react'
+import { news, tournaments, notifications } from '../data.js'
 import { SectionHeader } from '../components/ui.jsx'
-import TournamentCard from '../components/TournamentCard.jsx'
 import ProfileCircle from '../components/ProfileCircle.jsx'
 import Logo from '../components/Logo.jsx'
 
@@ -16,8 +15,7 @@ const PILLARS = [
 
 export default function Home() {
   const nav = useNavigate()
-  const applied = tournaments.filter((t) => t.applied)
-  const nextMatch = myMatches[0]
+  const upcoming = tournaments.slice(0, 4)
   const hasUnread = notifications.some((n) => n.unread)
 
   return (
@@ -103,24 +101,22 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Personal: only for signed-in referees who already applied */}
-        {nextMatch && applied.length > 0 && (
-          <div className="mt-7 relative overflow-hidden rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#2FA850,#1B6E36)' }}>
-            <span className="pointer-events-none absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10" />
-            <div className="relative">
-              <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-white/90"><span className="w-2 h-2 rounded-full bg-white" /> Your next match</div>
-              <h2 className="mt-2 text-[22px] font-extrabold leading-tight">{nextMatch.home} vs {nextMatch.away}</h2>
-              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[14px] font-semibold text-white/95"><span>{nextMatch.day} · {nextMatch.time}</span><span>{nextMatch.pitch}</span></div>
-              <button onClick={() => nav('/matches')} className="mt-4 inline-flex items-center gap-2 bg-white text-brand-dark font-extrabold text-[14px] rounded-2xl px-5 py-2.5">View details</button>
-            </div>
+        {/* Upcoming tournaments: a visual 2x2 grid (not personal) */}
+        <div className="mt-7">
+          <SectionHeader title="Upcoming tournaments" action="See all" onAction={() => nav('/tournaments')} />
+          <div className="grid grid-cols-2 gap-3">
+            {upcoming.map((t) => (
+              <button key={t.id} onClick={() => nav(`/tournament/${t.id}`)} className="relative h-36 rounded-2xl overflow-hidden text-left active:scale-[0.99] transition shadow-card">
+                <img src={t.img} alt={t.name} className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.05))' }} />
+                <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                  <p className="text-[13.5px] font-extrabold leading-tight">{t.name}</p>
+                  <p className="text-[11px] font-semibold text-white/85 flex items-center gap-1 mt-0.5"><MapPin size={11} /> {t.city}, {t.country}</p>
+                </div>
+              </button>
+            ))}
           </div>
-        )}
-        {applied.length > 0 && (
-          <div className="mt-7">
-            <SectionHeader title="Your tournaments" action="See all" onAction={() => nav('/tournaments')} />
-            <div className="space-y-4">{applied.map((t) => <TournamentCard key={t.id} t={t} />)}</div>
-          </div>
-        )}
+        </div>
 
         {/* News */}
         <div className="mt-7">
