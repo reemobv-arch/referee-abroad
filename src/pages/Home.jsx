@@ -3,6 +3,7 @@ import { Megaphone, Bell, ArrowRight, Target, Flag, PenLine } from 'lucide-react
 import { user, news, tournaments, myMatches, notifications } from '../data.js'
 import { SectionHeader } from '../components/ui.jsx'
 import TournamentCard from '../components/TournamentCard.jsx'
+import ProfileCircle from '../components/ProfileCircle.jsx'
 import Logo from '../components/Logo.jsx'
 
 export default function Home() {
@@ -22,10 +23,13 @@ export default function Home() {
       <header className="sticky top-0 z-20 bg-white border-b border-neutral-200">
         <div className="h-14 flex items-center justify-between px-4">
           <Logo size={30} showText textClass="text-base" />
-          <button onClick={() => nav('/notifications')} aria-label="Notifications" className="relative w-10 h-10 rounded-2xl border border-neutral-200 flex items-center justify-center">
-            <Bell size={20} className="text-ink" />
-            {hasUnread && <span className="absolute top-2 right-2 w-2 h-2 bg-coral rounded-full ring-2 ring-white" style={{ background: '#F0603C' }} />}
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button onClick={() => nav('/notifications')} aria-label="Notifications" className="relative w-10 h-10 rounded-2xl border border-neutral-200 flex items-center justify-center">
+              <Bell size={20} className="text-ink" />
+              {hasUnread && <span className="absolute top-2 right-2 w-2 h-2 bg-coral rounded-full ring-2 ring-white" style={{ background: '#F0603C' }} />}
+            </button>
+            <ProfileCircle />
+          </div>
         </div>
       </header>
 

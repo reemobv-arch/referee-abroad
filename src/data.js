@@ -13,7 +13,7 @@ export const user = {
   emergency: 'Sofie Klein · +31 6 98 76 54 32',
 }
 
-export const tournaments = [
+const baseTournaments = [
   {
     id: 'porto',
     name: 'Porto International Cup',
@@ -124,6 +124,47 @@ export const tournaments = [
     applied: false,
   },
 ]
+
+// Extra sample tournaments so the USA / Europe / Asia regions are populated in
+// the prototype. Minimal fields, enough for the cards and the detail intro.
+const IMGS = ['img/costabrava.jpg', 'img/porto.jpg', 'img/copenhagen.jpg', 'img/ibercup.jpg', 'img/malta.jpg', 'img/alpine.jpg']
+const mk = (name, city, country, dates, price, spotsLeft, referees, i) => ({
+  id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+  name, city, country, img: IMGS[i % IMGS.length],
+  age: 'U11 to U19', sport: 'Football', dates, price, spotsLeft, referees,
+  clubs: Math.max(8, Math.round(referees / 2)), matches: referees * 2,
+  status: spotsLeft > 0 ? 'recruiting' : 'confirmed', applied: false,
+})
+const regionSeed = [
+  // USA / North America
+  ['Dallas Cup', 'Dallas', 'United States', 'Apr 12 to Apr 18', 199, 14, 46],
+  ['Surf Cup', 'San Diego', 'United States', 'Jul 19 to Jul 23', 189, 9, 40],
+  ['Disney Soccer Showcase', 'Orlando', 'United States', 'Dec 27 to Jan 2', 219, 22, 60],
+  ['Las Vegas Mayor’s Cup', 'Las Vegas', 'United States', 'Feb 14 to Feb 17', 179, 6, 32],
+  ['Bay Area Classic', 'San Francisco', 'United States', 'May 24 to May 27', 169, 18, 44],
+  ['Windy City Cup', 'Chicago', 'United States', 'Jun 7 to Jun 10', 175, 0, 50],
+  ['Lone Star Invitational', 'Houston', 'United States', 'Mar 15 to Mar 19', 185, 11, 36],
+  ['Rocky Mountain Cup', 'Denver', 'United States', 'Aug 2 to Aug 6', 165, 20, 42],
+  ['Toronto International', 'Toronto', 'Canada', 'Jul 5 to Jul 9', 195, 13, 48],
+  ['Montreal Cup', 'Montreal', 'Canada', 'Jun 21 to Jun 24', 185, 7, 34],
+  ['Vancouver Cup', 'Vancouver', 'Canada', 'Aug 16 to Aug 20', 189, 16, 40],
+  ['Copa Mexico', 'Mexico City', 'Mexico', 'Nov 8 to Nov 12', 159, 24, 55],
+  // Asia
+  ['Tokyo Youth Cup', 'Tokyo', 'Japan', 'May 3 to May 7', 189, 22, 38],
+  ['Osaka Spring Cup', 'Osaka', 'Japan', 'Apr 4 to Apr 7', 179, 10, 32],
+  ['Lion City Cup', 'Singapore', 'Singapore', 'Jun 14 to Jun 18', 209, 8, 36],
+  ['Bangkok Football Festival', 'Bangkok', 'Thailand', 'Jul 26 to Jul 30', 169, 19, 44],
+  ['Dubai Super Cup', 'Dubai', 'United Arab Emirates', 'Dec 12 to Dec 16', 239, 15, 50],
+  ['Shanghai International', 'Shanghai', 'China', 'Oct 3 to Oct 7', 199, 0, 48],
+  ['Seoul Youth Cup', 'Seoul', 'South Korea', 'Sep 20 to Sep 24', 185, 12, 40],
+  ['Bali Cup', 'Bali', 'Indonesia', 'Aug 9 to Aug 13', 175, 21, 42],
+  ['KL Invitational', 'Kuala Lumpur', 'Malaysia', 'Jul 12 to Jul 15', 169, 9, 34],
+  ['Doha Youth Cup', 'Doha', 'Qatar', 'Jan 17 to Jan 21', 229, 17, 46],
+  ['Ho Chi Minh Cup', 'Ho Chi Minh City', 'Vietnam', 'Mar 1 to Mar 4', 149, 23, 38],
+  ['Mumbai Soccer Fest', 'Mumbai', 'India', 'Feb 7 to Feb 11', 155, 14, 40],
+].map((a, i) => mk(a[0], a[1], a[2], a[3], a[4], a[5], a[6], i))
+
+export const tournaments = [...baseTournaments, ...regionSeed]
 
 export const news = [
   {

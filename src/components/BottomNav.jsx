@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Trophy, MessageCircle, User } from 'lucide-react'
+import { Home, Trophy, MessageCircle } from 'lucide-react'
 
 function Football({ size = 22 }) {
   return (
@@ -16,7 +16,6 @@ const tabs = [
   { to: '/tournaments', label: 'Tournaments', Icon: Trophy },
   { to: '/matches', label: 'Matches', Icon: Football },
   { to: '/chats', label: 'Chat', Icon: MessageCircle },
-  { to: '/profile', label: 'Profile', Icon: User },
 ]
 
 export default function BottomNav() {
