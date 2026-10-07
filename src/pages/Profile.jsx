@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, LogOut, FileText, CalendarClock, Bell, ChevronRight, Pencil } from 'lucide-react'
+import { Check, LogOut, FileText, CalendarClock, Bell, ChevronRight, Pencil, Camera, AlertCircle } from 'lucide-react'
 import { TopBar, Pill } from '../components/ui.jsx'
 import { user } from '../data.js'
+import { getPhoto, setPhoto as savePhoto, subscribePhoto, fileToDataUrl } from '../profilePhoto.js'
 
 function Field({ label, value, onChange }) {
   return (
@@ -35,16 +36,34 @@ export default function Profile() {
   const [f, setF] = useState({ ...user })
   const [saved, setSaved] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [photo, setPhotoState] = useState(getPhoto())
+  const fileRef = useRef(null)
   const set = (k) => (v) => { setF((s) => ({ ...s, [k]: v })); setSaved(false) }
+
+  useEffect(() => subscribePhoto(setPhotoState), [])
+  const onPick = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const url = await fileToDataUrl(file)
+    savePhoto(url)
+    e.target.value = ''
+  }
 
   return (
     <div className="pb-6">
       <TopBar title="Profile" />
       <div className="px-4 pt-4 space-y-5">
         <div className="flex flex-col items-center text-center pt-2">
-          <div className="w-20 h-20 rounded-3xl text-white text-3xl font-extrabold flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#3BB65C,#176B33)' }}>
-            {user.initials}
-          </div>
+          <input ref={fileRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
+          <button onClick={() => fileRef.current?.click()} className="relative active:scale-95 transition" aria-label="Upload profile photo">
+            <span className={`w-24 h-24 rounded-3xl overflow-hidden flex items-center justify-center text-white text-3xl font-extrabold ${photo ? '' : 'ring-2 ring-dashed ring-brand/50'}`} style={{ background: 'linear-gradient(135deg,#3BB65C,#176B33)' }}>
+              {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : user.initials}
+            </span>
+            <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white border border-neutral-200 shadow flex items-center justify-center text-brand-dark"><Camera size={16} /></span>
+          </button>
+          {!photo && (
+            <p className="mt-2 text-[12px] font-semibold text-amber-600 flex items-center gap-1"><AlertCircle size={13} /> Profile photo required. Tap to upload.</p>
+          )}
           <p className="mt-3 text-2xl font-extrabold text-ink">{f.name}</p>
           <div className="flex items-center justify-center gap-2 mt-1.5">
             <Pill>{user.level}</Pill>

@@ -1,12 +1,14 @@
 // Mock data for the Tournament Command Centre prototype
 
+// `online` = spots published online (available to the public); `capacity` =
+// total, so (capacity - online) are reserved for partners (e.g. KNVB).
 export const dashTournaments = [
-  { id: 't1', name: 'Porto International Cup', city: 'Porto', country: 'Portugal', img: 'img/porto.jpg', dates: 'Jul 1 to Jul 5', sport: 'Football', status: 'confirmed', enrolled: 48, capacity: 60 },
-  { id: 't2', name: 'Copenhagen Cup', city: 'Copenhagen', country: 'Denmark', img: 'img/copenhagen.jpg', dates: 'Jul 10 to Jul 16', sport: 'Football', status: 'recruiting', enrolled: 31, capacity: 50 },
-  { id: 't3', name: 'IberCup Cascais', city: 'Cascais', country: 'Portugal', img: 'img/ibercup.jpg', dates: 'Jun 2 to Jun 8', sport: 'Football', status: 'recruiting', enrolled: 33, capacity: 40 },
-  { id: 't4', name: 'Costa Brava Cup', city: 'Girona', country: 'Spain', img: 'img/costabrava.jpg', dates: 'Aug 12 to Aug 16', sport: 'Football', status: 'confirmed', enrolled: 48, capacity: 60 },
-  { id: 't5', name: 'Malta Youth Festival', city: 'Valletta', country: 'Malta', img: 'img/malta.jpg', dates: 'Oct 3 to Oct 7', sport: 'Football', status: 'planned', enrolled: 12, capacity: 50 },
-  { id: 't6', name: 'Alpine Hockey Trophy', city: 'Innsbruck', country: 'Austria', img: 'img/alpine.jpg', dates: 'Nov 21 to Nov 24', sport: 'Hockey', status: 'recruiting', enrolled: 12, capacity: 40 },
+  { id: 't1', name: 'Porto International Cup', city: 'Porto', country: 'Portugal', img: 'img/porto.jpg', dates: 'Jul 1 to Jul 5', sport: 'Football', status: 'confirmed', enrolled: 48, online: 50, capacity: 60 },
+  { id: 't2', name: 'Copenhagen Cup', city: 'Copenhagen', country: 'Denmark', img: 'img/copenhagen.jpg', dates: 'Jul 10 to Jul 16', sport: 'Football', status: 'recruiting', enrolled: 31, online: 45, capacity: 50 },
+  { id: 't3', name: 'IberCup Cascais', city: 'Cascais', country: 'Portugal', img: 'img/ibercup.jpg', dates: 'Jun 2 to Jun 8', sport: 'Football', status: 'recruiting', enrolled: 33, online: 38, capacity: 40 },
+  { id: 't4', name: 'Costa Brava Cup', city: 'Girona', country: 'Spain', img: 'img/costabrava.jpg', dates: 'Aug 12 to Aug 16', sport: 'Football', status: 'confirmed', enrolled: 48, online: 55, capacity: 60 },
+  { id: 't5', name: 'Malta Youth Festival', city: 'Valletta', country: 'Malta', img: 'img/malta.jpg', dates: 'Oct 3 to Oct 7', sport: 'Football', status: 'planned', enrolled: 12, online: 40, capacity: 50 },
+  { id: 't6', name: 'Alpine Hockey Trophy', city: 'Innsbruck', country: 'Austria', img: 'img/alpine.jpg', dates: 'Nov 21 to Nov 24', sport: 'Hockey', status: 'recruiting', enrolled: 12, online: 35, capacity: 40 },
 ]
 
 // 12 referees in the pool, richer profiles.
@@ -24,6 +26,13 @@ export const dashReferees = [
   { id: 'r11', name: 'Marta Kowalski', country: 'Poland', flag: '🇵🇱', level: 'talent', email: 'marta.kowalski@mail.com', phone: '+48 511 224 668', languages: ['PL', 'EN', 'DE'], apps: 13, reports: 11, rating: 4.5 },
   { id: 'r12', name: 'Chiara Rossi', country: 'Italy', flag: '🇮🇹', level: 'medior', email: 'chiara.rossi@mail.com', phone: '+39 345 668 11 22', languages: ['IT', 'EN', 'FR'], apps: 7, reports: 5, rating: 4.2 },
 ]
+
+// Sample profile photos (prototype): a few referees have uploaded one, shown in
+// the dashboard when you open their profile. Generated as inline SVG avatars.
+const avatar = (initials, bg) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="${bg}"/><text x="60" y="74" font-family="Arial, sans-serif" font-size="48" fill="white" text-anchor="middle" font-weight="bold">${initials}</text></svg>`)}`
+dashReferees[2].photo = avatar('AN', '#3B82F6') // Ana Nogueira
+dashReferees[7].photo = avatar('TR', '#059669') // Tomás Ruiz
+dashReferees[0].photo = avatar('DK', '#7C3AED') // Daniel Klein
 
 export const refById = Object.fromEntries(dashReferees.map((r) => [r.id, r]))
 

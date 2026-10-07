@@ -3,7 +3,7 @@ import {
   Plus, MapPin, Calendar, Users, X, Send, MessageSquare, Search, TrendingUp,
   Mail, MessageCircle, AlertTriangle, Check, Sparkles, Star, Globe, Phone, ClipboardList,
   ChevronRight, Clock, Pencil, Trash2, RefreshCw, CheckCircle2, Coins, Building2, Plug, HelpCircle, UserPlus,
-  Upload, Lock, FileText,
+  Upload, Lock, FileText, SlidersHorizontal, ChevronDown,
 } from 'lucide-react'
 import {
   dashTournaments, dashReferees, dashStaff, dashTickets, dashPnl, dashAnalytics,
@@ -288,6 +288,122 @@ function EnrolmentList({ enrol, onAction }) {
   )
 }
 
+/* ---- Participants table: full operational view with a column picker ---- */
+const FEMALE_NAMES = new Set(['Ana', 'Sophie', 'Emma', 'Lena', 'Marta', 'Chiara', 'Sara', 'Julia', 'Nina', 'Laura'])
+const SIZES = ['XS', 'S', 'M', 'L', 'XL']
+const HOTELS = ['Hotel Vila Foz', 'Grand Plaza', 'City Garden Inn', 'Seaside Resort', 'Olympic Lodge', 'Central Suites']
+function hashN(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h }
+function flightNo(seed) { const L = 'ABDEFKLNOQSTUW'; return L[seed % L.length] + L[(seed >> 4) % L.length] + (100 + (seed % 899)) }
+function partExtras(r, t) {
+  const h = hashN(r.id || 'x'); const ht = hashN((r.id || 'x') + (t?.id || ''))
+  const parts = (r.name || '').split(' '); const first = parts[0] || ''; const surname = parts.slice(1).join(' ')
+  const age = 24 + (h % 26); const birthYear = 2026 - age; const day = 1 + (h % 28); const month = 1 + ((h >> 3) % 12)
+  const dd = String(day).padStart(2, '0'); const mm = String(month).padStart(2, '0')
+  const parcels = String(t?.dates || '').split(' to ')
+  return {
+    first, surname,
+    size: SIZES[h % SIZES.length],
+    age, dob: `${dd}-${mm}-${birthYear}`,
+    whatsapp: r.phone || '',
+    sex: FEMALE_NAMES.has(first) ? 'F' : 'M',
+    accommodation: HOTELS[h % HOTELS.length],
+    arrival: parcels[0] || '', arrivalFlight: flightNo(ht),
+    departure: parcels[1] || parcels[0] || '', departureFlight: flightNo(ht >> 2),
+  }
+}
+const ROLE_PILL = { referee: 'bg-brand-light text-brand-dark', staff: 'bg-sky-100 text-sky-700', observer: 'bg-amber-100 text-amber-700' }
+
+function ParticipantsTable({ t, enrol, onAction }) {
+  const rows = useMemo(() => enrol.map((e, i) => {
+    const r = refById[e.refId] || { name: `Referee ${i + 1}` }
+    const x = partExtras(r, t)
+    const paid = e.status === 'confirmed' || e.status === 'paid'
+    const role = i % 9 === 8 ? 'observer' : i % 6 === 5 ? 'staff' : 'referee'
+    return { e, r, x, i, role, paid, fee: paid ? 'Paid' : 'No fee', cost: paid ? `€${150 + (hashN(r.id || 'x') % 90)}` : '—' }
+  }), [enrol, t])
+
+  const COLS = [
+    { key: 'num', label: '#', cell: (d) => d.i + 1, hideable: false },
+    { key: 'name', label: 'Name', cell: (d) => d.x.first },
+    { key: 'surname', label: 'Surname', cell: (d) => d.x.surname },
+    { key: 'country', label: 'Country', cell: (d) => `${d.r.flag || ''} ${d.r.country || ''}` },
+    { key: 'status', label: 'Status', cell: (d) => <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${enrolMap[d.e.status]}`}>{d.e.status}</span> },
+    { key: 'role', label: 'Role', cell: (d) => <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${ROLE_PILL[d.role]}`}>{d.role}</span> },
+    { key: 'email', label: 'Email', cell: (d) => d.r.email || '' },
+    { key: 'phone', label: 'Phone', cell: (d) => d.r.phone || '' },
+    { key: 'size', label: 'Size', cell: (d) => d.x.size },
+    { key: 'age', label: 'Age', cell: (d) => d.x.age },
+    { key: 'dob', label: 'Date of birth', cell: (d) => d.x.dob },
+    { key: 'whatsapp', label: 'WhatsApp', cell: (d) => d.x.whatsapp },
+    { key: 'sex', label: 'Sex', cell: (d) => d.x.sex },
+    { key: 'fee', label: 'Fee', cell: (d) => <span className={d.paid ? 'text-brand-dark font-semibold' : 'text-neutral-400'}>{d.fee}</span> },
+    { key: 'cost', label: 'Cost', cell: (d) => d.cost },
+    { key: 'accom', label: 'Accommodation', cell: (d) => d.x.accommodation },
+    { key: 'arrival', label: 'Arrival', cell: (d) => d.x.arrival },
+    { key: 'arrflight', label: 'Arrival flight', cell: (d) => d.x.arrivalFlight },
+    { key: 'departure', label: 'Departure', cell: (d) => d.x.departure },
+    { key: 'depflight', label: 'Departure flight', cell: (d) => d.x.departureFlight },
+    { key: 'actions', label: 'Actions', hideable: true, cell: (d) => (
+      d.e.status === 'applied' || d.e.status === 'paid'
+        ? <span className="flex gap-1.5">
+            <button onClick={() => onAction(d.e.refId, 'approve')} className="text-[10px] font-semibold px-2 h-6 rounded-full bg-brand text-white">{d.e.status === 'paid' ? 'Confirm' : 'Approve'}</button>
+            <button onClick={() => onAction(d.e.refId, 'decline')} className="text-[10px] font-semibold px-2 h-6 rounded-full border border-neutral-200 text-neutral-500">Remove</button>
+          </span>
+        : <span className="text-neutral-300">—</span>
+    ) },
+  ]
+
+  const [vis, setVis] = useState(() => Object.fromEntries(COLS.map((c) => [c.key, true])))
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const shown = COLS.filter((c) => vis[c.key])
+  const toggle = (k) => setVis((v) => ({ ...v, [k]: !v[k] }))
+
+  if (enrol.length === 0) return <p className="text-sm text-neutral-400 font-medium">No participants yet.</p>
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[13px] font-semibold text-neutral-500">{enrol.length} participants</p>
+        <div className="relative">
+          <button onClick={() => setPickerOpen((o) => !o)} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-neutral-200 bg-white text-[13px] font-semibold text-ink hover:border-brand">
+            <SlidersHorizontal size={15} /> Columns <ChevronDown size={14} className="text-neutral-400" />
+          </button>
+          {pickerOpen && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setPickerOpen(false)} />
+              <div className="absolute right-0 mt-2 w-56 max-h-80 overflow-y-auto bg-white rounded-2xl border border-neutral-200 shadow-xl z-30 p-2">
+                {COLS.filter((c) => c.hideable !== false).map((c) => (
+                  <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-page cursor-pointer text-sm font-medium text-ink">
+                    <input type="checkbox" checked={!!vis[c.key]} onChange={() => toggle(c.key)} className="accent-brand" />
+                    {c.label}
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-x-auto">
+        <table className="w-full text-sm whitespace-nowrap">
+          <thead>
+            <tr className="text-left text-[11px] uppercase tracking-wide text-neutral-500 border-b border-neutral-200 bg-page/60">
+              {shown.map((c) => <th key={c.key} className="px-3 py-2.5 font-semibold">{c.label}</th>)}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {rows.map((d) => (
+              <tr key={d.i} className="hover:bg-page">
+                {shown.map((c) => <td key={c.key} className="px-3 py-2.5 text-neutral-600 font-medium">{c.cell(d)}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 const genderPill = (g) => g === 'Girls' ? 'bg-pink-100 text-pink-700' : g === 'Boys' ? 'bg-sky-100 text-sky-700' : 'bg-neutral-100 text-neutral-500'
 
 function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
@@ -476,7 +592,7 @@ function TournamentView({ t, onBack, onEdit }) {
       metric: teams.length ? `${teams.length} teams across ${clubCount} clubs` : 'Not imported yet',
       onClick: () => teams.length ? setTab('clubs') : setShowImport(true) },
     { title: 'Participants', status: enrol.length === 0 ? 'todo' : (t.enrolled >= t.capacity ? 'done' : 'progress'),
-      metric: `${t.enrolled} of ${t.capacity} spots filled${appliedCount ? ` · ${appliedCount} awaiting approval` : ''}`,
+      metric: `${t.enrolled} of ${t.online != null ? t.online : t.capacity} online (${t.capacity} total) filled${appliedCount ? ` · ${appliedCount} awaiting approval` : ''}`,
       onClick: () => setTab('enrolments') },
     { title: 'Fields uploaded', status: fields.length ? 'done' : 'todo',
       metric: fields.length ? `${fields.length} fields` : 'No fields yet',
@@ -581,7 +697,7 @@ function TournamentView({ t, onBack, onEdit }) {
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Sport</p><p className="text-base font-extrabold text-ink mt-0.5">{t.sport}</p></div>
                   <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Dates</p><p className="text-sm font-extrabold text-ink mt-0.5">{t.dates}</p></div>
-                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Referees</p><p className="text-base font-extrabold text-ink mt-0.5">{t.enrolled}/{t.capacity}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Referees</p><p className="text-base font-extrabold text-ink mt-0.5">{t.enrolled}/{t.online != null ? t.online : t.capacity}/{t.capacity}</p><p className="text-[9.5px] font-semibold text-neutral-400 leading-tight">filled/online/total</p></div>
                   <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Teams</p><p className="text-base font-extrabold text-ink mt-0.5">{teams.length || '—'}</p></div>
                 </div>
               </div>
@@ -622,7 +738,7 @@ function TournamentView({ t, onBack, onEdit }) {
           </div>
         )}
         {tab === 'clubs' && <ClubsTab teams={teams} onOpenImport={() => setShowImport(true)} />}
-        {tab === 'enrolments' && <EnrolmentList enrol={enrol} onAction={onEnrolAction} />}
+        {tab === 'enrolments' && <ParticipantsTable t={t} enrol={enrol} onAction={onEnrolAction} />}
         {tab === 'appointing' && <DashboardAppointing initialTournament={t.id} lockTournament />}
       </div>
       {showStaff && <AppointStaffModal tournamentName={t.name} assigned={staff} onToggle={(name) => setStaff((prev) => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })} onClose={() => setShowStaff(false)} />}
@@ -830,7 +946,9 @@ export function DashboardTournaments({ createSignal, focusT, onListChange }) {
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {tournaments.map((t) => {
-          const pct = t.capacity ? Math.round((t.enrolled / t.capacity) * 100) : 0
+          const online = t.online != null ? t.online : t.capacity
+          const fillPct = t.capacity ? (t.enrolled / t.capacity) * 100 : 0
+          const onlinePct = t.capacity ? (online / t.capacity) * 100 : 0
           return (
             <button
               key={t.id}
@@ -849,10 +967,15 @@ export function DashboardTournaments({ createSignal, focusT, onListChange }) {
                 <span>{t.dates}</span>
               </p>
               <div className="mt-4">
-                <p className="text-[13px] font-bold text-ink mb-1.5"><span className="text-brand-dark">{t.enrolled}</span> / {t.capacity} referees</p>
-                <div className="h-2 rounded-full bg-neutral-200/80 overflow-hidden">
-                  <span className={`block h-full rounded-full ${barCls(t.status)}`} style={{ width: pct + '%' }} />
+                <p className="text-[13px] font-bold text-ink mb-1.5">
+                  <span className="text-brand-dark">{t.enrolled}</span> / {online} / {t.capacity} referees
+                </p>
+                {/* filled (brand) · online available (light) · reserved for partners (hatched) */}
+                <div className="relative h-2 rounded-full bg-neutral-200/80 overflow-hidden">
+                  <span className="absolute inset-y-0 left-0 bg-brand-light" style={{ width: onlinePct + '%' }} />
+                  <span className={`absolute inset-y-0 left-0 rounded-full ${barCls(t.status)}`} style={{ width: fillPct + '%' }} />
                 </div>
+                <p className="mt-1 text-[10.5px] font-semibold text-neutral-400">filled / online / total{online < t.capacity ? ` · ${t.capacity - online} reserved for partners` : ''}</p>
               </div>
             </button>
           )
@@ -933,7 +1056,7 @@ export function DashboardReferees() {
         <Modal onClose={() => setOpen(null)}>
           <div className="p-5">
             <div className="flex items-start gap-3">
-              <span className="w-14 h-14 rounded-full bg-brand text-white text-lg font-bold flex items-center justify-center flex-none">{initialsOf(open.name)}</span>
+              <span className="w-14 h-14 rounded-full bg-brand text-white text-lg font-bold flex items-center justify-center flex-none overflow-hidden">{open.photo ? <img src={open.photo} alt="" className="w-full h-full object-cover" /> : initialsOf(open.name)}</span>
               <div className="flex-1">
                 <h3 className="text-xl font-extrabold text-ink leading-tight">{open.name}</h3>
                 <p className="text-sm text-neutral-500 font-medium">{open.flag} {open.country}</p>
@@ -1356,6 +1479,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
   const [confirmPublish, setConfirmPublish] = useState(false)
   const [showAI, setShowAI] = useState(false)
   const [showRevised, setShowRevised] = useState(false)
+  const [showMatchImport, setShowMatchImport] = useState(false)
   const [toast, setToast] = useState('')
 
   const list = matches[tid] || []
@@ -1411,6 +1535,17 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
     setToast('Appointments exported as CSV.')
   }
 
+  const importMatches = (result) => {
+    const slots = (result.matches || []).map((m) => ({
+      id: m.id || 'm' + Math.random().toString(36).slice(2, 7),
+      day: m.day || DAY_FALLBACK, time: m.time || 'TBD', pitch: m.pitch || 'TBD',
+      home: m.home || '', away: m.away || '', main: null, a1: null, a2: null, fourth: null, observer: null,
+    }))
+    setMatches((prev) => ({ ...prev, [tid]: [...(prev[tid] || []), ...slots] }))
+    setShowMatchImport(false)
+    if (slots.length) { setPublishDirty(true); setToast(`Imported ${slots.length} match${slots.length === 1 ? '' : 'es'} from the file.`) }
+  }
+
   const openSlots = list.filter((m) => !m.main).length
 
   return (
@@ -1425,6 +1560,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
         {teams.length > 0 && list.length > 0 && (
           <div className="ml-auto flex items-center gap-2 flex-wrap">
             <button onClick={() => setShowAI(true)} className="inline-flex items-center gap-1.5 border border-brand text-brand-dark text-sm font-semibold px-4 h-10 rounded-full hover:bg-brand-light transition"><Sparkles size={15} /> Appoint with AI</button>
+            <button onClick={() => setShowMatchImport(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Upload size={15} /> Import matches</button>
             <button onClick={() => setShowRevised(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><RefreshCw size={15} /> Revised schedule</button>
             <button onClick={exportCsv} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><FileText size={15} /> Export CSV</button>
             <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Plus size={15} /> Add match</button>
@@ -1453,8 +1589,11 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
       {teams.length > 0 && list.length === 0 && (
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-10 text-center">
           <p className="text-sm font-semibold text-ink">No matches scheduled yet</p>
-          <p className="text-xs text-neutral-500 font-medium mt-1">Add matches to start appointing officials.</p>
-          <button onClick={() => setAddingMatch(true)} className="mt-4 inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-10 rounded-full"><Plus size={15} /> Add match</button>
+          <p className="text-xs text-neutral-500 font-medium mt-1">Import the schedule from a file, or add matches manually.</p>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <button onClick={() => setShowMatchImport(true)} className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-10 rounded-full"><Upload size={15} /> Import matches (CSV/Excel)</button>
+            <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full"><Plus size={15} /> Add match</button>
+          </div>
         </div>
       )}
 
@@ -1581,6 +1720,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
       )}
 
       {addingMatch && <AddMatchModal onClose={() => setAddingMatch(false)} onAdd={addMatch} teams={teams} fields={fields} />}
+      {showMatchImport && <SmartImportModal tournamentName={dashTournaments.find((t) => t.id === tid)?.name} existing={list.length} onClose={() => setShowMatchImport(false)} onImport={importMatches} />}
       {showAI && <AppointAiModal onClose={() => setShowAI(false)} onRun={runAI} />}
       {showRevised && <RevisedScheduleModal current={list} onClose={() => setShowRevised(false)} onApply={(merged, mode) => {
         setMatches((prev) => ({ ...prev, [tid]: merged }))
