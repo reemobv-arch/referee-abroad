@@ -135,6 +135,17 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Technical partners footer */}
+      <footer className="mt-8 border-t border-neutral-200 bg-white px-4 py-7">
+        <p className="text-center text-[12px] font-bold uppercase tracking-wider text-neutral-400 mb-5">Technical partners</p>
+        <div className="flex items-center justify-around gap-4 flex-wrap">
+          {[['macron.png', 'Macron'], ['erasmus.png', 'Erasmus+'], ['spintso.webp', 'SPINTSO'], ['bd.png', 'b+d']].map(([f, alt]) => (
+            <img key={f} src={`img/partners/${f}`} alt={alt} className="h-9 w-auto object-contain" />
+          ))}
+        </div>
+        <p className="mt-6 text-center text-[11px] font-medium text-neutral-400">© {new Date().getFullYear()} Referee Abroad</p>
+      </footer>
     </div>
   )
 }
