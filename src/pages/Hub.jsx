@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight, Wrench } from 'lucide-react'
+import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight, Wrench, Layers } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
 const cardCls =
@@ -88,6 +88,22 @@ export default function Hub({ showOffer = true }) {
               </div>
               <span className="mt-auto block text-2xl sm:text-3xl font-extrabold leading-tight text-ink group-hover:text-white transition">Fase 1</span>
               <span className="mt-1 block text-xs sm:text-sm font-medium text-neutral-500 group-hover:text-white/80 transition">Build workspace · source of truth, timeline and requirements</span>
+            </Link>
+
+            <Link
+              to="/phase2"
+              className="group aspect-square flex flex-col rounded-3xl bg-white border border-neutral-200 hover:bg-amber-500 hover:border-amber-500 p-6 shadow-card active:scale-[0.99] transition"
+            >
+              <div className="flex items-start justify-between">
+                <span className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 group-hover:bg-white/20 group-hover:text-white flex items-center justify-center transition">
+                  <Layers size={26} />
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-amber-600 group-hover:text-white transition">
+                  Open <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </div>
+              <span className="mt-auto block text-2xl sm:text-3xl font-extrabold leading-tight text-ink group-hover:text-white transition">Fase 2</span>
+              <span className="mt-1 block text-xs sm:text-sm font-medium text-neutral-500 group-hover:text-white/80 transition">Backlog · future wishes and requirements (own backend)</span>
             </Link>
           </div>
         )}

@@ -1,6 +1,7 @@
-// Shared storage for the Phase 1 sprint board, backed by Upstash Redis (REST).
+// Shared storage for the sprint boards, backed by Upstash Redis (REST).
 // Env (set in Vercel, not in the repo): UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
-const KEY = 'board:referee-abroad-phase1'
+// ?board=phase1 (default) or phase2 selects which board.
+const keyFor = (b) => `board:referee-abroad-${b === 'phase2' ? 'phase2' : 'phase1'}`
 
 async function redis(cmd) {
   const url = process.env.UPSTASH_REDIS_REST_URL
@@ -18,6 +19,7 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'Storage not configured.' })
   }
 
+  const KEY = keyFor(req.query && req.query.board)
   try {
     if (req.method === 'GET') {
       const out = await redis(['GET', KEY])

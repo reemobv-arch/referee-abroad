@@ -15,6 +15,14 @@ const LS_KEY = 'ra_board_phase1'
 const SEED_VERSION = 4 // bump to re-seed the shared board
 const uid = () => Math.random().toString(36).slice(2, 9)
 
+// Phase 2 backlog: ideas/requirements for the own-backend phase. Collected here
+// so nothing is lost; not part of Phase 1 scope.
+const PHASE2_SEED = [
+  ['Webshop in the app', 'Browse products and order from within the app (in-app cart + payment)'],
+  ['Observers log in with their own role and screens', 'Different roles (referee / observer / staff) each get their own views'],
+]
+const buildPhase2 = () => PHASE2_SEED.map(([title, note]) => ({ id: uid(), title, note }))
+
 // Cards come straight from the source-of-truth requirements, one card per item.
 const cardsFor = (groupId) => {
   const g = requirements.find((x) => x.id === groupId)
@@ -24,22 +32,24 @@ const cardsExcept = (groupIds) =>
   requirements.filter((g) => !groupIds.includes(g.id)).flatMap((g) =>
     g.items.map(([id, text]) => ({ id: uid(), title: text, sprint: id, note: g.title })))
 
-const seed = () => ({
-  version: SEED_VERSION,
-  updatedAt: Date.now(),
-  cols: {
-    todo: cardsExcept(['A']),
-    doing: cardsFor('A'),
-    testing: [],
-    done: [
-      { id: uid(), title: 'Architecture & rollout plan', sprint: 'Sprint 1', note: 'Delivered' },
-      { id: uid(), title: 'Clickable prototypes', sprint: 'Sprint 1', note: 'Delivered' },
-    ],
-  },
-})
+const makeSeed = (isP2) => isP2
+  ? { version: SEED_VERSION, updatedAt: Date.now(), cols: { todo: buildPhase2(), doing: [], testing: [], done: [] } }
+  : {
+    version: SEED_VERSION,
+    updatedAt: Date.now(),
+    cols: {
+      todo: cardsExcept(['A']),
+      doing: cardsFor('A'),
+      testing: [],
+      done: [
+        { id: uid(), title: 'Architecture & rollout plan', sprint: 'Sprint 1', note: 'Delivered' },
+        { id: uid(), title: 'Clickable prototypes', sprint: 'Sprint 1', note: 'Delivered' },
+      ],
+    },
+  }
 
-const normalise = (b) => {
-  if (!b || !b.cols) return seed()
+const normalise = (b, isP2) => {
+  if (!b || !b.cols) return makeSeed(isP2)
   const cols = {}
   for (const k of ORDER) cols[k] = Array.isArray(b.cols[k]) ? b.cols[k] : []
   return { version: b.version, updatedAt: b.updatedAt || Date.now(), cols }
@@ -60,7 +70,12 @@ const withMissingCards = (b) => {
   return { board: { ...b, version: SEED_VERSION, cols }, changed: true }
 }
 
-export default function SprintBoard() {
+export default function SprintBoard({ phase = 1 }) {
+  const isP2 = phase === 2
+  const boardKey = isP2 ? 'phase2' : 'phase1'
+  const lsKey = `ra_board_${boardKey}`
+  const api = `/api/board?board=${boardKey}`
+
   const [board, setBoard] = useState(null)
   const [status, setStatus] = useState('') // '', 'saving', 'saved', 'local'
   const [dragId, setDragId] = useState(null)
@@ -74,40 +89,43 @@ export default function SprintBoard() {
   // Load once, then poll for shared updates.
   useEffect(() => {
     let alive = true
+    // Phase 1 keeps itself in sync with the requirements source; Phase 2 is a
+    // free-form backlog, so no requirements migration there.
+    const migrate = (b) => isP2 ? { board: b, changed: false } : withMissingCards(b)
     const load = async () => {
       try {
-        const r = await fetch('/api/board')
+        const r = await fetch(api)
         if (!r.ok) throw new Error('no api')
         const { board: remote } = await r.json()
         if (!alive) return
         if (remote) {
-          const { board, changed } = withMissingCards(normalise(remote))
+          const { board, changed } = migrate(normalise(remote, isP2))
           if (changed) { board.updatedAt = Date.now(); localAt.current = board.updatedAt; setBoard(board); save(board) }
           else { localAt.current = board.updatedAt; setBoard(board) }
         } else {
-          const b = seed(); localAt.current = b.updatedAt; setBoard(b); save(b)
+          const b = makeSeed(isP2); localAt.current = b.updatedAt; setBoard(b); save(b)
         }
       } catch {
         // Local fallback (e.g. dev without the serverless function).
         try {
-          const raw = localStorage.getItem(LS_KEY)
-          const base = raw ? normalise(JSON.parse(raw)) : seed()
-          const { board, changed } = withMissingCards(base)
+          const raw = localStorage.getItem(lsKey)
+          const base = raw ? normalise(JSON.parse(raw), isP2) : makeSeed(isP2)
+          const { board, changed } = migrate(base)
           if (changed) board.updatedAt = Date.now()
           localAt.current = board.updatedAt; setBoard(board); setStatus('local')
-          if (changed || !raw) { try { localStorage.setItem(LS_KEY, JSON.stringify(board)) } catch { /* ignore */ } }
-        } catch { const b = seed(); localAt.current = b.updatedAt; setBoard(b) }
+          if (changed || !raw) { try { localStorage.setItem(lsKey, JSON.stringify(board)) } catch { /* ignore */ } }
+        } catch { const b = makeSeed(isP2); localAt.current = b.updatedAt; setBoard(b) }
       }
     }
     load()
     const t = setInterval(async () => {
       if (busy.current) return
       try {
-        const r = await fetch('/api/board')
+        const r = await fetch(api)
         if (!r.ok) return
         const { board: remote } = await r.json()
         if (remote && remote.updatedAt > localAt.current) {
-          const b = normalise(remote); localAt.current = b.updatedAt; setBoard(b)
+          const b = normalise(remote, isP2); localAt.current = b.updatedAt; setBoard(b)
         }
       } catch { /* ignore */ }
     }, 6000)
@@ -115,12 +133,12 @@ export default function SprintBoard() {
   }, [])
 
   const save = (b) => {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(b)) } catch { /* ignore */ }
+    try { localStorage.setItem(lsKey, JSON.stringify(b)) } catch { /* ignore */ }
     clearTimeout(saveTimer.current)
     setStatus((s) => (s === 'local' ? 'local' : 'saving'))
     saveTimer.current = setTimeout(async () => {
       try {
-        const r = await fetch('/api/board', {
+        const r = await fetch(api, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ board: b }),
         })
@@ -202,19 +220,19 @@ export default function SprintBoard() {
       }}
     >
       <div className="max-w-5xl mx-auto px-5 py-10">
-        <Link to="/phase1" className="inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm mb-8">
-          <ArrowLeft size={17} /> Back to Fase 1
+        <Link to={isP2 ? '/' : '/phase1'} className="inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm mb-8">
+          <ArrowLeft size={17} /> {isP2 ? 'Back to hub' : 'Back to Fase 1'}
         </Link>
 
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <Logo size={40} showText textClass="text-lg" />
-          <span className="text-xs font-bold uppercase tracking-wide bg-brand-light text-brand-dark px-3 py-1 rounded-full">Sprint board</span>
+          <span className={`text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full ${isP2 ? 'bg-amber-100 text-amber-700' : 'bg-brand-light text-brand-dark'}`}>{isP2 ? 'Fase 2 · backlog' : 'Sprint board'}</span>
         </div>
 
         <div className="mt-6 flex items-end justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight flex items-center gap-3">
-              <KanbanSquare size={30} className="text-brand-dark" /> Sprint board
+              <KanbanSquare size={30} className={isP2 ? 'text-amber-500' : 'text-brand-dark'} /> {isP2 ? 'Fase 2 · Sprint board' : 'Sprint board'}
             </h1>
             <p className="mt-2 text-neutral-600 font-medium max-w-2xl">
               Drag cards between columns as work moves. Changes are shared with everyone who opens this link.

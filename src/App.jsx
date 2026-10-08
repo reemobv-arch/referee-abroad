@@ -58,6 +58,7 @@ export default function App() {
       <Route path="/phase1" element={<PasswordGate><Phase1Hub /></PasswordGate>} />
       <Route path="/phase1/source-of-truth" element={<PasswordGate><Phase1SourceOfTruth /></PasswordGate>} />
       <Route path="/phase1/sprint-board" element={<PasswordGate><SprintBoard /></PasswordGate>} />
+      <Route path="/phase2" element={<PasswordGate><SprintBoard phase={2} /></PasswordGate>} />
       <Route path="/phase1/progress-log" element={<PasswordGate><ProgressLog /></PasswordGate>} />
       <Route path="/phase1/handover" element={<PasswordGate><Handover /></PasswordGate>} />
       <Route element={<PhoneShell />}>
