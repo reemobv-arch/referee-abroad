@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom'
 import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight, Wrench, Layers } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
+// Rough estimate of how far Phase 1 is (shown as a fill on the Fase 1 card).
+const PHASE1_PCT = 40
+
 const cardCls =
   'group flex flex-col rounded-2xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-4 min-h-[160px] shadow-card active:scale-[0.98] transition'
 const iconCls =
@@ -76,18 +79,28 @@ export default function Hub({ showOffer = true }) {
           <div className="mt-3 grid grid-cols-2 gap-3">
             <Link
               to="/phase1"
-              className="group aspect-square flex flex-col rounded-3xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-6 shadow-card active:scale-[0.99] transition"
+              className="group relative overflow-hidden aspect-square flex flex-col rounded-3xl bg-white border border-neutral-200 p-6 shadow-card hover:shadow-lg active:scale-[0.99] transition"
             >
-              <div className="flex items-start justify-between">
-                <span className="w-14 h-14 rounded-2xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center transition">
+              {/* Progress fill: how far Phase 1 is */}
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand/30 to-brand/10" style={{ height: `${PHASE1_PCT}%` }} aria-hidden="true" />
+              <span className="pointer-events-none absolute inset-x-0 h-[3px] bg-brand/70" style={{ bottom: `${PHASE1_PCT}%` }} aria-hidden="true" />
+
+              <div className="relative flex items-start justify-between">
+                <span className="w-14 h-14 rounded-2xl bg-brand-light text-brand-dark flex items-center justify-center">
                   <Wrench size={26} />
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-dark group-hover:text-white transition">
+                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-dark">
                   Open <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
                 </span>
               </div>
-              <span className="mt-auto block text-2xl sm:text-3xl font-extrabold leading-tight text-ink group-hover:text-white transition">Fase 1</span>
-              <span className="mt-1 block text-xs sm:text-sm font-medium text-neutral-500 group-hover:text-white/80 transition">Build workspace · source of truth, timeline and requirements</span>
+
+              <div className="relative mt-4 flex items-baseline gap-2">
+                <span className="text-5xl font-extrabold text-brand-dark leading-none">{PHASE1_PCT}%</span>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400">complete</span>
+              </div>
+
+              <span className="relative mt-auto block text-2xl sm:text-3xl font-extrabold leading-tight text-ink">Fase 1</span>
+              <span className="relative mt-1 block text-xs sm:text-sm font-medium text-neutral-500">Build workspace · source of truth, timeline and requirements</span>
             </Link>
 
             <Link
