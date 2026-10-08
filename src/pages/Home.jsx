@@ -34,8 +34,8 @@ export default function Home() {
       </header>
 
       {/* Hero: a referee in the field, like the website. Informational only. */}
-      <div className="relative h-80">
-        <img src="img/ra-hero.jpg" alt="Referee at an international tournament" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="relative h-[52vh] min-h-[380px]">
+        <img src="img/ra-hero.jpg" alt="Referee at an international tournament" className="absolute inset-0 w-full h-full object-cover object-center" />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(11,20,14,0.85) 0%, rgba(11,20,14,0.15) 55%, rgba(11,20,14,0.1) 100%)' }} />
         <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
           <p className="text-[12px] font-bold uppercase tracking-wider text-white/80">The Referee Abroad experience</p>
