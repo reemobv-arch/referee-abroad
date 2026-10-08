@@ -23,3 +23,19 @@ export function regionOf(country) {
 export function regionMeta(key) {
   return REGIONS.find((r) => r.key === key) || REGIONS[1]
 }
+
+// Country name -> flag emoji, for the tournament cards.
+const FLAGS = {
+  portugal: '🇵🇹', spain: '🇪🇸', denmark: '🇩🇰', netherlands: '🇳🇱', malta: '🇲🇹',
+  austria: '🇦🇹', germany: '🇩🇪', france: '🇫🇷', italy: '🇮🇹', sweden: '🇸🇪',
+  england: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'united kingdom': '🇬🇧', belgium: '🇧🇪', switzerland: '🇨🇭',
+  poland: '🇵🇱', czechia: '🇨🇿', norway: '🇳🇴', ireland: '🇮🇪', croatia: '🇭🇷',
+  'united states': '🇺🇸', usa: '🇺🇸', canada: '🇨🇦', mexico: '🇲🇽',
+  japan: '🇯🇵', china: '🇨🇳', thailand: '🇹🇭', singapore: '🇸🇬', 'south korea': '🇰🇷',
+  indonesia: '🇮🇩', malaysia: '🇲🇾', 'united arab emirates': '🇦🇪', uae: '🇦🇪',
+  qatar: '🇶🇦', vietnam: '🇻🇳', india: '🇮🇳', philippines: '🇵🇭',
+}
+
+export function countryFlag(country) {
+  return FLAGS[(country || '').trim().toLowerCase()] || '🏳️'
+}

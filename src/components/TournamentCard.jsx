@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { MapPin, Calendar, ArrowRight, Check, Clock } from 'lucide-react'
+import { countryFlag } from '../regions.js'
 
 const appliedChip = {
   confirmed: { label: "You're in", cls: 'bg-brand text-white', Icon: Check },
@@ -27,7 +28,7 @@ export default function TournamentCard({ t }) {
           : t.spotsLeft != null && <span className="absolute top-3 right-3 bg-black/55 text-white text-[11px] font-bold px-3 py-1 rounded-full">{t.spotsLeft} spots left</span>}
         <div className="absolute bottom-3 left-4 right-4 text-white">
           <h3 className="text-xl font-extrabold leading-tight drop-shadow-sm">{t.name}</h3>
-          <p className="mt-0.5 text-[13px] font-semibold text-white/90 flex items-center gap-1.5"><MapPin size={14} /> {t.city}, {t.country}</p>
+          <p className="mt-0.5 text-[13px] font-semibold text-white/90 flex items-center gap-1.5"><span className="text-[15px] leading-none">{countryFlag(t.country)}</span> {t.city}, {t.country}</p>
         </div>
       </div>
       <div className="flex items-center justify-between px-4 py-3.5">
