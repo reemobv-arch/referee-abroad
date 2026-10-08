@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Trophy, MessageCircle } from 'lucide-react'
+import { Home, Trophy, MessageCircle, ShoppingBag } from 'lucide-react'
+
+const SHOP_URL = 'https://refereeabroad.com/referee-abroad-shop/'
 
 function Football({ size = 22 }) {
   return (
@@ -34,6 +36,13 @@ export default function BottomNav() {
             )}
           </NavLink>
         ))}
+        {/* External: Referee Abroad webshop (merchandise) */}
+        <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 flex-1 py-1">
+          <span className="flex items-center justify-center h-8 w-12 rounded-2xl text-neutral-400">
+            <ShoppingBag size={22} strokeWidth={2.2} />
+          </span>
+          <span className="text-[11px] font-bold text-neutral-400">Shop</span>
+        </a>
       </div>
     </nav>
   )
