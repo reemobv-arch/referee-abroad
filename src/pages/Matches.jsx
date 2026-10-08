@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Clock, Users, Check, ChevronRight, MessageCircle } from 'lucide-react'
+import { MapPin, Clock, Users, Check, ChevronRight, ChevronDown, MessageCircle } from 'lucide-react'
 import { TopBar } from '../components/ui.jsx'
+import ProfileCircle from '../components/ProfileCircle.jsx'
 import { myMatches } from '../data.js'
 
 const roleColor = (role) => role.startsWith('Main') ? 'bg-brand text-white' : 'bg-brand-light text-brand-dark'
@@ -12,19 +14,34 @@ export default function Matches() {
     (acc[m.tournament] = acc[m.tournament] || []).push(m)
     return acc
   }, {})
+  const tournaments = Object.keys(byTournament)
+  const [open, setOpen] = useState(tournaments[0] || null)
 
   return (
     <div className="pb-4">
-      <TopBar title="My matches" />
+      <TopBar title="My matches" right={<ProfileCircle />} />
       <div className="px-4 pt-4">
         <p className="text-xs font-medium text-neutral-500 mb-3">
           {myMatches.length} appointments
         </p>
 
-        {Object.entries(byTournament).map(([tournament, list]) => (
-          <section key={tournament} className="mb-5">
-            <h2 className="text-xs font-bold text-neutral-500 mb-2">{tournament}</h2>
-            <div className="space-y-3">
+        {tournaments.map((tournament) => {
+          const list = byTournament[tournament]
+          const isOpen = open === tournament
+          return (
+          <section key={tournament} className="mb-3">
+            <button
+              onClick={() => setOpen(isOpen ? null : tournament)}
+              className="w-full flex items-center justify-between gap-2 bg-white rounded-2xl border border-neutral-200 px-4 py-3.5 active:scale-[0.99] transition text-left"
+            >
+              <span className="min-w-0">
+                <span className="block text-[15px] font-extrabold text-ink truncate">{tournament}</span>
+                <span className="block text-[12px] font-semibold text-neutral-500">{list.length} {list.length === 1 ? 'match' : 'matches'}</span>
+              </span>
+              <ChevronDown size={20} className={`text-neutral-400 flex-none transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+            <div className="space-y-3 mt-3">
               {list.map((m) => (
                 <button key={m.id} onClick={() => nav(`/match/${m.id}`)} className="w-full text-left bg-white rounded-3xl p-5 shadow-card active:scale-[0.99] transition">
                   <div className="flex items-center justify-between gap-2">
@@ -55,8 +72,10 @@ export default function Matches() {
                 </button>
               ))}
             </div>
+            )}
           </section>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Users, Sparkles, ArrowRight } from 'lucide-react'
 import { TopBar } from '../components/ui.jsx'
+import ProfileCircle from '../components/ProfileCircle.jsx'
 
 const convos = [
   { id: 'org', name: 'Referee Abroad', kind: 'org', last: "Done 👍 Updated to L, it's set in your profile.", time: '14:32', unread: 0, to: '/chat', tag: 'Organisation' },
@@ -12,7 +13,7 @@ export default function Chat() {
   const nav = useNavigate()
   return (
     <div className="pb-4">
-      <TopBar title="Chat" />
+      <TopBar title="Chat" right={<ProfileCircle />} />
       <div className="px-4 pt-4">
         <button
           onClick={() => nav('/assistant')}

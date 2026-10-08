@@ -62,10 +62,10 @@ export default function Tournaments() {
                 <button
                   key={r.key}
                   onClick={() => { setRegion(r.key); setQ('') }}
-                  className="relative w-full h-32 rounded-3xl overflow-hidden shadow-card active:scale-[0.99] transition-transform text-left"
+                  className="relative w-full h-44 rounded-3xl overflow-hidden shadow-card active:scale-[0.99] transition-transform text-left"
                 >
-                  <div className="absolute inset-0 flex items-center justify-center text-[120px] leading-none opacity-90 select-none" aria-hidden="true">{r.flag}</div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/10" />
+                  <div className="absolute inset-0 flex items-center justify-end pr-7 text-[132px] leading-none opacity-95 select-none" aria-hidden="true">{r.flag}</div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
                   <div className="absolute inset-0 p-5 flex flex-col justify-between text-white">
                     <div>
                       <p className="text-2xl font-extrabold leading-tight">{r.label}</p>
