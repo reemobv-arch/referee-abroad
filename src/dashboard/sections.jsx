@@ -353,7 +353,9 @@ function ParticipantsTable({ t, enrol, onAction }) {
     ) },
   ]
 
-  const [vis, setVis] = useState(() => Object.fromEntries(COLS.map((c) => [c.key, true])))
+  // Hidden by default (keeps the table in view); re-enable via the Columns picker.
+  const DEFAULT_OFF = new Set(['arrflight', 'departure', 'depflight', 'actions'])
+  const [vis, setVis] = useState(() => Object.fromEntries(COLS.map((c) => [c.key, !DEFAULT_OFF.has(c.key)])))
   const [pickerOpen, setPickerOpen] = useState(false)
   const shown = COLS.filter((c) => vis[c.key])
   const toggle = (k) => setVis((v) => ({ ...v, [k]: !v[k] }))
