@@ -20,6 +20,7 @@ const uid = () => Math.random().toString(36).slice(2, 9)
 const PHASE2_SEED = [
   ['Webshop in the app', 'Browse products and order from within the app (in-app cart + payment)'],
   ['Observers log in with their own role and screens', 'Different roles (referee / observer / staff) each get their own views'],
+  ['Tournament briefing: auto Google Meet links + RSVP', 'Google Calendar integration generates the Meet link, sends the invites and tracks accept status for the briefing and staff kick-off. Phase 1 only has an arranged toggle; links are shared outside the dashboard.'],
 ]
 const buildPhase2 = () => PHASE2_SEED.map(([title, note]) => ({ id: uid(), title, note }))
 
