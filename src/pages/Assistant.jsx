@@ -1,28 +1,34 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Send, Sparkles, MessageCircle } from 'lucide-react'
-import { faq } from '../data.js'
+import { localAnswer } from '../lib/faqAnswer.js'
 
-// Tiny FAQ-grounded answer: score by shared keywords, fall back to a safe reply.
-function answer(question) {
-  const q = question.toLowerCase()
-  let best = null
-  let bestScore = 0
-  for (const item of faq) {
-    let score = 0
-    for (const tag of item.tags) if (q.includes(tag)) score += 2
-    for (const w of item.q.toLowerCase().split(/\W+/)) if (w.length > 3 && q.includes(w)) score += 1
-    if (score > bestScore) { bestScore = score; best = item }
+// Ask the server assistant. On any failure (not configured, offline, error)
+// returns null so the caller can fall back to the local answer.
+async function askServer(history) {
+  try {
+    const messages = history
+      .filter((m) => m.from === 'me' || m.from === 'bot')
+      .map((m) => ({ role: m.from === 'me' ? 'user' : 'assistant', content: m.text }))
+    const r = await fetch('/api/assistant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+    })
+    if (!r.ok) return null
+    const data = await r.json()
+    if (!data || !data.reply) return null
+    return { text: data.reply, fallback: !!data.handoff }
+  } catch {
+    return null
   }
-  if (best && bestScore >= 2) return { text: best.a, fallback: false }
-  return { text: "I'm not sure about that one yet. I can help with match schedules, arrival, kit, transfers, applying and payments. For anything else, the Referee Abroad team is happy to help.", fallback: true }
 }
 
 const suggestions = [
-  'When do I get my match schedule?',
-  'How do I change my kit size?',
-  'What should I pack?',
-  'How do I get to the hotel?',
+  'What does the tournament fee include?',
+  'How old do I need to be to take part?',
+  'How is travel organised?',
+  'Why is there a credit card guarantee?',
 ]
 
 export default function Assistant() {
@@ -31,22 +37,25 @@ export default function Assistant() {
     { from: 'bot', text: "Hi! I'm the Referee Abroad assistant 🤖 Ask me anything about your tournaments, travel or kit." },
   ])
   const [text, setText] = useState('')
+  const [typing, setTyping] = useState(false)
   const listRef = useRef(null)
 
   useEffect(() => {
     const el = listRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [msgs])
+  }, [msgs, typing])
 
-  const ask = (q) => {
+  const ask = async (q) => {
     const question = (q ?? text).trim()
-    if (!question) return
-    setMsgs((m) => [...m, { from: 'me', text: question }])
+    if (!question || typing) return
+    const history = [...msgs, { from: 'me', text: question }]
+    setMsgs(history)
     setText('')
-    setTimeout(() => {
-      const a = answer(question)
-      setMsgs((m) => [...m, { from: 'bot', text: a.text, handoff: a.fallback }])
-    }, 350)
+    setTyping(true)
+    // Try the live AI endpoint first; fall back to the local FAQ answer.
+    const a = (await askServer(history)) || localAnswer(question)
+    setTyping(false)
+    setMsgs((m) => [...m, { from: 'bot', text: a.text, handoff: a.fallback }])
   }
 
   return (
@@ -80,9 +89,19 @@ export default function Assistant() {
           </div>
         ))}
 
-        {msgs.length <= 1 && (
+        {typing && (
+          <div className="max-w-[80%] bg-white border border-neutral-200 rounded-3xl rounded-bl-md px-4 py-3">
+            <span className="flex items-center gap-1" aria-label="Assistant is typing">
+              <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+            </span>
+          </div>
+        )}
+
+        {msgs.length <= 1 && !typing && (
           <div className="pt-2 space-y-2">
-            <p className="text-[11px] font-semibold text-neutral-400 px-1">Try asking</p>
+            <p className="text-[11px] font-semibold text-neutral-500 px-1">Try asking</p>
             {suggestions.map((s) => (
               <button key={s} onClick={() => ask(s)} className="block w-full text-left bg-white border border-neutral-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-ink active:scale-[0.99]">
                 {s}

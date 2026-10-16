@@ -37,7 +37,7 @@ export default function Notifications() {
                 <span className="flex items-center gap-2">
                   <span className="font-bold text-ink text-sm">{n.title}</span>
                   {n.unread && <span className="w-2 h-2 rounded-full bg-brand flex-none" />}
-                  <span className="ml-auto text-[11px] text-neutral-400 font-medium flex-none">{n.ago}</span>
+                  <span className="ml-auto text-[11px] text-neutral-500 font-medium flex-none">{n.ago}</span>
                 </span>
                 <span className="block text-xs text-neutral-500 font-medium mt-0.5 leading-snug">{n.body}</span>
               </span>

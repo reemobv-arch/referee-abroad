@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Plus, MapPin, Calendar, Users, X, Send, MessageSquare, Search, TrendingUp,
-  Mail, MessageCircle, AlertTriangle, Check, Sparkles, Star, Globe, Phone, ClipboardList,
+  Mail, MessageCircle, AlertTriangle, AlertCircle, Check, Sparkles, Star, Globe, Phone, ClipboardList,
   ChevronRight, Clock, Pencil, Trash2, RefreshCw, CheckCircle2, Coins, Building2, Plug, HelpCircle, UserPlus,
-  Upload, Lock, FileText, SlidersHorizontal, ChevronDown,
+  Upload, Lock, FileText, SlidersHorizontal, ChevronDown, Download, Save,
 } from 'lucide-react'
 import {
-  dashTournaments, dashReferees, dashStaff, dashTickets, dashPnl, dashAnalytics,
+  dashTournaments, dashReferees, dashStaff, dashTickets, dashPnl,
   dashEnrolments, dashMatches, dashInbox, refById, dashClubs,
   dashFields, dashObservers, dashGuests, obsById, dashReports,
 } from './data.js'
-import { faq } from '../data.js'
+import { FAQ_ITEMS } from '../faqContent.js'
+import Flag from '../components/Flag.jsx'
+import { countryCode } from '../regions.js'
+import { getDashTournaments, getEnrolmentSummary, getParticipants, getReferees, getPnl, getAnalytics, approveApplication, getRefereeApplications, updateApplication, LIVE } from '../lib/dataSource.js'
 
 const euro = (n) => '€' + n.toLocaleString('en-US')
 const initialsOf = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
@@ -106,6 +109,34 @@ function extractClub(name) {
   return s || String(name || '').trim()
 }
 
+// Read a dropped file into table text. .xlsx/.xls go through SheetJS (loaded on
+// demand, so it never weighs down the initial bundle); everything else is read
+// as plain text (CSV / TSV).
+async function fileToTableText(file) {
+  const name = (file.name || '').toLowerCase()
+  if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+    const XLSX = await import('xlsx')
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' })
+    const sheet = wb.Sheets[wb.SheetNames[0]]
+    return XLSX.utils.sheet_to_csv(sheet)
+  }
+  return await file.text()
+}
+
+// Trigger a client-side download of text as a file.
+function downloadText(filename, text, type = 'text/csv;charset=utf-8') {
+  const url = URL.createObjectURL(new Blob([text], { type }))
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url)
+}
+
+// Reusable column-mapping profiles (I6), saved per source name in the browser,
+// so an organiser's recurring export format only has to be mapped once.
+const MAP_STORE = 'ra_import_maps'
+function loadMapProfiles() { try { return JSON.parse(localStorage.getItem(MAP_STORE) || '{}') } catch { return {} } }
+function saveMapProfile(name, header, map) {
+  try { const all = loadMapProfiles(); all[name] = { header, map }; localStorage.setItem(MAP_STORE, JSON.stringify(all)) } catch { /* ignore */ }
+}
+
 // Turn a parsed table + a column mapping into { teams, matches }.
 function buildImport(table, map) {
   const val = (r, f) => (map[f] != null ? (r[map[f]] ?? '') : '').toString().trim()
@@ -147,7 +178,8 @@ function LevelPill({ level }) {
     medior: 'bg-sky-100 text-sky-700',
     talent: 'bg-brand-light text-brand-dark',
   }
-  return <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${map[level]}`}>{level}</span>
+  if (!level) return null
+  return <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize whitespace-nowrap ${map[level] || 'bg-brand-light text-brand-dark'}`}>{level}</span>
 }
 
 function StatusPill({ status }) {
@@ -197,7 +229,7 @@ const EnrolChips = ({ refId, className = '' }) => {
 function StatCard({ label, value, sub }) {
   return (
     <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 hover:shadow-md transition-shadow">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{label}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">{label}</p>
       <p className="mt-1.5 text-2xl font-extrabold text-ink leading-none">{value}</p>
       {sub && <p className="text-xs font-semibold text-brand-dark mt-1.5">{sub}</p>}
     </div>
@@ -247,7 +279,8 @@ function Crumb({ children, onClick, current }) {
 }
 
 function EnrolmentList({ enrol, onAction }) {
-  if (enrol.length === 0) return <p className="text-sm text-neutral-400 font-medium">No participants yet.</p>
+  if (enrol.length === 0) return <EmptyState title="No participants yet" sub="Referees who apply for this tournament will appear here." />
+
   const actionsFor = (status) => {
     if (status === 'applied') return [['approve', 'Approve', 'bg-brand text-white'], ['decline', 'Decline', 'border border-neutral-200 text-neutral-500']]
     if (status === 'paid') return [['approve', 'Confirm', 'bg-brand text-white'], ['decline', 'Remove', 'border border-neutral-200 text-neutral-500']]
@@ -265,20 +298,25 @@ function EnrolmentList({ enrol, onAction }) {
       </div>
       <div className="divide-y divide-neutral-100">
         {enrol.map((e, i) => {
-          const r = refById[e.refId]
+          const r = refById[e.refId] || {}
+          const name = e.name || r.name || `Referee #${e.id ?? ''}`
+          const country = e.country || r.country || ''
+          const flag = r.flag || ''
           return (
-            <div key={i} className="flex items-center px-4 py-2.5">
+            <div key={e.id ?? e.refId ?? i} className="flex items-center px-4 py-2.5">
               <span className="w-56 flex-none flex items-center gap-3 min-w-0">
-                <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(r.name)}</span>
-                <span className="text-sm font-semibold text-ink truncate">{r.name}</span>
+                <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(name)}</span>
+                <span className="text-sm font-semibold text-ink truncate">{name}</span>
               </span>
-              <span className="w-40 text-sm text-neutral-500 font-medium hidden md:block truncate">{r.flag} {r.country}</span>
+              <span className="w-40 text-sm text-neutral-500 font-medium hidden md:block truncate">{flag} {country}</span>
               <span className="w-32 text-xs text-neutral-500 font-medium hidden sm:flex items-center gap-1">{fmtEnrolDate(e.date)}</span>
               <span className="w-24"><span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${enrolMap[e.status]}`}>{e.status}</span></span>
               <span className="flex-1 flex gap-1.5 justify-end">
-                {actionsFor(e.status).map(([act, label, cls]) => (
-                  <button key={act} onClick={() => onAction(e.refId, act)} className={`text-[11px] font-semibold px-2.5 h-7 rounded-full ${cls}`}>{label}</button>
-                ))}
+                {onAction
+                  ? actionsFor(e.status).map(([act, label, cls]) => (
+                      <button key={act} onClick={() => onAction(e.refId, act)} className={`text-[11px] font-semibold px-2.5 h-7 rounded-full ${cls}`}>{label}</button>
+                    ))
+                  : <span className="text-[11px] font-medium text-neutral-300">read-only</span>}
               </span>
             </div>
           )
@@ -288,7 +326,11 @@ function EnrolmentList({ enrol, onAction }) {
   )
 }
 
-/* ---- Participants table: full operational view with a column picker ---- */
+/* ---- Participants table: operational view with a column picker ----
+   Live Phase 1 only has a few whitelisted fields per participant (name,
+   country, status, email, sex); the richer operational columns (phone, DOB,
+   size, cost, accommodation, flights, ...) are mock-only until that data
+   exists. In live we therefore show only the available columns. */
 const FEMALE_NAMES = new Set(['Ana', 'Sophie', 'Emma', 'Lena', 'Marta', 'Chiara', 'Sara', 'Julia', 'Nina', 'Laura'])
 const SIZES = ['XS', 'S', 'M', 'L', 'XL']
 const HOTELS = ['Hotel Vila Foz', 'Grand Plaza', 'City Garden Inn', 'Seaside Resort', 'Olympic Lodge', 'Central Suites']
@@ -301,74 +343,153 @@ function partExtras(r, t) {
   const dd = String(day).padStart(2, '0'); const mm = String(month).padStart(2, '0')
   const parcels = String(t?.dates || '').split(' to ')
   return {
-    first, surname,
-    size: SIZES[h % SIZES.length],
-    age, dob: `${dd}-${mm}-${birthYear}`,
-    whatsapp: r.phone || '',
-    sex: FEMALE_NAMES.has(first) ? 'F' : 'M',
-    accommodation: HOTELS[h % HOTELS.length],
-    arrival: parcels[0] || '', arrivalFlight: flightNo(ht),
-    departure: parcels[1] || parcels[0] || '', departureFlight: flightNo(ht >> 2),
+    first, surname, size: SIZES[h % SIZES.length], age, dob: `${dd}-${mm}-${birthYear}`,
+    whatsapp: r.phone || '', sex: FEMALE_NAMES.has(first) ? 'F' : 'M', accommodation: HOTELS[h % HOTELS.length],
+    arrival: parcels[0] || '', arrivalFlight: flightNo(ht), departure: parcels[1] || parcels[0] || '', departureFlight: flightNo(ht >> 2),
   }
 }
-const ROLE_PILL = { referee: 'bg-brand-light text-brand-dark', staff: 'bg-sky-100 text-sky-700', observer: 'bg-amber-100 text-amber-700' }
+const PART_ROLES = ['referee', 'staff', 'observer', 'media', 'observer VIP', 'coach']
+const ROLE_PILL = {
+  referee: 'bg-brand-light text-brand-dark', staff: 'bg-sky-100 text-sky-700', observer: 'bg-amber-100 text-amber-700',
+  media: 'bg-purple-100 text-purple-700', 'observer VIP': 'bg-rose-100 text-rose-700', coach: 'bg-teal-100 text-teal-700',
+}
+const PART_LIVE_COLS = new Set(['num', 'name', 'surname', 'country', 'status', 'role', 'fa', 'email', 'sex'])
+const PART_DEFAULT_OFF = new Set(['arrflight', 'departure', 'depflight', 'actions'])
+
+// Export to a real .xlsx file, SheetJS loaded on demand.
+async function exportToXlsx(filename, headers, rows) {
+  const XLSX = await import('xlsx')
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Export')
+  XLSX.writeFile(wb, filename)
+}
+// Multi-sheet export: { 'Sheet name': { headers, rows } }.
+async function exportSheetsToXlsx(filename, sheets) {
+  const XLSX = await import('xlsx')
+  const wb = XLSX.utils.book_new()
+  for (const [name, { headers, rows }] of Object.entries(sheets)) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...rows]), name.slice(0, 31))
+  }
+  XLSX.writeFile(wb, filename)
+}
 
 function ParticipantsTable({ t, enrol, onAction }) {
   const rows = useMemo(() => enrol.map((e, i) => {
+    if (LIVE) {
+      const parts = (e.name || '').split(' ')
+      return { num: i + 1, first: parts[0] || '', surname: parts.slice(1).join(' '), country: e.country || '', flag: '', status: e.status, role: e.role || 'referee', fa: !!e.fa, orderId: e.orderId, email: e.email || '', sex: e.sex || '', paid: e.status === 'confirmed', e }
+    }
     const r = refById[e.refId] || { name: `Referee ${i + 1}` }
     const x = partExtras(r, t)
     const paid = e.status === 'confirmed' || e.status === 'paid'
     const role = i % 9 === 8 ? 'observer' : i % 6 === 5 ? 'staff' : 'referee'
-    return { e, r, x, i, role, paid, fee: paid ? 'Paid' : 'No fee', cost: paid ? `€${150 + (hashN(r.id || 'x') % 90)}` : '—' }
+    return {
+      num: i + 1, first: x.first, surname: x.surname, country: r.country || '', flag: r.flag || '', status: e.status, role,
+      email: r.email || '', phone: r.phone || '', size: x.size, age: x.age, dob: x.dob, whatsapp: x.whatsapp, sex: x.sex,
+      fee: paid ? 'Paid' : 'No fee', cost: paid ? `€${150 + (hashN(r.id || 'x') % 90)}` : '—', accom: x.accommodation,
+      arrival: x.arrival, arrflight: x.arrivalFlight, departure: x.departure, depflight: x.departureFlight, paid, e,
+    }
   }), [enrol, t])
 
-  const COLS = [
-    { key: 'num', label: '#', cell: (d) => d.i + 1, hideable: false },
-    { key: 'name', label: 'Name', cell: (d) => d.x.first },
-    { key: 'surname', label: 'Surname', cell: (d) => d.x.surname },
-    { key: 'country', label: 'Country', cell: (d) => `${d.r.flag || ''} ${d.r.country || ''}` },
-    { key: 'status', label: 'Status', cell: (d) => <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${enrolMap[d.e.status]}`}>{d.e.status}</span> },
-    { key: 'role', label: 'Role', cell: (d) => <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${ROLE_PILL[d.role]}`}>{d.role}</span> },
-    { key: 'email', label: 'Email', cell: (d) => d.r.email || '' },
-    { key: 'phone', label: 'Phone', cell: (d) => d.r.phone || '' },
-    { key: 'size', label: 'Size', cell: (d) => d.x.size },
-    { key: 'age', label: 'Age', cell: (d) => d.x.age },
-    { key: 'dob', label: 'Date of birth', cell: (d) => d.x.dob },
-    { key: 'whatsapp', label: 'WhatsApp', cell: (d) => d.x.whatsapp },
-    { key: 'sex', label: 'Sex', cell: (d) => d.x.sex },
-    { key: 'fee', label: 'Fee', cell: (d) => <span className={d.paid ? 'text-brand-dark font-semibold' : 'text-neutral-400'}>{d.fee}</span> },
-    { key: 'cost', label: 'Cost', cell: (d) => d.cost },
-    { key: 'accom', label: 'Accommodation', cell: (d) => d.x.accommodation },
-    { key: 'arrival', label: 'Arrival', cell: (d) => d.x.arrival },
-    { key: 'arrflight', label: 'Arrival flight', cell: (d) => d.x.arrivalFlight },
-    { key: 'departure', label: 'Departure', cell: (d) => d.x.departure },
-    { key: 'depflight', label: 'Departure flight', cell: (d) => d.x.departureFlight },
-    { key: 'actions', label: 'Actions', hideable: true, cell: (d) => (
+  // Local prototype state (no backend yet): per-row role override, FA flag, selection.
+  const [roleOv, setRoleOv] = useState({})
+  const [faMap, setFaMap] = useState({})
+  const [sel, setSel] = useState(() => new Set())
+  const roleOf = (d) => roleOv[d.num] ?? d.role
+  const faOf = (d) => faMap[d.num] ?? !!d.fa
+  const toggleFa = (d) => {
+    const next = !faOf(d)
+    setFaMap((m) => ({ ...m, [d.num]: next }))
+    if (d.orderId) updateApplication(d.orderId, { fa: next }).catch(() => {})
+  }
+  const setRole = (d, role) => {
+    setRoleOv((m) => ({ ...m, [d.num]: role }))
+    if (d.orderId) updateApplication(d.orderId, { role }).catch(() => {})
+  }
+  const toggleSel = (num) => setSel((s) => { const n = new Set(s); n.has(num) ? n.delete(num) : n.add(num); return n })
+
+  const dash = (v) => (v == null || v === '' ? '—' : v)
+  const ALL_COLS = [
+    { key: 'num', label: '#', cell: (d) => d.num, hideable: false },
+    { key: 'name', label: 'Name', cell: (d) => dash(d.first) },
+    { key: 'surname', label: 'Surname', cell: (d) => dash(d.surname) },
+    { key: 'country', label: 'Country', cell: (d) => <span className="inline-flex items-center gap-1.5"><Flag code={countryCode(d.country)} emoji={d.flag} size={12} /> {d.country || '—'}</span> },
+    { key: 'status', label: 'Status', cell: (d) => <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${enrolMap[d.status]}`}>{d.status}</span> },
+    { key: 'role', label: 'Role', cell: (d) => (
+      <select value={roleOf(d)} onChange={(e) => setRole(d, e.target.value)}
+        className={`text-[10px] font-semibold pl-2 pr-1 py-1 rounded-full capitalize border-0 outline-none cursor-pointer ${ROLE_PILL[roleOf(d)] || 'bg-neutral-100 text-neutral-500'}`}>
+        {PART_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+      </select>
+    ) },
+    { key: 'fa', label: 'FA referee', cell: (d) => (
+      <button onClick={() => toggleFa(d)} className={`text-[10px] font-bold px-2.5 h-6 rounded-full transition ${faOf(d) ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}>{faOf(d) ? 'Yes' : 'No'}</button>
+    ) },
+    { key: 'email', label: 'Email', cell: (d) => dash(d.email) },
+    { key: 'phone', label: 'Phone', cell: (d) => dash(d.phone) },
+    { key: 'size', label: 'Size', cell: (d) => dash(d.size) },
+    { key: 'age', label: 'Age', cell: (d) => dash(d.age) },
+    { key: 'dob', label: 'Date of birth', cell: (d) => dash(d.dob) },
+    { key: 'whatsapp', label: 'WhatsApp', cell: (d) => dash(d.whatsapp) },
+    { key: 'sex', label: 'Sex', cell: (d) => dash(d.sex) },
+    { key: 'fee', label: 'Fee', cell: (d) => <span className={d.paid ? 'text-brand-dark font-semibold' : 'text-neutral-500'}>{dash(d.fee)}</span> },
+    { key: 'cost', label: 'Cost', cell: (d) => dash(d.cost) },
+    { key: 'accom', label: 'Accommodation', cell: (d) => dash(d.accom) },
+    { key: 'arrival', label: 'Arrival', cell: (d) => dash(d.arrival) },
+    { key: 'arrflight', label: 'Arrival flight', cell: (d) => dash(d.arrflight) },
+    { key: 'departure', label: 'Departure', cell: (d) => dash(d.departure) },
+    { key: 'depflight', label: 'Departure flight', cell: (d) => dash(d.depflight) },
+    ...(LIVE ? [] : [{ key: 'actions', label: 'Actions', cell: (d) => (
       d.e.status === 'applied' || d.e.status === 'paid'
         ? <span className="flex gap-1.5">
             <button onClick={() => onAction(d.e.refId, 'approve')} className="text-[10px] font-semibold px-2 h-6 rounded-full bg-brand text-white">{d.e.status === 'paid' ? 'Confirm' : 'Approve'}</button>
             <button onClick={() => onAction(d.e.refId, 'decline')} className="text-[10px] font-semibold px-2 h-6 rounded-full border border-neutral-200 text-neutral-500">Remove</button>
           </span>
         : <span className="text-neutral-300">—</span>
-    ) },
+    ) }]),
   ]
+  const COLS = LIVE ? ALL_COLS.filter((c) => PART_LIVE_COLS.has(c.key)) : ALL_COLS
 
-  // Hidden by default (keeps the table in view); re-enable via the Columns picker.
-  const DEFAULT_OFF = new Set(['arrflight', 'departure', 'depflight', 'actions'])
-  const [vis, setVis] = useState(() => Object.fromEntries(COLS.map((c) => [c.key, !DEFAULT_OFF.has(c.key)])))
+  const [vis, setVis] = useState(() => Object.fromEntries(COLS.map((c) => [c.key, LIVE ? true : !PART_DEFAULT_OFF.has(c.key)])))
   const [pickerOpen, setPickerOpen] = useState(false)
   const shown = COLS.filter((c) => vis[c.key])
   const toggle = (k) => setVis((v) => ({ ...v, [k]: !v[k] }))
 
-  if (enrol.length === 0) return <p className="text-sm text-neutral-400 font-medium">No participants yet.</p>
+  const cellText = (key, d) => {
+    switch (key) {
+      case 'num': return String(d.num)
+      case 'name': return d.first || ''
+      case 'surname': return d.surname || ''
+      case 'country': return d.country || ''
+      case 'role': return roleOf(d)
+      case 'fa': return faOf(d) ? 'Yes' : 'No'
+      default: return d[key] != null ? String(d[key]) : ''
+    }
+  }
+  const allSel = rows.length > 0 && rows.every((d) => sel.has(d.num))
+  const toggleAll = () => setSel(allSel ? new Set() : new Set(rows.map((d) => d.num)))
+  const doExport = async () => {
+    const cols = shown.filter((c) => c.key !== 'actions')
+    const chosen = rows.filter((d) => sel.size === 0 || sel.has(d.num))
+    const headers = cols.map((c) => c.label)
+    const data = chosen.map((d) => cols.map((c) => cellText(c.key, d)))
+    await exportToXlsx(`${(t?.name || 'participants').replace(/[^\w]+/g, '-').toLowerCase()}-participants.xlsx`, headers, data)
+  }
+
+  if (enrol.length === 0) return <EmptyState title="No participants yet" sub="Referees who apply for this tournament will appear here." />
+
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-[13px] font-semibold text-neutral-500">{enrol.length} participants</p>
+      <div className="flex items-center justify-between mb-3 gap-2">
+        <p className="text-[13px] font-semibold text-neutral-500">{enrol.length} participants{sel.size ? ` · ${sel.size} selected` : ''}</p>
+        <div className="flex items-center gap-2">
+        <button onClick={doExport} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-neutral-200 bg-white text-[13px] font-semibold text-ink hover:border-brand">
+          <Download size={15} /> Export{sel.size ? ` (${sel.size})` : ''}
+        </button>
         <div className="relative">
           <button onClick={() => setPickerOpen((o) => !o)} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-neutral-200 bg-white text-[13px] font-semibold text-ink hover:border-brand">
-            <SlidersHorizontal size={15} /> Columns <ChevronDown size={14} className="text-neutral-400" />
+            <SlidersHorizontal size={15} /> Columns <ChevronDown size={14} className="text-neutral-500" />
           </button>
           {pickerOpen && (
             <>
@@ -384,18 +505,21 @@ function ParticipantsTable({ t, enrol, onAction }) {
             </>
           )}
         </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-x-auto">
         <table className="w-full text-sm whitespace-nowrap">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wide text-neutral-500 border-b border-neutral-200 bg-page/60">
+              <th className="px-3 py-2.5 w-8"><input type="checkbox" checked={allSel} onChange={toggleAll} className="accent-brand" aria-label="Select all" /></th>
               {shown.map((c) => <th key={c.key} className="px-3 py-2.5 font-semibold">{c.label}</th>)}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {rows.map((d) => (
-              <tr key={d.i} className="hover:bg-page">
+              <tr key={d.num} className={`hover:bg-page ${sel.has(d.num) ? 'bg-brand-light/40' : ''}`}>
+                <td className="px-3 py-2.5"><input type="checkbox" checked={sel.has(d.num)} onChange={() => toggleSel(d.num)} className="accent-brand" aria-label={`Select row ${d.num}`} /></td>
                 {shown.map((c) => <td key={c.key} className="px-3 py-2.5 text-neutral-600 font-medium">{c.cell(d)}</td>)}
               </tr>
             ))}
@@ -416,15 +540,29 @@ function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
   const result = useMemo(() => step === 'preview' ? buildImport(table, map) : { teams: [], matches: [] }, [step, table, map])
   const clubCount = useMemo(() => new Set(result.teams.map((t) => t.club.toLowerCase())).size, [result])
   const apptCols = ['main', 'ar1', 'ar2', 'fourth'].filter((f) => map[f] != null).length
+  const [profiles, setProfiles] = useState(() => loadMapProfiles())
 
-  const onFile = (e) => {
+  const onFile = async (e) => {
     const file = e.target.files?.[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setText(String(reader.result || ''))
-    reader.readAsText(file)
+    try { setText(await fileToTableText(file)) } catch { setText('') }
+    e.target.value = ''
   }
-  const toMap = () => { setMap(autoMap(table.header)); setStep('map') }
+  const toMap = () => {
+    // Reuse a saved mapping when this file's header matches one (I6); else auto-map.
+    const sig = (h) => (h || []).join('|').toLowerCase()
+    const match = Object.values(profiles).find((p) => sig(p.header) === sig(table.header))
+    setMap(match ? match.map : autoMap(table.header))
+    setStep('map')
+  }
   const setField = (f) => (e) => setMap((m) => ({ ...m, [f]: e.target.value === '' ? null : Number(e.target.value) }))
+  const applyProfile = (name) => { const p = profiles[name]; if (p) setMap(p.map) }
+  const saveProfile = () => {
+    const name = (window.prompt('Save this column mapping for next time. Name it after the organiser or source:') || '').trim()
+    if (!name) return
+    saveMapProfile(name, table.header, map)
+    setProfiles(loadMapProfiles())
+  }
+  const profileNames = Object.keys(profiles)
 
   return (
     <Modal onClose={onClose} wide>
@@ -448,7 +586,13 @@ function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
                 <li>We detect the header row and auto-map the fields, then you confirm.</li>
                 <li>Age and gender are read from the team names or a category column (e.g. u14girls, G18, birth year 2013).</li>
               </ul>
-              <p className="mt-3 text-[12px] font-semibold text-ink">No export system? Use this simple template:</p>
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <p className="text-[12px] font-semibold text-ink">No export system? Use this simple template:</p>
+                <button onClick={() => downloadText('referee-abroad-teams-template.csv', SAMPLE_TEAMS_CSV)}
+                  className="inline-flex items-center gap-1.5 text-[12px] font-bold text-brand-dark hover:underline shrink-0">
+                  <Download size={13} /> Download template
+                </button>
+              </div>
               <pre className="mt-1 bg-white border border-neutral-200 rounded-xl p-3 text-[12px] text-ink font-mono overflow-x-auto whitespace-pre">{SAMPLE_TEAMS_CSV}</pre>
             </div>
             <div className="mt-4">
@@ -456,7 +600,7 @@ function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
                 <span className="text-xs font-semibold text-ink">Paste data or upload a file</span>
                 <label className="inline-flex items-center gap-1.5 text-[12px] font-bold text-brand-dark cursor-pointer hover:underline">
                   <Upload size={13} /> Choose file
-                  <input type="file" accept=".csv,.tsv,text/csv,text/plain" onChange={onFile} className="hidden" />
+                  <input type="file" accept=".csv,.tsv,.xlsx,.xls,text/csv,text/plain" onChange={onFile} className="hidden" />
                 </label>
               </div>
               <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} placeholder={SAMPLE_TEAMS_CSV}
@@ -474,12 +618,27 @@ function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
 
         {step === 'map' && (
           <>
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+              {profileNames.length > 0 ? (
+                <label className="inline-flex items-center gap-2 text-[12px] font-semibold text-neutral-500">
+                  Saved mapping
+                  <select onChange={(e) => e.target.value && applyProfile(e.target.value)} defaultValue=""
+                    className="h-8 px-2 rounded-lg border border-neutral-200 text-sm font-medium outline-none focus:border-brand">
+                    <option value="">— choose —</option>
+                    {profileNames.map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </label>
+              ) : <span className="text-[12px] font-medium text-neutral-500">Tip: save this mapping to reuse it for this organiser next time.</span>}
+              <button onClick={saveProfile} className="inline-flex items-center gap-1.5 text-[12px] font-bold text-brand-dark hover:underline">
+                <Save size={13} /> Save mapping
+              </button>
+            </div>
             <div className="grid sm:grid-cols-2 gap-3 max-h-[46vh] overflow-y-auto pr-1">
               {FIELD_ORDER.map((f) => (
                 <div key={f}>
                   <p className="text-[11px] font-semibold text-neutral-500 mb-1">{FIELD_LABELS[f]}</p>
                   <select value={map[f] ?? ''} onChange={setField(f)}
-                    className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${map[f] != null ? 'border-neutral-200' : 'border-neutral-200 text-neutral-400'}`}>
+                    className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${map[f] != null ? 'border-neutral-200' : 'border-neutral-200 text-neutral-500'}`}>
                     <option value="">— not in file —</option>
                     {table.header.map((h, i) => <option key={i} value={i}>{h || `Column ${i + 1}`}</option>)}
                   </select>
@@ -512,7 +671,7 @@ function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
                   <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${genderPill(t.gender)}`}>{t.gender}</span>
                 </div>
               ))}
-              {result.teams.length === 0 && <p className="p-4 text-sm text-neutral-400 font-medium">Nothing detected. Go back and check the column mapping.</p>}
+              {result.teams.length === 0 && <p className="p-4 text-sm text-neutral-500 font-medium">Nothing detected. Go back and check the column mapping.</p>}
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setStep('map')} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Back</button>
@@ -565,6 +724,25 @@ function ClubsTab({ teams, onOpenImport }) {
   )
 }
 
+// Phase 1 keeps the briefing / kick-off light: the admin ticks a box once the
+// meeting is arranged. Generating and sending the actual Google Meet links is a
+// Phase 2 item (Google Calendar integration); for now the admin shares the link
+// outside the dashboard.
+function ReadinessCheck({ label, sub, checked, onToggle }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="flex-1 min-w-0">
+        <span className="block text-[14px] font-bold text-ink">{label}</span>
+        <span className="block text-[12px] font-medium text-neutral-500">{sub}</span>
+      </span>
+      <button onClick={() => onToggle(!checked)} role="switch" aria-checked={checked}
+        className={`text-[11px] font-bold px-3 h-7 rounded-full inline-flex items-center gap-1.5 flex-none ${checked ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}>
+        {checked ? <><Check size={13} /> Arranged</> : 'Mark arranged'}
+      </button>
+    </div>
+  )
+}
+
 function TournamentView({ t, onBack, onEdit }) {
   const [tab, setTab] = useState('info')
   const [enrol, setEnrol] = useState(dashEnrolments[t.id] || [])
@@ -575,6 +753,10 @@ function TournamentView({ t, onBack, onEdit }) {
   const [fields, setFields] = useState(() => dashFields[t.id] || [])
   const [showFields, setShowFields] = useState(false)
   const [matchCount, setMatchCount] = useState((dashMatches[t.id] || []).length)
+  // Extra readiness (prototype local state).
+  const [accommodation, setAccommodation] = useState(null) // null | 'yes' | 'no'
+  const [briefing, setBriefing] = useState(false) // briefing arranged (link shared outside the dashboard)
+  const [kickoff, setKickoff] = useState(false)   // staff kick-off arranged
   const onEnrolAction = (refId, action) => setEnrol((prev) =>
     action === 'decline' ? prev.filter((e) => e.refId !== refId)
       : prev.map((e) => e.refId === refId ? { ...e, status: action === 'promote' ? 'applied' : 'confirmed' } : e))
@@ -585,16 +767,27 @@ function TournamentView({ t, onBack, onEdit }) {
     setShowImport(false)
     setTab('clubs')
   }
+  const [summary, setSummary] = useState(null)
+  useEffect(() => {
+    let alive = true
+    getEnrolmentSummary(t).then((s) => { if (alive) setSummary(s) }).catch(() => {})
+    getParticipants(t).then((p) => { if (alive) setEnrol(p) }).catch(() => {})
+    return () => { alive = false }
+  }, [t.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const matchesArr = dashMatches[t.id] || []
   const appointedCount = matchesArr.filter((m) => m.main).length
-  const appliedCount = enrol.filter((e) => e.status === 'applied').length
   const clubCount = new Set(teams.map((x) => x.club)).size
+  // Enrolment numbers: live from orders when available, else the tournament/mock figures.
+  const enrolledCount = summary ? summary.enrolled : (t.enrolled ?? 0)
+  const capacityCount = (summary && summary.capacity != null) ? summary.capacity : (t.capacity ?? 0)
+  const awaitingCount = summary ? summary.awaiting : enrol.filter((e) => e.status === 'applied').length
   const steps = [
     { title: 'Teams imported', status: teams.length ? 'done' : 'todo',
       metric: teams.length ? `${teams.length} teams across ${clubCount} clubs` : 'Not imported yet',
       onClick: () => teams.length ? setTab('clubs') : setShowImport(true) },
-    { title: 'Participants', status: enrol.length === 0 ? 'todo' : (t.enrolled >= t.capacity ? 'done' : 'progress'),
-      metric: `${t.enrolled} of ${t.online != null ? t.online : t.capacity} online (${t.capacity} total) filled${appliedCount ? ` · ${appliedCount} awaiting approval` : ''}`,
+    { title: 'Participants', status: capacityCount && enrolledCount >= capacityCount ? 'done' : (enrolledCount > 0 ? 'progress' : 'todo'),
+      metric: `${enrolledCount} of ${capacityCount} spots filled${awaitingCount ? ` · ${awaitingCount} awaiting approval` : ''}`,
       onClick: () => setTab('enrolments') },
     { title: 'Fields uploaded', status: fields.length ? 'done' : 'todo',
       metric: fields.length ? `${fields.length} fields` : 'No fields yet',
@@ -620,8 +813,9 @@ function TournamentView({ t, onBack, onEdit }) {
     { k: 'clubs', label: `Teams (${teams.length})` },
     { k: 'enrolments', label: `Participants (${enrol.length})` },
     { k: 'appointing', label: `Appointing (${matchCount})` },
+    { k: 'broadcast', label: 'Broadcast' },
   ]
-  const crumbLabel = { info: 'Tournament information', clubs: 'Teams', enrolments: 'Participants', appointing: 'Appointing' }[tab]
+  const crumbLabel = { info: 'Tournament information', clubs: 'Teams', enrolments: 'Participants', appointing: 'Appointing', broadcast: 'Broadcast' }[tab]
 
   return (
     <div>
@@ -638,7 +832,7 @@ function TournamentView({ t, onBack, onEdit }) {
         <img src={t.img} alt={t.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <span className="absolute top-4 left-4"><StatusPill status={t.status} /></span>
-        <button onClick={() => onEdit && onEdit(t)} className="absolute top-4 right-4 inline-flex items-center gap-1.5 bg-white/90 hover:bg-white text-ink text-xs font-semibold px-3 h-8 rounded-full transition"><Pencil size={13} /> Edit</button>
+        {!LIVE && <button onClick={() => onEdit && onEdit(t)} className="absolute top-4 right-4 inline-flex items-center gap-1.5 bg-white/90 hover:bg-white text-ink text-xs font-semibold px-3 h-8 rounded-full transition"><Pencil size={13} /> Edit</button>}
         <div className="absolute bottom-5 left-6 right-6 text-white">
           <h2 className="text-3xl font-extrabold leading-tight">{t.name}</h2>
           <p className="text-sm font-medium text-white/90 flex items-center gap-1.5 mt-1"><MapPin size={15} /> {t.city}, {t.country} · {t.dates}</p>
@@ -672,7 +866,7 @@ function TournamentView({ t, onBack, onEdit }) {
               </div>
               <div>
                 {steps.map((s, i) => {
-                  const ic = s.status === 'done' ? 'bg-brand text-white' : s.status === 'progress' ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-400 border border-dashed border-neutral-300'
+                  const ic = s.status === 'done' ? 'bg-brand text-white' : s.status === 'progress' ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-500 border border-dashed border-neutral-300'
                   const pillTxt = s.pill || (s.status === 'done' ? 'Done' : s.status === 'progress' ? 'In progress' : 'To do')
                   const pillCls = s.status === 'done' ? 'bg-brand-light text-brand-dark' : (s.status === 'progress' || s.pill) ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-500'
                   return (
@@ -690,6 +884,29 @@ function TournamentView({ t, onBack, onEdit }) {
                   )
                 })}
               </div>
+
+              {/* Extra readiness */}
+              <div className="mt-4 pt-4 border-t border-neutral-100 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[14px] font-bold text-ink">Travel confirmation</span>
+                    <span className="block text-[12px] font-medium text-neutral-500">Participants upload their travel documents in the app</span>
+                  </span>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-500 flex-none">Awaiting uploads</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[14px] font-bold text-ink">Accommodation ready</span>
+                    <span className="block text-[12px] font-medium text-neutral-500">{accommodation === 'yes' ? 'Confirmed by admin' : accommodation === 'no' ? 'Not confirmed' : 'Confirm once rooms are arranged'}</span>
+                  </span>
+                  <span className="flex gap-1.5 flex-none">
+                    <button onClick={() => setAccommodation('yes')} className={`text-[11px] font-bold px-3 h-7 rounded-full ${accommodation === 'yes' ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}>Yes</button>
+                    <button onClick={() => setAccommodation('no')} className={`text-[11px] font-bold px-3 h-7 rounded-full ${accommodation === 'no' ? 'bg-red-500 text-white' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}>No</button>
+                  </span>
+                </div>
+                <ReadinessCheck label="Tournament briefing" sub="Tick once the referee and staff briefing is arranged. The meeting link is shared outside the dashboard." checked={briefing} onToggle={setBriefing} />
+                <ReadinessCheck label="Staff kick-off" sub="Tick once the on-site staff kick-off is arranged." checked={kickoff} onToggle={setKickoff} />
+              </div>
             </div>
 
             {/* Right column */}
@@ -697,20 +914,20 @@ function TournamentView({ t, onBack, onEdit }) {
               <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
                 <h3 className="font-bold text-ink text-sm mb-3">At a glance</h3>
                 <div className="grid grid-cols-2 gap-2.5">
-                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Sport</p><p className="text-base font-extrabold text-ink mt-0.5">{t.sport}</p></div>
-                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Dates</p><p className="text-sm font-extrabold text-ink mt-0.5">{t.dates}</p></div>
-                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Referees</p><p className="text-base font-extrabold text-ink mt-0.5">{t.enrolled}/{t.online != null ? t.online : t.capacity}/{t.capacity}</p><p className="text-[9.5px] font-semibold text-neutral-400 leading-tight">filled/online/total</p></div>
-                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-400">Teams</p><p className="text-base font-extrabold text-ink mt-0.5">{teams.length || '—'}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-500">Sport</p><p className="text-base font-extrabold text-ink mt-0.5">{t.sport}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-500">Dates</p><p className="text-sm font-extrabold text-ink mt-0.5">{t.dates}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-500">Referees</p><p className="text-base font-extrabold text-ink mt-0.5">{enrolledCount}/{capacityCount}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[10.5px] font-bold uppercase tracking-wide text-neutral-500">Teams</p><p className="text-base font-extrabold text-ink mt-0.5">{teams.length || '—'}</p></div>
                 </div>
               </div>
 
               <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-bold text-ink text-sm">Staff on site <span className="text-neutral-400 font-medium">({staff.size})</span></h3>
+                  <h3 className="font-bold text-ink text-sm">Staff on site <span className="text-neutral-500 font-medium">({staff.size})</span></h3>
                   <button onClick={() => setShowStaff(true)} className="text-[13px] font-bold text-brand-dark inline-flex items-center gap-1"><UserPlus size={14} /> Appoint</button>
                 </div>
                 {staff.size === 0 ? (
-                  <p className="mt-2 text-[13px] text-neutral-400 font-medium">No staff assigned yet.</p>
+                  <p className="mt-2 text-[13px] text-neutral-500 font-medium">No staff assigned yet.</p>
                 ) : (
                   <div className="mt-3 space-y-2">
                     {[...staff].map((name) => {
@@ -742,6 +959,7 @@ function TournamentView({ t, onBack, onEdit }) {
         {tab === 'clubs' && <ClubsTab teams={teams} onOpenImport={() => setShowImport(true)} />}
         {tab === 'enrolments' && <ParticipantsTable t={t} enrol={enrol} onAction={onEnrolAction} />}
         {tab === 'appointing' && <DashboardAppointing initialTournament={t.id} lockTournament />}
+        {tab === 'broadcast' && <TournamentBroadcast tournamentName={t.name} />}
       </div>
       {showStaff && <AppointStaffModal tournamentName={t.name} assigned={staff} onToggle={(name) => setStaff((prev) => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })} onClose={() => setShowStaff(false)} />}
       {showImport && <SmartImportModal tournamentName={t.name} existing={teams.length} onClose={() => setShowImport(false)} onImport={importTeams} />}
@@ -788,15 +1006,66 @@ const COUNTRIES = [
 ]
 const fmtDate = (v) => v ? new Date(v).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : ''
 
-function Field({ label, children }) {
+function Field({ label, children, error }) {
   return (
     <label className="block">
       <span className="block text-xs font-semibold text-ink mb-1">{label}</span>
       {children}
+      {error && <span className="block text-[11px] font-semibold text-red-600 mt-1">{error}</span>}
     </label>
   )
 }
 const inputCls = 'w-full h-10 px-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand bg-white'
+const inputInvalidCls = 'w-full h-10 px-3 rounded-xl border border-red-300 bg-red-50 text-sm font-medium outline-none focus:border-red-400'
+// Pick the input styling based on whether the field currently has an error (U8).
+const fieldCls = (hasError) => (hasError ? inputInvalidCls : inputCls)
+
+// A friendly empty state: icon, title and a short line of context (U6).
+function EmptyState({ icon: Icon = Users, title, sub, className = '' }) {
+  return (
+    <div className={`text-center py-10 px-4 ${className}`}>
+      {Icon && <span className="w-12 h-12 rounded-2xl bg-page text-neutral-500 flex items-center justify-center mx-auto mb-3"><Icon size={22} /></span>}
+      <p className="text-sm font-bold text-ink">{title}</p>
+      {sub && <p className="text-[12.5px] font-medium text-neutral-500 mt-1 max-w-xs mx-auto leading-snug">{sub}</p>}
+    </div>
+  )
+}
+
+// Loading placeholder block with a subtle pulse (U5).
+function Skel({ className = '' }) {
+  return <span className={`block bg-neutral-200/70 rounded-lg animate-pulse ${className}`} />
+}
+// A grid of card skeletons for the tournament overview while it loads.
+function CardGridSkeleton({ count = 6 }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+          <Skel className="h-32 rounded-none" />
+          <div className="p-4 space-y-2.5">
+            <Skel className="h-4 w-3/4" />
+            <Skel className="h-3 w-1/2" />
+            <Skel className="h-3 w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+// Stacked row skeletons for list and table views.
+function RowsSkeleton({ count = 6, className = '' }) {
+  return (
+    <div className={`space-y-2 ${className}`}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 bg-white rounded-xl border border-neutral-200 p-3">
+          <Skel className="w-9 h-9 rounded-full flex-none" />
+          <Skel className="h-3.5 flex-1" />
+          <Skel className="h-3.5 w-16 flex-none" />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function FieldsModal({ tournamentName, initial, onClose, onSave }) {
   const [text, setText] = useState((initial || []).join('\n'))
@@ -829,10 +1098,17 @@ function TournamentFormModal({ initial, onClose, onSave }) {
     start: '', end: '', firstMatch: '', lastMatch: '', capacity: initial?.capacity ?? 40, status: initial?.status || 'planned', img: initial?.img || PRESET_IMAGES[0],
   })
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
-  const valid = f.name.trim() && f.city.trim() && f.country.trim()
+  const [tried, setTried] = useState(false)
+  const errors = {
+    name: !f.name.trim() ? 'Enter a tournament name' : '',
+    city: !f.city.trim() ? 'Enter a city' : '',
+    country: !f.country.trim() ? 'Select a country' : '',
+  }
+  const valid = !errors.name && !errors.city && !errors.country
+  const showErr = (k) => (tried ? errors[k] : '')
 
   const submit = () => {
-    if (!valid) return
+    if (!valid) { setTried(true); return }
     // "dates" shows the arrival to departure window on cards.
     const dates = f.start && f.end ? `${fmtDate(f.start)} to ${fmtDate(f.end)}` : (f.start ? fmtDate(f.start) : (initial?.dates || 'Dates to be set'))
     onSave({
@@ -854,11 +1130,11 @@ function TournamentFormModal({ initial, onClose, onSave }) {
           <h3 className="text-xl font-extrabold text-ink">{edit ? 'Edit tournament' : 'New tournament'}</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
         </div>
-        {edit && <p className="-mt-3 mb-3 text-[11px] font-medium text-neutral-400">Leave the dates empty to keep the current dates ({initial.dates}).</p>}
+        {edit && <p className="-mt-3 mb-3 text-[11px] font-medium text-neutral-500">Leave the dates empty to keep the current dates ({initial.dates}).</p>}
 
         <div className="space-y-3">
-          <Field label="Tournament name">
-            <input value={f.name} onChange={set('name')} placeholder="e.g. Lisbon Spring Cup" className={inputCls} autoFocus />
+          <Field label="Tournament name" error={showErr('name')}>
+            <input value={f.name} onChange={set('name')} placeholder="e.g. Lisbon Spring Cup" className={fieldCls(showErr('name'))} autoFocus />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Sport">
@@ -873,9 +1149,9 @@ function TournamentFormModal({ initial, onClose, onSave }) {
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="City"><input value={f.city} onChange={set('city')} placeholder="Lisbon" className={inputCls} /></Field>
-            <Field label="Country">
-              <select value={f.country} onChange={set('country')} className={inputCls}>
+            <Field label="City" error={showErr('city')}><input value={f.city} onChange={set('city')} placeholder="Lisbon" className={fieldCls(showErr('city'))} /></Field>
+            <Field label="Country" error={showErr('country')}>
+              <select value={f.country} onChange={set('country')} className={fieldCls(showErr('country'))}>
                 <option value="">Select a country…</option>
                 {[...new Set([...(f.country ? [f.country] : []), ...COUNTRIES])].sort().map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -904,7 +1180,7 @@ function TournamentFormModal({ initial, onClose, onSave }) {
 
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
-          <button onClick={submit} disabled={!valid} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+          <button onClick={submit} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2">
             {edit ? <><Check size={16} /> Save changes</> : <><Plus size={16} /> Create tournament</>}
           </button>
         </div>
@@ -913,11 +1189,21 @@ function TournamentFormModal({ initial, onClose, onSave }) {
   )
 }
 
-export function DashboardTournaments({ createSignal, focusT, onListChange }) {
+export function DashboardTournaments({ createSignal, focusT, onListChange, searchQuery = '' }) {
   const [selected, setSelected] = useState(null)
-  const [tournaments, setTournaments] = useState(dashTournaments)
+  const [tournaments, setTournaments] = useState([])
+  const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState(null)
+
+  useEffect(() => {
+    let alive = true
+    getDashTournaments()
+      .then((list) => { if (alive) setTournaments(list) })
+      .catch(() => { if (alive) setTournaments([]) })
+      .finally(() => { if (alive) setLoading(false) })
+    return () => { alive = false }
+  }, [])
 
   useEffect(() => { onListChange?.(!selected) }, [selected]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (createSignal) { setSelected(null); setCreating(true) } }, [createSignal])
@@ -944,13 +1230,17 @@ export function DashboardTournaments({ createSignal, focusT, onListChange }) {
 
   const barCls = (status) => status === 'confirmed' ? 'bg-brand' : status === 'recruiting' ? 'bg-amber-400' : 'bg-neutral-300'
 
+  const q = searchQuery.trim().toLowerCase()
+  const shown = q
+    ? tournaments.filter((t) => [t.name, t.city, t.country].some((v) => (v || '').toLowerCase().includes(q)))
+    : tournaments
+
   return (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {tournaments.map((t) => {
-          const online = t.online != null ? t.online : t.capacity
-          const fillPct = t.capacity ? (t.enrolled / t.capacity) * 100 : 0
-          const onlinePct = t.capacity ? (online / t.capacity) * 100 : 0
+        {loading && [0, 1, 2].map((i) => <div key={`sk${i}`} className="rounded-[22px] bg-white/70 border border-white/80 min-h-[196px] animate-pulse" />)}
+        {!loading && shown.map((t) => {
+          const pct = t.capacity ? Math.round((t.enrolled / t.capacity) * 100) : 0
           return (
             <button
               key={t.id}
@@ -969,25 +1259,25 @@ export function DashboardTournaments({ createSignal, focusT, onListChange }) {
                 <span>{t.dates}</span>
               </p>
               <div className="mt-4">
-                <p className="text-[13px] font-bold text-ink mb-1.5">
-                  <span className="text-brand-dark">{t.enrolled}</span> / {online} / {t.capacity} referees
-                </p>
-                {/* filled (brand) · online available (light) · reserved for partners (hatched) */}
-                <div className="relative h-2 rounded-full bg-neutral-200/80 overflow-hidden">
-                  <span className="absolute inset-y-0 left-0 bg-brand-light" style={{ width: onlinePct + '%' }} />
-                  <span className={`absolute inset-y-0 left-0 rounded-full ${barCls(t.status)}`} style={{ width: fillPct + '%' }} />
+                <p className="text-[13px] font-bold text-ink mb-1.5"><span className="text-brand-dark">{t.enrolled}</span> / {t.capacity} referees</p>
+                <div className="h-2 rounded-full bg-neutral-200/80 overflow-hidden">
+                  <span className={`block h-full rounded-full ${barCls(t.status)}`} style={{ width: pct + '%' }} />
                 </div>
-                <p className="mt-1 text-[10.5px] font-semibold text-neutral-400">filled / online / total{online < t.capacity ? ` · ${t.capacity - online} reserved for partners` : ''}</p>
               </div>
             </button>
           )
         })}
 
-        <button onClick={() => setCreating(true)} className="flex flex-col items-center justify-center gap-2 rounded-[22px] border-2 border-dashed border-neutral-300 text-neutral-500 hover:text-brand-dark hover:border-brand min-h-[196px] bg-white/50 backdrop-blur-sm transition">
-          <span className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center"><Plus size={24} /></span>
-          <span className="text-sm font-semibold">Create new tournament</span>
-        </button>
+        {!loading && !q && !LIVE && (
+          <button onClick={() => setCreating(true)} className="flex flex-col items-center justify-center gap-2 rounded-[22px] border-2 border-dashed border-neutral-300 text-neutral-500 hover:text-brand-dark hover:border-brand min-h-[196px] bg-white/50 backdrop-blur-sm transition">
+            <span className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center"><Plus size={24} /></span>
+            <span className="text-sm font-semibold">Create new tournament</span>
+          </button>
+        )}
       </div>
+      {!loading && q && shown.length === 0 && (
+        <p className="text-sm text-neutral-500 font-medium mt-2">No tournaments match “{searchQuery.trim()}”.</p>
+      )}
       {creating && <TournamentFormModal onClose={() => setCreating(false)} onSave={create} />}
     </div>
   )
@@ -999,29 +1289,85 @@ export function DashboardReferees() {
   const [level, setLevel] = useState('all')
   const [tourId, setTourId] = useState('all')
   const [open, setOpen] = useState(null)
+  const [referees, setReferees] = useState(LIVE ? [] : dashReferees)
+  const [loading, setLoading] = useState(LIVE)
+  const [error, setError] = useState(null)
+  const [appsByRef, setAppsByRef] = useState({}) // live: refereeId -> [applications]
+  const [busyOrder, setBusyOrder] = useState(null)
 
-  const filtered = dashReferees.filter((r) => {
+  const loadApps = () => {
+    if (!LIVE) return
+    Promise.all([getRefereeApplications(), getDashTournaments()])
+      .then(([apps, tours]) => {
+        const name = {}
+        for (const t of tours) name[String(t.productId ?? t.id)] = t.name
+        const byRef = {}
+        for (const a of apps) {
+          if (a.refereeId == null) continue
+          ;(byRef[a.refereeId] ||= []).push({
+            orderId: a.id, tournamentId: a.tournamentId,
+            tournament: name[String(a.tournamentId)] || `#${a.tournamentId}`,
+            status: a.appStatus, paid: a.paid, date: a.datePaid,
+          })
+        }
+        setAppsByRef(byRef)
+      })
+      .catch(() => { /* non-fatal: the directory still works without applications */ })
+  }
+
+  const loadReferees = () => {
+    if (!LIVE) return
+    setLoading(true); setError(null)
+    getReferees()
+      .then((rows) => setReferees(rows))
+      .catch((e) => setError(e.message || 'Could not load referees'))
+      .finally(() => setLoading(false))
+    loadApps()
+  }
+
+  useEffect(() => { loadReferees() }, [])
+
+  // Approve / decline an application (two-way sync: writes back to WordPress).
+  const decide = async (orderId, approved) => {
+    setBusyOrder(orderId)
+    try {
+      await approveApplication(orderId, approved)
+      setAppsByRef((prev) => {
+        const next = {}
+        for (const rid of Object.keys(prev)) {
+          next[rid] = prev[rid].map((a) => a.orderId === orderId ? { ...a, status: approved ? 'confirmed' : 'declined' } : a)
+        }
+        return next
+      })
+    } catch { /* keep the buttons so the admin can retry */ }
+    finally { setBusyOrder(null) }
+  }
+
+  const filtered = referees.filter((r) => {
     const okLevel = level === 'all' || r.level === level
-    const okText = !q || r.name.toLowerCase().includes(q.toLowerCase()) || r.country.toLowerCase().includes(q.toLowerCase())
-    const okTour = tourId === 'all' || (enrolmentsByRef[r.id] || []).some((e) => e.tid === tourId)
+    const okText = !q || r.name.toLowerCase().includes(q.toLowerCase()) || (r.country || '').toLowerCase().includes(q.toLowerCase())
+    const okTour = LIVE || tourId === 'all' || (enrolmentsByRef[r.id] || []).some((e) => e.tid === tourId)
     return okLevel && okText && okTour
   })
 
-  const levels = ['all', 'talent', 'medior', 'beginner']
+  // Level filter options: derive from the loaded data so live levels show too.
+  const levels = ['all', ...Array.from(new Set(referees.map((r) => r.level).filter(Boolean)))]
   const enrolledTournaments = dashTournaments.filter((t) => (dashEnrolments[t.id] || []).length > 0)
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="flex items-center gap-2 bg-white rounded-xl border border-neutral-200 px-3 h-10 flex-1 min-w-[200px]">
-          <Search size={16} className="text-neutral-400" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or country" className="flex-1 bg-transparent outline-none text-sm font-medium placeholder:text-neutral-400" />
+          <Search size={16} className="text-neutral-500" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or country" className="flex-1 bg-transparent outline-none text-sm font-medium placeholder:text-neutral-500" />
         </div>
-        <select value={tourId} onChange={(e) => setTourId(e.target.value)}
-          className="h-10 px-3 rounded-xl border border-neutral-200 text-sm font-semibold text-ink outline-none focus:border-brand bg-white">
-          <option value="all">All tournaments</option>
-          {enrolledTournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
+        {!LIVE && (
+          <select value={tourId} onChange={(e) => setTourId(e.target.value)}
+            className="h-10 px-3 rounded-xl border border-neutral-200 text-sm font-semibold text-ink outline-none focus:border-brand bg-white">
+            <option value="all">All tournaments</option>
+            {enrolledTournaments.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        )}
         <div className="flex gap-1.5">
           {levels.map((l) => (
             <button key={l} onClick={() => setLevel(l)} className={`text-xs font-semibold px-3 h-10 rounded-xl capitalize border transition ${level === l ? 'bg-brand text-white border-brand' : 'bg-white text-neutral-500 border-neutral-200 hover:border-brand'}`}>{l}</button>
@@ -1029,28 +1375,40 @@ export function DashboardReferees() {
         </div>
       </div>
 
+      {error && <DashError message={error} onRetry={loadReferees} />}
+
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
         <div className="flex items-center px-4 py-2.5 border-b border-neutral-200 text-[11px] uppercase tracking-wide text-neutral-500 font-semibold">
           <span className="w-52 flex-none">Referee</span>
           <span className="w-32 hidden lg:block">Country</span>
-          <span className="flex-1 min-w-0 hidden md:block">Enrolments</span>
-          <span className="w-16 text-right">Apps</span>
-          <span className="w-24 text-right">Level</span>
+          {!LIVE && <span className="flex-1 min-w-0 hidden md:block">Enrolments</span>}
+          {LIVE && <span className="flex-1 min-w-0 hidden md:block">Federation</span>}
+          {LIVE && <span className="w-12 text-center hidden sm:block">Sex</span>}
+          {LIVE && <span className="w-14 text-center hidden sm:block">Age</span>}
+          <span className={`${LIVE ? 'w-28' : 'w-24'} text-right flex-none`}>Level</span>
         </div>
         <div className="divide-y divide-neutral-100">
-          {filtered.map((r) => (
+          {loading && Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center px-4 py-2.5">
+              <span className="w-7 h-7 rounded-full bg-neutral-100 animate-pulse mr-3" />
+              <span className="h-3 w-40 bg-neutral-100 rounded animate-pulse" />
+            </div>
+          ))}
+          {!loading && filtered.map((r) => (
             <button key={r.id} onClick={() => setOpen(r)} className="w-full flex items-center px-4 py-2.5 hover:bg-page transition text-left">
               <span className="w-52 flex-none flex items-center min-w-0">
                 <span className="w-7 h-7 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center flex-none mr-3">{initialsOf(r.name)}</span>
                 <span className="font-semibold text-ink text-sm truncate">{r.name}</span>
               </span>
-              <span className="w-32 text-sm text-neutral-500 font-medium hidden lg:block truncate">{r.flag} {r.country}</span>
-              <span className="flex-1 min-w-0 hidden md:flex"><EnrolChips refId={r.id} /></span>
-              <span className="w-16 text-right text-sm font-medium text-neutral-500 tabular-nums">{r.apps}</span>
-              <span className="w-24 flex justify-end"><LevelPill level={r.level} /></span>
+              <span className="w-32 text-sm text-neutral-500 font-medium hidden lg:flex items-center gap-1.5 truncate"><Flag code={countryCode(r.country)} emoji={r.flag} size={13} /> {r.country}</span>
+              {!LIVE && <span className="flex-1 min-w-0 hidden md:flex"><EnrolChips refId={r.id} /></span>}
+              {LIVE && <span className="flex-1 min-w-0 hidden md:block text-sm text-neutral-500 font-medium truncate">{r.federation || '—'}</span>}
+              {LIVE && <span className="w-12 text-center hidden sm:block text-sm font-semibold text-neutral-600">{r.sex || '—'}</span>}
+              {LIVE && <span className="w-14 text-center hidden sm:block text-sm font-medium text-neutral-500 tabular-nums">{r.age ?? '—'}</span>}
+              <span className={`${LIVE ? 'w-28' : 'w-24'} flex-none flex justify-end`}><LevelPill level={r.level} /></span>
             </button>
           ))}
-          {filtered.length === 0 && <p className="text-sm text-neutral-400 font-medium p-4">No referees match your search.</p>}
+          {!loading && filtered.length === 0 && <EmptyState title="No referees found" sub="No referees match your search. Try a different name or clear the filters." />}
         </div>
       </div>
 
@@ -1058,49 +1416,93 @@ export function DashboardReferees() {
         <Modal onClose={() => setOpen(null)}>
           <div className="p-5">
             <div className="flex items-start gap-3">
-              <span className="w-14 h-14 rounded-full bg-brand text-white text-lg font-bold flex items-center justify-center flex-none overflow-hidden">{open.photo ? <img src={open.photo} alt="" className="w-full h-full object-cover" /> : initialsOf(open.name)}</span>
+              <span className="w-14 h-14 rounded-full bg-brand text-white text-lg font-bold flex items-center justify-center flex-none">{initialsOf(open.name)}</span>
               <div className="flex-1">
                 <h3 className="text-xl font-extrabold text-ink leading-tight">{open.name}</h3>
-                <p className="text-sm text-neutral-500 font-medium">{open.flag} {open.country}</p>
+                <p className="text-sm text-neutral-500 font-medium inline-flex items-center gap-1.5"><Flag code={countryCode(open.country)} emoji={open.flag} size={13} /> {open.country}</p>
                 <div className="mt-1.5"><LevelPill level={open.level} /></div>
               </div>
               <button onClick={() => setOpen(null)} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center flex-none"><X size={18} /></button>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mt-4">
-              <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Tournaments</p><p className="font-bold text-ink text-sm">{open.apps}</p></div>
-              <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Reports</p><p className="font-bold text-ink text-sm">{open.reports}</p></div>
-              <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Rating</p><p className="font-bold text-ink text-sm flex items-center gap-1"><Star size={13} className="text-amber-500 fill-amber-500" /> {open.rating}</p></div>
-            </div>
+            {LIVE ? (
+              <>
+                <div className="grid grid-cols-3 gap-3 mt-4">
+                  <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Nationality</p><p className="font-bold text-ink text-sm">{open.nationality || '—'}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Federation</p><p className="font-bold text-ink text-sm">{open.federation || '—'}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Registered</p><p className="font-bold text-ink text-sm">{open.yearsRegistered || '—'}</p></div>
+                </div>
+                <div className="mt-4 space-y-2.5 text-sm">
+                  {open.email && <div className="flex items-center gap-2 text-neutral-600 font-medium"><Mail size={15} className="text-neutral-500" /> {open.email}</div>}
+                  {open.phone && <div className="flex items-center gap-2 text-neutral-600 font-medium"><Phone size={15} className="text-neutral-500" /> {open.phone}</div>}
+                  {open.emergencyContact && <div className="flex items-center gap-2 text-neutral-600 font-medium"><AlertCircle size={15} className="text-neutral-500" /> Emergency: {open.emergencyContact}</div>}
+                  {open.dietary && <div className="flex items-center gap-2 text-neutral-600 font-medium"><AlertTriangle size={15} className="text-amber-500" /> Dietary: {open.dietary}</div>}
+                </div>
 
-            <div className="mt-4">
-              <p className="text-[11px] uppercase tracking-wide text-neutral-400 font-semibold mb-2">Enrolled in</p>
-              {(enrolmentsByRef[open.id] || []).length === 0
-                ? <p className="text-sm text-neutral-400 font-medium">Not enrolled for any tournament yet.</p>
-                : (
-                  <div className="space-y-1.5">
-                    {enrolmentsByRef[open.id].map((e, i) => (
-                      <div key={i} className="flex items-center justify-between gap-2 bg-page rounded-xl px-3 py-2">
-                        <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-ink truncate">{e.tournament}</span>
-                          <span className="block text-[11px] text-neutral-500 font-medium flex items-center gap-1"><Calendar size={11} className="text-neutral-400" /> Applied {fmtEnrolDate(e.date)}</span>
-                        </span>
-                        <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize flex-none ${enrolMap[e.status]}`}>{e.status}</span>
+                <div className="mt-4">
+                  <p className="text-[11px] uppercase tracking-wide text-neutral-500 font-semibold mb-2">Applications</p>
+                  {(appsByRef[open.id] || []).length === 0
+                    ? <p className="text-sm text-neutral-500 font-medium">No applications yet.</p>
+                    : (
+                      <div className="space-y-1.5">
+                        {appsByRef[open.id].map((a) => (
+                          <div key={a.orderId} className="flex items-center justify-between gap-2 bg-page rounded-xl px-3 py-2">
+                            <span className="min-w-0">
+                              <span className="block text-sm font-semibold text-ink truncate">{a.tournament}</span>
+                              <span className="block text-[11px] text-neutral-500 font-medium flex items-center gap-1"><Calendar size={11} className="text-neutral-500" /> Applied {fmtEnrolDate(a.date)}</span>
+                            </span>
+                            {a.status === 'applied' ? (
+                              <span className="flex items-center gap-1.5 flex-none">
+                                <button disabled={busyOrder === a.orderId} onClick={() => decide(a.orderId, true)} className="text-[12px] font-bold text-white bg-brand rounded-full px-3 h-8 disabled:opacity-50">Accept</button>
+                                <button disabled={busyOrder === a.orderId} onClick={() => decide(a.orderId, false)} className="text-[12px] font-bold text-red-600 border border-red-200 rounded-full px-3 h-8 hover:bg-red-50 disabled:opacity-50">Decline</button>
+                              </span>
+                            ) : (
+                              <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full flex-none ${a.status === 'confirmed' ? 'bg-brand-light text-brand-dark' : a.status === 'declined' ? 'bg-red-50 text-red-600' : 'bg-neutral-100 text-neutral-500'}`}>{a.status === 'confirmed' ? "You're in" : a.status === 'declined' ? 'Declined' : a.status}</span>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
-            </div>
+                    )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3 mt-4">
+                  <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Tournaments</p><p className="font-bold text-ink text-sm">{open.apps}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Reports</p><p className="font-bold text-ink text-sm">{open.reports}</p></div>
+                  <div className="bg-page rounded-xl p-3"><p className="text-[11px] text-neutral-500 font-medium">Rating</p><p className="font-bold text-ink text-sm flex items-center gap-1"><Star size={13} className="text-amber-500 fill-amber-500" /> {open.rating}</p></div>
+                </div>
 
-            <div className="mt-4 space-y-2.5 text-sm">
-              <div className="flex items-center gap-2 text-neutral-600 font-medium"><Mail size={15} className="text-neutral-400" /> {open.email}</div>
-              <div className="flex items-center gap-2 text-neutral-600 font-medium"><Phone size={15} className="text-neutral-400" /> {open.phone}</div>
-              <div className="flex items-center gap-2 text-neutral-600 font-medium"><Globe size={15} className="text-neutral-400" /> {open.languages.join(' · ')}</div>
-            </div>
+                <div className="mt-4">
+                  <p className="text-[11px] uppercase tracking-wide text-neutral-500 font-semibold mb-2">Enrolled in</p>
+                  {(enrolmentsByRef[open.id] || []).length === 0
+                    ? <p className="text-sm text-neutral-500 font-medium">Not enrolled for any tournament yet.</p>
+                    : (
+                      <div className="space-y-1.5">
+                        {enrolmentsByRef[open.id].map((e, i) => (
+                          <div key={i} className="flex items-center justify-between gap-2 bg-page rounded-xl px-3 py-2">
+                            <span className="min-w-0">
+                              <span className="block text-sm font-semibold text-ink truncate">{e.tournament}</span>
+                              <span className="block text-[11px] text-neutral-500 font-medium flex items-center gap-1"><Calendar size={11} className="text-neutral-500" /> Applied {fmtEnrolDate(e.date)}</span>
+                            </span>
+                            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize flex-none ${enrolMap[e.status]}`}>{e.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
+
+                <div className="mt-4 space-y-2.5 text-sm">
+                  <div className="flex items-center gap-2 text-neutral-600 font-medium"><Mail size={15} className="text-neutral-500" /> {open.email}</div>
+                  <div className="flex items-center gap-2 text-neutral-600 font-medium"><Phone size={15} className="text-neutral-500" /> {open.phone}</div>
+                  <div className="flex items-center gap-2 text-neutral-600 font-medium"><Globe size={15} className="text-neutral-500" /> {open.languages.join(' · ')}</div>
+                  {open.dietary && <div className="flex items-center gap-2 text-neutral-600 font-medium"><AlertTriangle size={15} className="text-amber-500" /> Dietary: {open.dietary}</div>}
+                </div>
+              </>
+            )}
 
             <div className="flex gap-3 mt-5">
-              <button className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><MessageSquare size={16} /> Message</button>
-              <button className="flex-1 h-11 rounded-full border-[1.5px] border-brand text-brand-dark font-semibold flex items-center justify-center gap-2"><ClipboardList size={16} /> Appoint</button>
+              <button onClick={() => { setOpen(null); window.dispatchEvent(new CustomEvent('ra-nav', { detail: 'communication' })) }} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><MessageSquare size={16} /> Message</button>
             </div>
           </div>
         </Modal>
@@ -1110,9 +1512,15 @@ export function DashboardReferees() {
 }
 
 function AddStaffModal({ onClose, onAdd }) {
-  const [f, setF] = useState({ name: '', role: 'Logistics coordinator', tournament: dashTournaments[0].name })
+  const [f, setF] = useState({ name: '', role: 'Logistics coordinator', tournament: dashTournaments[0].name, email: '', phone: '', languages: '', country: '', city: '', iban: '' })
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
   const roles = ['Tournament director', 'Logistics coordinator', 'Referee mentor', 'Communication', 'Onsite host', 'Media & content']
+  const [tried, setTried] = useState(false)
+  const nameErr = tried && !f.name.trim() ? 'Enter a full name' : ''
+  const submit = () => {
+    if (!f.name.trim()) { setTried(true); return }
+    onAdd({ name: f.name.trim(), role: f.role, tournament: f.tournament, email: f.email.trim(), phone: f.phone.trim(), languages: f.languages.trim(), country: f.country.trim(), city: f.city.trim(), iban: f.iban.trim(), initials: initialsOf(f.name.trim()) })
+  }
   return (
     <Modal onClose={onClose}>
       <div className="p-5">
@@ -1120,15 +1528,26 @@ function AddStaffModal({ onClose, onAdd }) {
           <h3 className="text-xl font-extrabold text-ink">Add staff member</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
         </div>
-        <div className="space-y-3">
-          <Field label="Full name"><input value={f.name} onChange={set('name')} placeholder="e.g. Sara Mendes" className={inputCls} autoFocus /></Field>
-          <Field label="Role"><select value={f.role} onChange={set('role')} className={inputCls}>{roles.map((r) => <option key={r}>{r}</option>)}</select></Field>
-          <Field label="Assigned to"><select value={f.tournament} onChange={set('tournament')} className={inputCls}>{dashTournaments.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+          <Field label="Full name" error={nameErr}><input value={f.name} onChange={set('name')} placeholder="e.g. Sara Mendes" className={fieldCls(nameErr)} autoFocus /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Role"><select value={f.role} onChange={set('role')} className={inputCls}>{roles.map((r) => <option key={r}>{r}</option>)}</select></Field>
+            <Field label="Assigned to"><select value={f.tournament} onChange={set('tournament')} className={inputCls}>{dashTournaments.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Email"><input value={f.email} onChange={set('email')} placeholder="name@example.com" className={inputCls} /></Field>
+            <Field label="Phone"><input value={f.phone} onChange={set('phone')} placeholder="+31 6 …" className={inputCls} /></Field>
+          </div>
+          <Field label="Languages spoken"><input value={f.languages} onChange={set('languages')} placeholder="e.g. English, Portuguese, Spanish" className={inputCls} /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Country"><input value={f.country} onChange={set('country')} placeholder="e.g. Portugal" className={inputCls} /></Field>
+            <Field label="City"><input value={f.city} onChange={set('city')} placeholder="e.g. Lisbon" className={inputCls} /></Field>
+          </div>
+          <Field label="IBAN"><input value={f.iban} onChange={set('iban')} placeholder="NL00 BANK 0000 0000 00" className={inputCls} /></Field>
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
-          <button onClick={() => f.name.trim() && onAdd({ name: f.name.trim(), role: f.role, tournament: f.tournament, initials: initialsOf(f.name.trim()) })}
-            disabled={!f.name.trim()} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"><Plus size={16} /> Add staff</button>
+          <button onClick={submit} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><Plus size={16} /> Add staff</button>
         </div>
       </div>
     </Modal>
@@ -1152,12 +1571,17 @@ export function DashboardStaff({ createSignal }) {
               <p className="text-xs text-neutral-500 font-medium">{s.role}</p>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-neutral-100 text-xs font-medium text-neutral-500">
-            <span className="text-neutral-400">Assigned to</span><br />{s.tournament}
+          <div className="mt-3 pt-3 border-t border-neutral-100 text-xs font-medium text-neutral-500 space-y-1.5">
+            <div><span className="text-neutral-500">Assigned to</span> {s.tournament}</div>
+            {s.languages && <div className="flex items-center gap-1.5"><Globe size={12} className="text-neutral-500 flex-none" /> {s.languages}</div>}
+            {s.email && <div className="flex items-center gap-1.5 truncate"><Mail size={12} className="text-neutral-500 flex-none" /> {s.email}</div>}
+            {s.phone && <div className="flex items-center gap-1.5"><Phone size={12} className="text-neutral-500 flex-none" /> {s.phone}</div>}
+            {(s.city || s.country) && <div className="flex items-center gap-1.5"><MapPin size={12} className="text-neutral-500 flex-none" /> {[s.city, s.country].filter(Boolean).join(', ')}</div>}
+            {s.iban && <div className="flex items-center gap-1.5"><span className="text-neutral-500 flex-none">IBAN</span> <span className="font-mono text-[11px] truncate">{s.iban}</span></div>}
           </div>
         </div>
       ))}
-      <button onClick={() => setAdding(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand min-h-[128px] transition">
+      <button onClick={() => setAdding(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-500 hover:text-brand-dark hover:border-brand min-h-[128px] transition">
         <Plus size={24} />
         <span className="text-sm font-semibold">Add staff member</span>
       </button>
@@ -1207,11 +1631,11 @@ function PeopleGrid({ seed, roles, addTitle, addCta, emptyAdd }) {
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-neutral-100 text-xs font-medium text-neutral-500">
-            <span className="text-neutral-400">{s.org ? 'Organisation' : 'Assigned to'}</span><br />{s.org || s.tournament || '—'}
+            <span className="text-neutral-500">{s.org ? 'Organisation' : 'Assigned to'}</span><br />{s.org || s.tournament || '—'}
           </div>
         </div>
       ))}
-      <button onClick={() => setAdding(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand min-h-[128px] transition">
+      <button onClick={() => setAdding(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-500 hover:text-brand-dark hover:border-brand min-h-[128px] transition">
         <Plus size={24} /><span className="text-sm font-semibold">{emptyAdd}</span>
       </button>
       {adding && <AddPersonModal title={addTitle} roles={roles} cta={addCta} onClose={() => setAdding(false)} onAdd={(p) => { setPeople((prev) => [...prev, p]); setAdding(false) }} />}
@@ -1263,7 +1687,7 @@ function AddMatchModal({ onClose, onAdd, teams = [], fields = [] }) {
               {options.filter((o) => o !== f.home).map((o) => <option key={o} value={o}>{o}</option>)}
             </select>
           </Field>
-          <p className="text-[11px] font-medium text-neutral-400">Teams come from the imported CSV. Import more on the tournament page if one is missing.</p>
+          <p className="text-[11px] font-medium text-neutral-500">Teams come from the imported CSV. Import more on the tournament page if one is missing.</p>
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
@@ -1407,6 +1831,14 @@ function RevisedScheduleModal({ current, onClose, onApply }) {
 
         {!analysed && (
           <>
+            <div className="flex justify-end mb-1">
+              <label className="inline-flex items-center gap-1.5 text-[12px] font-bold text-brand-dark cursor-pointer hover:underline">
+                <Upload size={13} /> Choose file (CSV / Excel)
+                <input type="file" accept=".csv,.tsv,.xlsx,.xls,text/csv,text/plain"
+                  onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { setText(await fileToTableText(f)) } catch { /* ignore */ } e.target.value = '' }}
+                  className="hidden" />
+              </label>
+            </div>
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6}
               placeholder={'date,time,field,home,away\nDay 1,09:00,Pitch A,Ajax U15,Benfica U15'}
               className="w-full rounded-xl border border-neutral-200 p-3 text-[13px] font-mono outline-none focus:border-brand resize-y" />
@@ -1452,7 +1884,7 @@ function RevisedScheduleModal({ current, onClose, onApply }) {
                 )
               })}
               {analysed.added.map((f, i) => <div key={'a' + i} className="px-3 py-2 text-[12.5px]"><span className="font-semibold text-ink">{f.home} vs {f.away}</span><span className="text-brand-dark font-medium"> · new · {f.day || DAY_FALLBACK} {f.time} {f.pitch}</span></div>)}
-              {analysed.removed.map((m, i) => <div key={'r' + i} className="px-3 py-2 text-[12.5px]"><span className="font-semibold text-neutral-500 line-through">{m.home} vs {m.away}</span><span className="text-neutral-400 font-medium"> · removed</span></div>)}
+              {analysed.removed.map((m, i) => <div key={'r' + i} className="px-3 py-2 text-[12.5px]"><span className="font-semibold text-neutral-500 line-through">{m.home} vs {m.away}</span><span className="text-neutral-500 font-medium"> · removed</span></div>)}
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => setAnalysed(null)} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Back</button>
@@ -1481,7 +1913,6 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
   const [confirmPublish, setConfirmPublish] = useState(false)
   const [showAI, setShowAI] = useState(false)
   const [showRevised, setShowRevised] = useState(false)
-  const [showMatchImport, setShowMatchImport] = useState(false)
   const [toast, setToast] = useState('')
 
   const list = matches[tid] || []
@@ -1527,25 +1958,20 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
     if (filled > 0) { setPublishDirty(true); setToast(`AI filled ${filled} open slot${filled === 1 ? '' : 's'}. Review and publish.`) }
     else setToast('No open slots to fill.')
   }
+  const APPT_HEAD = ['Day', 'Time', 'Field', 'Home', 'Away', 'Main referee', 'Assistant 1', 'Assistant 2', '4th official', 'Observer']
+  const appointmentRows = () => list.map((m) => [m.day || '', m.time || '', m.pitch || '', m.home || '', m.away || '',
+    refById[m.main]?.name || '', refById[m.a1]?.name || '', refById[m.a2]?.name || '', refById[m.fourth]?.name || '', obsById[m.observer]?.name || ''])
+  const apptFile = () => `${(dashTournaments.find((t) => t.id === tid)?.name || 'tournament')} - appointments`
   const exportCsv = () => {
-    const head = ['Day', 'Time', 'Field', 'Home', 'Away', 'Main referee', 'Assistant 1', 'Assistant 2', '4th official', 'Observer']
-    const rows = [head, ...list.map((m) => [m.day || '', m.time || '', m.pitch || '', m.home || '', m.away || '',
-      refById[m.main]?.name || '', refById[m.a1]?.name || '', refById[m.a2]?.name || '', refById[m.fourth]?.name || '', obsById[m.observer]?.name || ''])]
+    const rows = [APPT_HEAD, ...appointmentRows()]
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
-    const a = document.createElement('a'); a.href = url; a.download = `${dashTournaments.find((t) => t.id === tid).name} - appointments.csv`; a.click(); URL.revokeObjectURL(url)
+    const a = document.createElement('a'); a.href = url; a.download = `${apptFile()}.csv`; a.click(); URL.revokeObjectURL(url)
     setToast('Appointments exported as CSV.')
   }
-
-  const importMatches = (result) => {
-    const slots = (result.matches || []).map((m) => ({
-      id: m.id || 'm' + Math.random().toString(36).slice(2, 7),
-      day: m.day || DAY_FALLBACK, time: m.time || 'TBD', pitch: m.pitch || 'TBD',
-      home: m.home || '', away: m.away || '', main: null, a1: null, a2: null, fourth: null, observer: null,
-    }))
-    setMatches((prev) => ({ ...prev, [tid]: [...(prev[tid] || []), ...slots] }))
-    setShowMatchImport(false)
-    if (slots.length) { setPublishDirty(true); setToast(`Imported ${slots.length} match${slots.length === 1 ? '' : 'es'} from the file.`) }
+  const exportXlsx = async () => {
+    await exportToXlsx(`${apptFile()}.xlsx`, APPT_HEAD, appointmentRows())
+    setToast('Appointments exported to Excel.')
   }
 
   const openSlots = list.filter((m) => !m.main).length
@@ -1562,12 +1988,12 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
         {teams.length > 0 && list.length > 0 && (
           <div className="ml-auto flex items-center gap-2 flex-wrap">
             <button onClick={() => setShowAI(true)} className="inline-flex items-center gap-1.5 border border-brand text-brand-dark text-sm font-semibold px-4 h-10 rounded-full hover:bg-brand-light transition"><Sparkles size={15} /> Appoint with AI</button>
-            <button onClick={() => setShowMatchImport(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Upload size={15} /> Import matches</button>
             <button onClick={() => setShowRevised(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><RefreshCw size={15} /> Revised schedule</button>
             <button onClick={exportCsv} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><FileText size={15} /> Export CSV</button>
+            <button onClick={exportXlsx} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Download size={15} /> Export Excel</button>
             <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Plus size={15} /> Add match</button>
             <button onClick={() => publishDirty && setConfirmPublish(true)} disabled={!publishDirty}
-              className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 h-10 rounded-full transition ${publishDirty ? 'bg-brand text-white hover:bg-brand-dark' : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'}`}>
+              className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 h-10 rounded-full transition ${publishDirty ? 'bg-brand text-white hover:bg-brand-dark' : 'bg-neutral-200 text-neutral-500 cursor-not-allowed'}`}>
               <Send size={15} /> Publish
             </button>
           </div>
@@ -1591,11 +2017,8 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
       {teams.length > 0 && list.length === 0 && (
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-10 text-center">
           <p className="text-sm font-semibold text-ink">No matches scheduled yet</p>
-          <p className="text-xs text-neutral-500 font-medium mt-1">Import the schedule from a file, or add matches manually.</p>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <button onClick={() => setShowMatchImport(true)} className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-10 rounded-full"><Upload size={15} /> Import matches (CSV/Excel)</button>
-            <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full"><Plus size={15} /> Add match</button>
-          </div>
+          <p className="text-xs text-neutral-500 font-medium mt-1">Add matches to start appointing officials.</p>
+          <button onClick={() => setAddingMatch(true)} className="mt-4 inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-10 rounded-full"><Plus size={15} /> Add match</button>
         </div>
       )}
 
@@ -1631,7 +2054,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
       {teams.length > 0 && openDay && (
         <>
           <button onClick={() => { setOpenDay(null); setOpenId(null) }} className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-dark mb-3"><ChevronRight size={16} className="rotate-180" /> All days</button>
-          <p className="text-sm font-extrabold text-ink mb-2">{openDay} <span className="text-neutral-400 font-medium">· {dayList.length} matches</span></p>
+          <p className="text-sm font-extrabold text-ink mb-2">{openDay} <span className="text-neutral-500 font-medium">· {dayList.length} matches</span></p>
           <div className="space-y-2.5">
             {dayList.map((m, i) => {
               const open = openId === m.id
@@ -1641,7 +2064,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
                   <button onClick={() => setOpenId(open ? null : m.id)} className="w-full flex items-center gap-3 px-4 py-3 text-left">
                     <span className="text-sm font-bold text-brand-dark w-12 tabular-nums">{m.time}</span>
                     <span className="flex-1 min-w-0">
-                      <span className="block text-sm font-semibold text-ink truncate">{m.home} <span className="text-neutral-400 font-medium">vs</span> {m.away}</span>
+                      <span className="block text-sm font-semibold text-ink truncate">{m.home} <span className="text-neutral-500 font-medium">vs</span> {m.away}</span>
                       {!open && (
                         <span className="block text-[12px] font-medium mt-0.5 truncate">
                           {m.main
@@ -1653,7 +2076,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
                     <span className="text-xs font-medium text-neutral-500 hidden sm:block">{m.pitch}</span>
                     {dashReports[m.id] && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-light text-brand-dark flex items-center gap-1"><CheckCircle2 size={11} /> Report</span>}
                     {edited.has(m.id) && <span className="w-2 h-2 rounded-full bg-amber-400" title="Unsaved changes" />}
-                    <ChevronRight size={18} className={`text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+                    <ChevronRight size={18} className={`text-neutral-500 transition-transform ${open ? 'rotate-90' : ''}`} />
                   </button>
 
                   {open && (
@@ -1690,7 +2113,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
                             <div key={slot.key}>
                               <p className="text-[11px] font-semibold text-neutral-500 mb-1">{slot.label}</p>
                               <select value={val} onChange={(e) => setSlot(m.id, slot.key, e.target.value)}
-                                className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${conflict ? 'border-red-300 bg-red-50 text-red-700' : val ? 'border-neutral-200' : isMain ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-neutral-200 text-neutral-400'}`}>
+                                className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${conflict ? 'border-red-300 bg-red-50 text-red-700' : val ? 'border-neutral-200' : isMain ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-neutral-200 text-neutral-500'}`}>
                                 <option value="">Unassigned</option>
                                 {dashReferees.filter((r) => !usedElsewhere.includes(r.id) || r.id === val).map((r) => <option key={r.id} value={r.id}>{r.name} ({r.level})</option>)}
                               </select>
@@ -1700,7 +2123,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
                         <div>
                           <p className="text-[11px] font-semibold text-neutral-500 mb-1">Observer</p>
                           <select value={m.observer || ''} onChange={(e) => setSlot(m.id, 'observer', e.target.value)}
-                            className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${m.observer ? 'border-neutral-200' : 'border-neutral-200 text-neutral-400'}`}>
+                            className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${m.observer ? 'border-neutral-200' : 'border-neutral-200 text-neutral-500'}`}>
                             <option value="">No observer</option>
                             {dashObservers.map((o) => <option key={o.id} value={o.id}>{o.name} ({o.role})</option>)}
                           </select>
@@ -1711,7 +2134,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
                       </div>
                       {dashReports[m.id]
                         ? <MatchReport r={dashReports[m.id]} />
-                        : m.main && <p className="mt-3 text-[12.5px] font-medium text-neutral-400 flex items-center gap-1.5"><Clock size={13} /> Awaiting the main referee’s match report.</p>}
+                        : m.main && <p className="mt-3 text-[12.5px] font-medium text-neutral-500 flex items-center gap-1.5"><Clock size={13} /> Awaiting the main referee’s match report.</p>}
                     </div>
                   )}
                 </div>
@@ -1722,7 +2145,6 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
       )}
 
       {addingMatch && <AddMatchModal onClose={() => setAddingMatch(false)} onAdd={addMatch} teams={teams} fields={fields} />}
-      {showMatchImport && <SmartImportModal tournamentName={dashTournaments.find((t) => t.id === tid)?.name} existing={list.length} onClose={() => setShowMatchImport(false)} onImport={importMatches} />}
       {showAI && <AppointAiModal onClose={() => setShowAI(false)} onRun={runAI} />}
       {showRevised && <RevisedScheduleModal current={list} onClose={() => setShowRevised(false)} onApply={(merged, mode) => {
         setMatches((prev) => ({ ...prev, [tid]: merged }))
@@ -1787,27 +2209,127 @@ function TicketChat({ ticket, onClose }) {
 }
 
 /* ---------------- Communication ---------------- */
-function BroadcastPanel() {
-  const [tournament, setTournament] = useState(dashTournaments[0].name)
+// Broadcast / chat for one tournament. Admins create chats that land in the
+// referees' webapp: either a read-only broadcast (admin posts only) or an open
+// group chat (everyone can type), aimed at a chosen audience. A phone preview
+// shows how it looks in the app. Prototype: messages live in local state until
+// the chat backend (Phase 2) persists and delivers them.
+const BC_AUDIENCES = ['Referees', 'Observers', 'Staff', 'Everyone']
+function TournamentBroadcast({ tournamentName }) {
+  const [chats, setChats] = useState(() => [
+    { id: 'c1', name: 'Announcements', type: 'broadcast', audience: ['Everyone'], messages: [{ from: 'admin', text: `Welcome to ${tournamentName}! Your schedules follow soon.`, at: '09:00' }] },
+    { id: 'c2', name: 'Referees group', type: 'open', audience: ['Referees'], messages: [{ from: 'admin', text: 'Use this chat to coordinate travel with each other.', at: '09:05' }, { from: 'ref', who: 'Dylan', text: 'Landing Friday 14:00, anyone sharing a taxi?', at: '09:12' }] },
+  ])
+  const [activeId, setActiveId] = useState('c1')
+  const [creating, setCreating] = useState(false)
+  const [draft, setDraft] = useState({ name: '', type: 'broadcast', audience: ['Everyone'] })
   const [msg, setMsg] = useState('')
-  const [sent, setSent] = useState(false)
+  const active = chats.find((c) => c.id === activeId) || chats[0]
+
+  const send = () => {
+    if (!msg.trim()) return
+    setChats((cs) => cs.map((c) => c.id === active.id ? { ...c, messages: [...c.messages, { from: 'admin', text: msg.trim(), at: 'now' }] } : c))
+    setMsg('')
+  }
+  const toggleAud = (a) => setDraft((d) => ({ ...d, audience: d.audience.includes(a) ? d.audience.filter((x) => x !== a) : [...d.audience, a] }))
+  const createChat = () => {
+    if (!draft.name.trim() || draft.audience.length === 0) return
+    const id = 'c' + Math.random().toString(36).slice(2, 6)
+    setChats((cs) => [...cs, { id, name: draft.name.trim(), type: draft.type, audience: draft.audience, messages: [] }])
+    setActiveId(id); setCreating(false); setDraft({ name: '', type: 'broadcast', audience: ['Everyone'] })
+  }
+
   return (
-    <div className="max-w-xl bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
-      <p className="font-bold text-ink text-sm">Broadcast to a tournament</p>
-      <p className="text-xs text-neutral-500 font-medium mt-0.5">Lands in the webapp group chat of every enrolled referee.</p>
-      <label className="block text-xs font-semibold text-ink mt-4 mb-1">Tournament</label>
-      <select value={tournament} onChange={(e) => { setTournament(e.target.value); setSent(false) }}
-        className="w-full h-10 px-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand">
-        {dashTournaments.map((t) => <option key={t.id}>{t.name}</option>)}
-      </select>
-      <label className="block text-xs font-semibold text-ink mt-3 mb-1">Message</label>
-      <textarea value={msg} onChange={(e) => { setMsg(e.target.value); setSent(false) }} rows={4} placeholder="Type your announcement…"
-        className="w-full p-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand resize-none" />
-      <button onClick={() => { if (msg.trim()) { setSent(true); setMsg('') } }}
-        className="mt-3 w-full h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2">
-        <Send size={16} /> Send to group
-      </button>
-      {sent && <p className="mt-3 text-xs font-semibold text-brand-dark text-center">✓ Sent, delivered to the webapp of all referees in {tournament}.</p>}
+    <div className="grid lg:grid-cols-[250px_1fr_300px] gap-4 items-start">
+      {/* Chat list */}
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-2">
+        {chats.map((c) => (
+          <button key={c.id} onClick={() => { setActiveId(c.id); setCreating(false) }}
+            className={`w-full text-left px-3 py-2.5 rounded-xl mb-1 ${activeId === c.id && !creating ? 'bg-brand-light' : 'hover:bg-page'}`}>
+            <span className="flex items-center gap-1.5 text-sm font-bold text-ink">{c.type === 'broadcast' ? <Lock size={12} className="text-neutral-500" /> : <Users size={12} className="text-neutral-500" />} {c.name}</span>
+            <span className="block text-[11px] font-medium text-neutral-500 mt-0.5">{c.type === 'broadcast' ? 'Admin only' : 'Open chat'} · {c.audience.join(', ')}</span>
+          </button>
+        ))}
+        <button onClick={() => { setCreating(true) }} className="w-full flex items-center gap-1.5 text-[13px] font-semibold text-brand-dark px-3 py-2 rounded-xl hover:bg-page"><Plus size={15} /> New chat</button>
+      </div>
+
+      {/* Composer / new-chat form */}
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+        {creating ? (
+          <>
+            <p className="font-bold text-ink text-sm mb-3">New chat</p>
+            <label className="block text-xs font-semibold text-ink mb-1">Name</label>
+            <input value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder="e.g. Finals day briefing"
+              className="w-full h-10 px-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand" />
+            <label className="block text-xs font-semibold text-ink mt-3 mb-1">Type</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[['broadcast', 'Broadcast', 'Admin posts, read-only'], ['open', 'Open chat', 'Everyone can type']].map(([val, label, sub]) => (
+                <button key={val} onClick={() => setDraft((d) => ({ ...d, type: val }))}
+                  className={`text-left px-3 py-2.5 rounded-xl border ${draft.type === val ? 'border-brand bg-brand-light' : 'border-neutral-200'}`}>
+                  <span className="block text-sm font-bold text-ink">{label}</span>
+                  <span className="block text-[11px] font-medium text-neutral-500">{sub}</span>
+                </button>
+              ))}
+            </div>
+            <label className="block text-xs font-semibold text-ink mt-3 mb-1">Who can see it</label>
+            <div className="flex flex-wrap gap-2">
+              {BC_AUDIENCES.map((a) => (
+                <button key={a} onClick={() => toggleAud(a)}
+                  className={`text-[12px] font-semibold px-3 h-9 rounded-full border inline-flex items-center gap-1.5 ${draft.audience.includes(a) ? 'bg-brand text-white border-brand' : 'bg-white text-neutral-500 border-neutral-200'}`}>
+                  {draft.audience.includes(a) && <Check size={13} />} {a}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setCreating(false)} className="h-10 px-4 rounded-full border border-neutral-200 text-neutral-600 font-semibold text-sm">Cancel</button>
+              <button onClick={createChat} disabled={!draft.name.trim() || draft.audience.length === 0}
+                className="flex-1 h-10 rounded-full bg-brand text-white font-semibold text-sm disabled:opacity-50">Create chat</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <p className="font-bold text-ink text-sm flex items-center gap-1.5">{active.type === 'broadcast' ? <Lock size={13} className="text-neutral-500" /> : <Users size={13} className="text-neutral-500" />} {active.name}</p>
+              <span className="text-[11px] font-semibold text-neutral-500">{active.type === 'broadcast' ? 'Read-only broadcast' : 'Open chat'}</span>
+            </div>
+            <p className="text-xs text-neutral-500 font-medium mt-0.5">To {active.audience.join(', ')} in {tournamentName}. {active.type === 'open' ? 'Participants can reply.' : 'Only admins can post.'}</p>
+            <label className="block text-xs font-semibold text-ink mt-4 mb-1">Message</label>
+            <textarea value={msg} onChange={(e) => setMsg(e.target.value)} rows={5} placeholder="Type your message…"
+              className="w-full p-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand resize-none" />
+            <button onClick={send} disabled={!msg.trim()} className="mt-3 w-full h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+              <Send size={16} /> Send to {active.audience.join(' + ').toLowerCase()}
+            </button>
+            <p className="mt-2 text-[11px] text-neutral-500 font-medium">Messages are stored and delivered once the chat backend is live (Phase 2).</p>
+          </>
+        )}
+      </div>
+
+      {/* Phone preview of the chat as the referee sees it */}
+      <div className="bg-neutral-900 rounded-[28px] p-2.5 shadow-lg">
+        <div className="bg-page rounded-[20px] overflow-hidden h-[460px] flex flex-col">
+          <div className="bg-white px-4 py-3 border-b border-neutral-200">
+            <p className="text-[13px] font-extrabold text-ink flex items-center gap-1.5">{active.type === 'broadcast' ? <Lock size={12} /> : <Users size={12} />} {active.name}</p>
+            <p className="text-[10px] font-medium text-neutral-500">{tournamentName}</p>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {active.messages.length === 0 && <p className="text-[12px] text-neutral-500 font-medium text-center mt-6">No messages yet.</p>}
+            {active.messages.map((m, i) => (
+              <div key={i} className={m.from === 'admin' ? 'ml-auto max-w-[80%]' : 'mr-auto max-w-[80%]'}>
+                {m.from !== 'admin' && <p className="text-[9px] font-bold text-neutral-500 mb-0.5 ml-1">{m.who || 'Referee'}</p>}
+                <div className={`px-3 py-2 text-[12px] font-medium leading-snug ${m.from === 'admin' ? 'bg-brand text-white rounded-2xl rounded-br-sm' : 'bg-white border border-neutral-200 text-ink rounded-2xl rounded-bl-sm'}`}>{m.text}</div>
+              </div>
+            ))}
+          </div>
+          {active.type === 'open' ? (
+            <div className="bg-white border-t border-neutral-200 px-3 py-2 flex items-center gap-2">
+              <span className="flex-1 bg-page rounded-full px-3 py-1.5 text-[11px] text-neutral-500">Message…</span>
+              <Send size={14} className="text-brand" />
+            </div>
+          ) : (
+            <div className="bg-white border-t border-neutral-200 px-3 py-2.5 text-center text-[10px] font-semibold text-neutral-500 flex items-center justify-center gap-1"><Lock size={11} /> Only admins can post here</div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -1815,16 +2337,14 @@ function BroadcastPanel() {
 // Consolidated communication hub: the AI smart inbox, group broadcasts and the
 // AI assistant knowledge base all live here as tabs.
 export function DashboardCommunication() {
-  const [tab, setTab] = useState('conversations')
+  const [tab, setTab] = useState('inbox')
   return (
     <div>
       <SubTabs tabs={[
-        { k: 'conversations', label: 'Conversations' },
-        { k: 'broadcast', label: 'Broadcast' },
+        { k: 'inbox', label: 'Inbox' },
         { k: 'assistant', label: 'Assistant' },
       ]} active={tab} onChange={setTab} />
-      {tab === 'conversations' && <DashboardInbox />}
-      {tab === 'broadcast' && <BroadcastPanel />}
+      {tab === 'inbox' && <DashboardInbox />}
       {tab === 'assistant' && <DashboardAssistant />}
     </div>
   )
@@ -1878,13 +2398,13 @@ export function DashboardInbox() {
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-200 flex items-center justify-between">
           <p className="font-bold text-ink text-sm">Inbox</p>
-          <span className="text-xs font-medium text-neutral-400">{items.filter((x) => x.status === 'new').length} new</span>
+          <span className="text-xs font-medium text-neutral-500">{items.filter((x) => x.status === 'new').length} new</span>
         </div>
         <div className="divide-y divide-neutral-100 max-h-[540px] overflow-y-auto">
           {items.map((it) => (
             <button key={it.id} onClick={() => pick(it)} className={`w-full text-left px-4 py-3 transition ${sel === it.id ? 'bg-page' : 'hover:bg-page'}`}>
               <div className="flex items-center gap-2">
-                {it.channel === 'email' ? <Mail size={14} className="text-neutral-400" /> : <MessageCircle size={14} className="text-neutral-400" />}
+                {it.channel === 'email' ? <Mail size={14} className="text-neutral-500" /> : <MessageCircle size={14} className="text-neutral-500" />}
                 <span className="font-semibold text-ink text-sm truncate flex-1">{it.name}</span>
                 {it.status === 'answered' && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-light text-brand-dark">Answered</span>}
                 {it.status === 'auto' && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand text-white inline-flex items-center gap-1"><Sparkles size={9} /> Auto</span>}
@@ -1937,21 +2457,91 @@ export function DashboardInbox() {
   )
 }
 
+// Shared error state for the live dashboard views: a clear message plus a
+// Retry button so a failed load is never a dead end (U7).
+function DashError({ message, onRetry }) {
+  return (
+    <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 flex items-center gap-3 flex-wrap">
+      <AlertTriangle size={16} className="text-red-600 flex-none" />
+      <span className="text-sm font-medium text-red-700 flex-1 min-w-0">{message}</span>
+      {onRetry && (
+        <button onClick={onRetry} className="text-[12px] font-bold text-white bg-red-600 hover:bg-red-700 rounded-full px-3 h-8 inline-flex items-center gap-1.5 flex-none">
+          <RefreshCw size={13} /> Retry
+        </button>
+      )}
+    </div>
+  )
+}
+
 /* ---------------- P&L ---------------- */
 export function DashboardPnL() {
-  const totalRev = dashPnl.reduce((a, b) => a + b.revenue, 0)
-  const totalCost = dashPnl.reduce((a, b) => a + b.costs, 0)
+  const [rows, setRows] = useState(LIVE ? [] : dashPnl.map((p) => ({ ...p, hasCosts: true })))
+  const [loading, setLoading] = useState(LIVE)
+  const [error, setError] = useState(null)
+
+  const loadPnl = () => {
+    if (!LIVE) return
+    setLoading(true); setError(null)
+    getPnl()
+      .then((r) => setRows(r))
+      .catch((e) => setError(e.message || 'Could not load P&L'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { loadPnl() }, [])
+
+  const hasCosts = rows.length > 0 && rows.every((r) => r.hasCosts)
+  const totalRev = rows.reduce((a, b) => a + b.revenue, 0)
+  const totalRefs = rows.reduce((a, b) => a + (b.referees || 0), 0)
+  const totalCost = hasCosts ? rows.reduce((a, b) => a + b.costs, 0) : 0
   const net = totalRev - totalCost
-  const marginPct = Math.round((net / totalRev) * 100)
+  const marginPct = totalRev ? Math.round((net / totalRev) * 100) : 0
+
+  const exportPnl = async () => {
+    const headers = hasCosts ? ['Tournament', 'Revenue', 'Costs', 'Margin', '%'] : ['Tournament', 'Revenue', 'Paid referees']
+    const data = rows.map((p) => {
+      const m = p.revenue - (p.costs || 0)
+      const pct = p.revenue ? Math.round((m / p.revenue) * 100) : 0
+      return hasCosts ? [p.name, p.revenue, p.costs, m, pct] : [p.name, p.revenue, p.referees]
+    })
+    await exportToXlsx('referee-abroad-pnl.xlsx', headers, data)
+  }
+
+  if (loading) return (
+    <div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">{Array.from({ length: 4 }).map((_, i) => <Skel key={i} className="h-20" />)}</div>
+      <RowsSkeleton count={5} />
+    </div>
+  )
 
   return (
     <div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total revenue" value={euro(totalRev)} sub="6 tournaments" />
-        <StatCard label="Total costs" value={euro(totalCost)} />
-        <StatCard label="Net margin" value={euro(net)} sub={`${marginPct}% margin`} />
-        <StatCard label="Avg. per referee" value={euro(Math.round(net / dashPnl.reduce((a, b) => a + b.referees, 0)))} />
+      {error && <DashError message={error} onRetry={loadPnl} />}
+      <div className="flex justify-end mb-3">
+        <button onClick={exportPnl} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-neutral-200 bg-white text-[13px] font-semibold text-ink hover:border-brand"><Download size={15} /> Export to Excel</button>
       </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Total revenue" value={euro(totalRev)} sub={`${rows.length} tournaments`} />
+        {hasCosts ? (
+          <>
+            <StatCard label="Total costs" value={euro(totalCost)} />
+            <StatCard label="Net margin" value={euro(net)} sub={`${marginPct}% margin`} />
+            <StatCard label="Avg. per referee" value={euro(totalRefs ? Math.round(net / totalRefs) : 0)} />
+          </>
+        ) : (
+          <>
+            <StatCard label="Paid referees" value={totalRefs} />
+            <StatCard label="Avg. revenue / referee" value={euro(totalRefs ? Math.round(totalRev / totalRefs) : 0)} />
+          </>
+        )}
+      </div>
+
+      {!hasCosts && (
+        <p className="mt-3 text-xs text-neutral-500 font-medium flex items-center gap-1.5">
+          <Lock size={13} className="text-neutral-500" /> Costs and net margin aren’t tracked in WordPress; they come with the own backend in Phase 2.
+        </p>
+      )}
 
       <div className="mt-5 bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
@@ -1959,25 +2549,26 @@ export function DashboardPnL() {
             <tr className="text-left text-[11px] uppercase tracking-wide text-neutral-500 border-b border-neutral-200 bg-page/60">
               <th className="px-4 py-3 font-semibold">Tournament</th>
               <th className="px-4 py-3 font-semibold text-right">Revenue</th>
-              <th className="px-4 py-3 font-semibold text-right">Costs</th>
-              <th className="px-4 py-3 font-semibold text-right">Margin</th>
-              <th className="px-4 py-3 font-semibold text-right">%</th>
+              {hasCosts
+                ? <><th className="px-4 py-3 font-semibold text-right">Costs</th><th className="px-4 py-3 font-semibold text-right">Margin</th><th className="px-4 py-3 font-semibold text-right">%</th></>
+                : <th className="px-4 py-3 font-semibold text-right">Paid referees</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 tabular-nums">
-            {dashPnl.map((p, i) => {
-              const m = p.revenue - p.costs
-              const pct = Math.round((m / p.revenue) * 100)
+            {rows.map((p, i) => {
+              const m = p.revenue - (p.costs || 0)
+              const pct = p.revenue ? Math.round((m / p.revenue) * 100) : 0
               return (
                 <tr key={i} className="hover:bg-page">
                   <td className="px-4 py-3 font-semibold text-ink">{p.name}</td>
                   <td className="px-4 py-3 text-right font-medium text-neutral-600">{euro(p.revenue)}</td>
-                  <td className="px-4 py-3 text-right font-medium text-neutral-600">{euro(p.costs)}</td>
-                  <td className="px-4 py-3 text-right font-bold text-brand-dark">{euro(m)}</td>
-                  <td className="px-4 py-3 text-right font-medium text-neutral-500">{pct}%</td>
+                  {hasCosts
+                    ? <><td className="px-4 py-3 text-right font-medium text-neutral-600">{euro(p.costs)}</td><td className="px-4 py-3 text-right font-bold text-brand-dark">{euro(m)}</td><td className="px-4 py-3 text-right font-medium text-neutral-500">{pct}%</td></>
+                    : <td className="px-4 py-3 text-right font-medium text-neutral-600">{p.referees}</td>}
                 </tr>
               )
             })}
+            {rows.length === 0 && <tr><td colSpan={5} className="px-4 py-4 text-sm text-neutral-500 font-medium">No paid tournaments yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1986,31 +2577,151 @@ export function DashboardPnL() {
 }
 
 /* ---------------- Analytics ---------------- */
-export function DashboardAnalytics() {
-  const a = dashAnalytics
-  const maxBar = Math.max(...a.refereesPerTournament.map((d) => d.value))
-  const totalLevels = a.levels.beginner + a.levels.medior + a.levels.talent
-  const donut = [
-    { key: 'talent', val: a.levels.talent, color: '#44A546' },
-    { key: 'medior', val: a.levels.medior, color: '#7FB2E8' },
-    { key: 'beginner', val: a.levels.beginner, color: '#D3D6D2' },
-  ]
-  let acc = 0
+const LEVEL_PALETTE = { talent: '#44A546', medior: '#7FB2E8', beginner: '#D3D6D2' }
+const GENDER_PALETTE = { Male: '#7FB2E8', Female: '#E8768F', Other: '#F2A541' }
+const CHART_COLORS = ['#44A546', '#7FB2E8', '#F2A541', '#9B8BD6', '#E8768F', '#2FA8A0', '#D3D6D2', '#C9A227']
+
+// Donut chart with a legend. data = [{key, val}].
+function DonutCard({ title, data, palette = {} }) {
+  const total = data.reduce((s, d) => s + d.val, 0) || 1
+  const slices = data.map((d, i) => ({ ...d, color: palette[d.key] || CHART_COLORS[i % CHART_COLORS.length] }))
   const circ = 2 * Math.PI * 42
-  const maxLine = Math.max(...a.reportsByMonth.map((d) => d.v))
-  const pts = a.reportsByMonth.map((d, i) => {
-    const x = 20 + (i * 300) / (a.reportsByMonth.length - 1)
-    const y = 130 - (d.v / maxLine) * 100
-    return `${x},${y}`
-  }).join(' ')
+  let acc = 0
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
+      <p className="font-bold text-ink text-sm mb-3">{title}</p>
+      <div className="flex items-center gap-4">
+        <svg width="104" height="104" viewBox="0 0 100 100" className="-rotate-90 flex-none">
+          {slices.map((d) => {
+            const frac = d.val / total
+            const el = <circle key={d.key} cx="50" cy="50" r="42" fill="none" stroke={d.color} strokeWidth="16" strokeDasharray={`${frac * circ} ${circ}`} strokeDashoffset={-acc * circ} />
+            acc += frac
+            return el
+          })}
+        </svg>
+        <div className="flex-1 min-w-0 space-y-1.5">
+          {slices.map((d) => (
+            <div key={d.key} className="flex items-center gap-2 text-sm">
+              <span className="w-2.5 h-2.5 rounded-sm flex-none" style={{ background: d.color }} />
+              <span className="font-semibold text-ink capitalize truncate flex-1 min-w-0">{d.key}</span>
+              <span className="font-medium text-neutral-500 tabular-nums flex-none">{d.val}</span>
+              <span className="font-medium text-neutral-500 tabular-nums flex-none w-9 text-right">{Math.round((d.val / total) * 100)}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Horizontal bar list. data = [{key, val}].
+function HBarCard({ title, data, color = '#44A546' }) {
+  const max = Math.max(1, ...data.map((d) => d.val))
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
+      <p className="font-bold text-ink text-sm mb-3">{title}</p>
+      <div className="space-y-2">
+        {data.map((d) => (
+          <div key={d.key} className="flex items-center gap-3">
+            <span className="w-28 flex-none text-[13px] font-semibold text-ink truncate">{d.key}</span>
+            <span className="flex-1 h-5 bg-page rounded-md overflow-hidden"><span className="block h-full rounded-md" style={{ width: `${(d.val / max) * 100}%`, background: color }} /></span>
+            <span className="w-8 flex-none text-right text-[13px] font-medium text-neutral-500 tabular-nums">{d.val}</span>
+          </div>
+        ))}
+        {data.length === 0 && <p className="text-sm text-neutral-500 font-medium">No data.</p>}
+      </div>
+    </div>
+  )
+}
+
+// Simple responsive line chart. `data` is [{ month|m, value|v }]; `format`
+// turns a value into its label (e.g. a euro amount).
+function LineChartCard({ title, data, color = '#44A546', format = (n) => String(n) }) {
+  const pts = data.map((d) => ({ label: d.month ?? d.m, value: Number(d.value ?? d.v) || 0 }))
+  const max = Math.max(1, ...pts.map((p) => p.value))
+  const x = (i) => 20 + (i * 300) / Math.max(1, pts.length - 1)
+  const y = (v) => 130 - (v / max) * 100
+  const line = pts.map((p, i) => `${x(i)},${y(p.value)}`).join(' ')
+  return (
+    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 lg:col-span-2">
+      <p className="font-bold text-ink text-sm mb-2 flex items-center gap-1.5"><TrendingUp size={16} className="text-brand" /> {title}</p>
+      <svg viewBox="0 0 340 150" className="w-full h-44">
+        {[0, 1, 2, 3].map((g) => <line key={g} x1="20" x2="320" y1={30 + g * 33} y2={30 + g * 33} stroke="#eee" strokeWidth="1" />)}
+        <polyline points={line} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p, i) => (
+          <g key={i}>
+            <circle cx={x(i)} cy={y(p.value)} r="3.5" fill={color} />
+            <text x={x(i)} y={y(p.value) - 8} textAnchor="middle" fontSize="9" fill="#7c837e" fontWeight="600">{format(p.value)}</text>
+            <text x={x(i)} y="145" textAnchor="middle" fontSize="10" fill="#7c837e" fontWeight="500">{p.label}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  )
+}
+
+export function DashboardAnalytics() {
+  const [a, setA] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const loadAnalytics = () => {
+    setLoading(true); setError(null)
+    getAnalytics()
+      .then((d) => setA(d))
+      .catch((e) => setError(e.message || 'Could not load analytics'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { loadAnalytics() }, [])
+
+  if (loading) return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{Array.from({ length: 4 }).map((_, i) => <Skel key={i} className="h-20" />)}</div>
+      <div className="grid md:grid-cols-2 gap-4">{Array.from({ length: 4 }).map((_, i) => <Skel key={i} className="h-40" />)}</div>
+    </div>
+  )
+  if (error) return <div className="p-4"><DashError message={error} onRetry={loadAnalytics} /></div>
+  if (!a) return null
+
+  const maxBar = Math.max(1, ...a.refereesPerTournament.map((d) => d.value))
+  const euro = (n) => '€' + Number(n).toLocaleString('en-GB')
+  const hasApps = (a.applicationsByMonth || []).some((d) => d.value > 0)
+  const hasRev = (a.revenueByMonth || []).some((d) => d.value > 0)
+
+  const tiles = [
+    { label: 'Total referees', value: a.tiles.totalReferees },
+    { label: 'Avg. referees / tournament', value: a.tiles.avgReferees },
+    { label: 'Countries reached', value: a.tiles.countriesReached },
+    a.tiles.womenPct != null ? { label: 'Women', value: `${a.tiles.womenPct}%` } : null,
+    a.tiles.reportsSubmitted != null ? { label: 'Reports submitted', value: a.tiles.reportsSubmitted } : null,
+    a.tiles.avgScore != null ? { label: 'Avg. report score', value: a.tiles.avgScore } : null,
+  ].filter(Boolean).slice(0, 4)
+
+  const exportAnalytics = async () => {
+    const list = (l) => (l || []).map((x) => [x.key, x.val])
+    const months = (m) => (m || []).map((x) => [x.month, x.value])
+    const sheets = {
+      Overview: { headers: ['Metric', 'Value'], rows: tiles.map((t) => [t.label, String(t.value)]) },
+      'Per tournament': { headers: ['Tournament', 'Referees'], rows: (a.refereesPerTournament || []).map((d) => [d.name, d.value]) },
+      Levels: { headers: ['Level', 'Count'], rows: list(a.levelList) },
+      Gender: { headers: ['Gender', 'Count'], rows: list(a.genderList) },
+      Countries: { headers: ['Country', 'Count'], rows: list(a.countriesList) },
+    }
+    if ((a.ageList || []).length) sheets.Age = { headers: ['Age band', 'Count'], rows: list(a.ageList) }
+    if ((a.experienceList || []).length) sheets.Experience = { headers: ['Experience', 'Count'], rows: list(a.experienceList) }
+    if ((a.applicationsByMonth || []).length) sheets['Applications per month'] = { headers: ['Month', 'Applications'], rows: months(a.applicationsByMonth) }
+    if ((a.revenueByMonth || []).length) sheets['Revenue per month'] = { headers: ['Month', 'Revenue'], rows: months(a.revenueByMonth) }
+    await exportSheetsToXlsx('referee-abroad-analytics.xlsx', sheets)
+  }
 
   return (
     <div>
+      <div className="flex justify-end mb-3">
+        <button onClick={exportAnalytics} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-neutral-200 bg-white text-[13px] font-semibold text-ink hover:border-brand"><Download size={15} /> Export to Excel</button>
+      </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Avg. referees / tournament" value="33" sub="+8% vs last year" />
-        <StatCard label="Reports submitted" value="231" />
-        <StatCard label="Avg. report score" value="4.2 / 5" sub="+0.3" />
-        <StatCard label="Countries reached" value="27" />
+        {tiles.map((t) => <StatCard key={t.label} label={t.label} value={String(t.value)} />)}
       </div>
 
       <div className="mt-5 grid lg:grid-cols-2 gap-5">
@@ -2031,52 +2742,45 @@ export function DashboardAnalytics() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
-          <p className="font-bold text-ink text-sm mb-2">Referee levels</p>
-          <div className="flex items-center gap-5">
-            <svg width="110" height="110" viewBox="0 0 100 100" className="-rotate-90">
-              {donut.map((d) => {
-                const frac = d.val / totalLevels
-                const dash = `${frac * circ} ${circ}`
-                const el = <circle key={d.key} cx="50" cy="50" r="42" fill="none" stroke={d.color} strokeWidth="16" strokeDasharray={dash} strokeDashoffset={-acc * circ} />
-                acc += frac
-                return el
-              })}
-            </svg>
-            <div className="space-y-1.5">
-              {donut.map((d) => (
-                <div key={d.key} className="flex items-center gap-2 text-sm">
-                  <span className="w-3 h-3 rounded-sm" style={{ background: d.color }} />
-                  <span className="font-semibold text-ink capitalize w-20">{d.key}</span>
-                  <span className="font-medium text-neutral-500">{d.val}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        {a.levelList.length > 0 && <DonutCard title="Referee levels" data={a.levelList} palette={LEVEL_PALETTE} />}
+        {a.genderList.length > 0 && <DonutCard title="Gender" data={a.genderList} palette={GENDER_PALETTE} />}
+        {(a.ageList || []).length > 0 && <HBarCard title="Age groups" data={a.ageList} color="#9B8BD6" />}
+        {a.countriesList.length > 0 && <HBarCard title="Top countries" data={a.countriesList} />}
+        {a.experienceList.length > 0 && <HBarCard title="Experience (years registered)" data={a.experienceList} color="#7FB2E8" />}
 
-        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 lg:col-span-2">
-          <p className="font-bold text-ink text-sm mb-2 flex items-center gap-1.5"><TrendingUp size={16} className="text-brand" /> Reports submitted over time</p>
-          <svg viewBox="0 0 340 150" className="w-full h-44">
-            {[0, 1, 2, 3].map((g) => <line key={g} x1="20" x2="320" y1={30 + g * 33} y2={30 + g * 33} stroke="#eee" strokeWidth="1" />)}
-            <polyline points={pts} fill="none" stroke="#44A546" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {a.reportsByMonth.map((d, i) => {
-              const x = 20 + (i * 300) / (a.reportsByMonth.length - 1)
-              const y = 130 - (d.v / maxLine) * 100
-              return <g key={i}><circle cx={x} cy={y} r="3.5" fill="#44A546" /><text x={x} y="145" textAnchor="middle" fontSize="10" fill="#7c837e" fontWeight="500">{d.m}</text></g>
-            })}
-          </svg>
-        </div>
+        {hasApps && <LineChartCard title="Applications per month" data={a.applicationsByMonth} />}
+        {hasRev && <LineChartCard title="Revenue per month" data={a.revenueByMonth} color="#2F7D37" format={euro} />}
+        {a.reportsByMonth && (
+          <LineChartCard title="Reports submitted over time" data={a.reportsByMonth} />
+        )}
       </div>
+
+      {LIVE && (
+        <p className="mt-4 text-xs text-neutral-500 font-medium flex items-center gap-1.5">
+          <Lock size={13} className="text-neutral-500" />
+          {(a.ageList || []).length ? '' : 'Age groups appear once dates of birth are recorded in WordPress. '}
+          Match-report analytics (scores, trends) arrive with the own backend in Phase 2.
+        </p>
+      )}
     </div>
   )
 }
 
 /* ---------------- Assistant (FAQ + AI usage) ---------------- */
+const fmtTokens = (n) => n == null ? '—' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n)
+
 export function DashboardAssistant() {
-  const [items, setItems] = useState(() => faq.map((x, i) => ({ id: 'f' + i, q: x.q, a: x.a })))
+  const [items, setItems] = useState(() => FAQ_ITEMS.map((x, i) => ({ id: 'f' + i, q: x.q, a: x.a })))
   const [editing, setEditing] = useState(null) // id or 'new'
   const [draft, setDraft] = useState({ q: '', a: '' })
+  const [ai, setAi] = useState(null)
+
+  useEffect(() => {
+    if (!LIVE) return
+    let alive = true
+    fetch('/api/assistant').then((r) => (r.ok ? r.json() : null)).then((d) => { if (alive) setAi(d) }).catch(() => {})
+    return () => { alive = false }
+  }, [])
 
   const startEdit = (it) => { setEditing(it.id); setDraft({ q: it.q, a: it.a }) }
   const startNew = () => { setEditing('new'); setDraft({ q: '', a: '' }) }
@@ -2091,18 +2795,33 @@ export function DashboardAssistant() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-ink"><Coins size={17} className="text-brand" /> AI usage this month</div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Messages handled" value="428" sub="+12% vs last month" />
-          <StatCard label="Tokens used" value="1.24M" />
-          <StatCard label="Estimated cost" value="€42" sub="within €30 to €50 band" />
-          <StatCard label="Auto-answered" value="63%" sub="rest drafted for review" />
-        </div>
+        <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-ink"><Coins size={17} className="text-brand" /> AI assistant</div>
+        {LIVE ? (
+          ai && ai.configured ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard label="Status" value="Live" sub="answering in the app" />
+              <StatCard label="Provider" value={ai.provider === 'openai' ? 'OpenAI' : ai.provider === 'anthropic' ? 'Anthropic' : (ai.provider || '—')} sub={ai.model || ''} />
+              <StatCard label="Tokens this month" value={fmtTokens(ai.tokensThisMonth)} sub={ai.tokensThisMonth == null ? 'budget tracking off' : ''} />
+              <StatCard label="Monthly budget" value={ai.budget ? fmtTokens(ai.budget) + ' tokens' : 'No cap'} sub={ai.budget ? 'hard limit' : 'set LLM_MONTHLY_TOKEN_BUDGET'} />
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm font-medium">
+              The assistant is not switched on yet. Add an LLM provider key in Vercel (ANTHROPIC_API_KEY or OPENAI_API_KEY, with optional LLM_PROVIDER / LLM_MODEL) to turn it on. Until then the app answers from the FAQ below.
+            </div>
+          )
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Messages handled" value="428" sub="sample data" />
+            <StatCard label="Tokens used" value="1.24M" sub="sample data" />
+            <StatCard label="Estimated cost" value="€42" sub="sample data" />
+            <StatCard label="Auto-answered" value="63%" sub="sample data" />
+          </div>
+        )}
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-ink"><HelpCircle size={17} className="text-brand" /> FAQ knowledge base <span className="text-neutral-400 font-medium">({items.length})</span></div>
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink"><HelpCircle size={17} className="text-brand" /> FAQ knowledge base <span className="text-neutral-500 font-medium">({items.length})</span></div>
           <button onClick={startNew} className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-9 rounded-full hover:bg-brand-dark transition"><Plus size={15} /> Add entry</button>
         </div>
         <p className="text-xs font-medium text-neutral-500 mb-3">This is the source the chatbot and the smart inbox draft replies from. Keep it accurate.</p>
@@ -2119,7 +2838,7 @@ export function DashboardAssistant() {
                 <p className="font-bold text-ink text-sm">{it.q}</p>
                 <div className="flex items-center gap-1 flex-none">
                   <button onClick={() => startEdit(it)} className="w-8 h-8 rounded-lg hover:bg-page flex items-center justify-center text-neutral-500"><Pencil size={15} /></button>
-                  <button onClick={() => remove(it.id)} className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-neutral-400 hover:text-red-500"><Trash2 size={15} /></button>
+                  <button onClick={() => remove(it.id)} className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-neutral-500 hover:text-red-500"><Trash2 size={15} /></button>
                 </div>
               </div>
               <p className="mt-1 text-sm text-neutral-600 font-medium leading-relaxed">{it.a}</p>
@@ -2171,7 +2890,7 @@ export function DashboardSync() {
           <div><p className="font-bold text-ink text-sm">WooCommerce</p><p className="text-xs text-brand-dark font-semibold">Connected</p></div>
         </div>
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 flex items-center gap-3">
-          <Clock size={22} className="text-neutral-400" />
+          <Clock size={22} className="text-neutral-500" />
           <div><p className="font-bold text-ink text-sm">Last sync</p><p className="text-xs text-neutral-500 font-semibold">2 minutes ago</p></div>
         </div>
       </div>
@@ -2186,11 +2905,11 @@ export function DashboardSync() {
           <div key={i} className="flex items-center gap-3 px-4 py-3">
             <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full flex-none ${statusCls[l.status]}`}>{l.status === 'retry' ? 'Retried' : l.status === 'error' ? 'Error' : 'OK'}</span>
             <span className="flex-1 text-sm font-medium text-ink">{l.event}</span>
-            <span className="text-xs text-neutral-400 font-medium flex-none">{l.time}</span>
+            <span className="text-xs text-neutral-500 font-medium flex-none">{l.time}</span>
           </div>
         ))}
       </div>
-      <p className="mt-4 text-xs text-neutral-400 font-medium leading-relaxed">Two-way sync with automatic retries and logging. WordPress remains the single source of truth in Phase 1.</p>
+      <p className="mt-4 text-xs text-neutral-500 font-medium leading-relaxed">Two-way sync with automatic retries and logging. WordPress remains the single source of truth in Phase 1.</p>
       {toast && <Toast text={toast} onDone={() => setToast('')} />}
     </div>
   )

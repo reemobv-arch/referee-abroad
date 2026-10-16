@@ -1,8 +1,8 @@
 // Tournament regions for the webapp. The region is derived from the country.
 export const REGIONS = [
-  { key: 'usa', label: 'USA', flag: '🇺🇸', blurb: 'United States, Canada & Mexico' },
-  { key: 'europe', label: 'Europe', flag: '🇪🇺', blurb: 'Tournaments across Europe' },
-  { key: 'asia', label: 'Asia', flag: '🌏', blurb: 'Tournaments across Asia' },
+  { key: 'usa', label: 'USA', flag: '🇺🇸', code: 'us', blurb: 'United States, Canada & Mexico' },
+  { key: 'europe', label: 'Europe', flag: '🇪🇺', code: 'eu', blurb: 'Tournaments across Europe' },
+  { key: 'asia', label: 'Asia', flag: '🌏', code: null, blurb: 'Tournaments across Asia' },
 ]
 
 const MAP = {
@@ -38,4 +38,24 @@ const FLAGS = {
 
 export function countryFlag(country) {
   return FLAGS[(country || '').trim().toLowerCase()] || '🏳️'
+}
+
+// Country name OR ISO-2 code -> ISO-2 code for flag-icons (live referee data is
+// already a code like "GB"; tournament data is a full name like "France").
+const CODE = {
+  portugal: 'pt', spain: 'es', denmark: 'dk', netherlands: 'nl', malta: 'mt', austria: 'at',
+  germany: 'de', france: 'fr', italy: 'it', sweden: 'se', england: 'gb-eng', scotland: 'gb-sct',
+  'united kingdom': 'gb', belgium: 'be', switzerland: 'ch', poland: 'pl', czechia: 'cz',
+  'czech republic': 'cz', norway: 'no', ireland: 'ie', croatia: 'hr', finland: 'fi', greece: 'gr',
+  'united states': 'us', 'united states of america': 'us', usa: 'us', canada: 'ca', mexico: 'mx',
+  japan: 'jp', china: 'cn', thailand: 'th', singapore: 'sg', 'south korea': 'kr', korea: 'kr',
+  indonesia: 'id', malaysia: 'my', 'united arab emirates': 'ae', uae: 'ae', qatar: 'qa',
+  vietnam: 'vn', india: 'in', philippines: 'ph', taiwan: 'tw', nigeria: 'ng', hungary: 'hu',
+  australia: 'au', brazil: 'br', argentina: 'ar', turkey: 'tr', 'north macedonia': 'mk',
+}
+export function countryCode(country) {
+  const s = (country || '').trim().toLowerCase()
+  if (!s) return null
+  if (/^[a-z]{2}$/.test(s)) return s           // already an ISO-2 code (e.g. "GB")
+  return CODE[s] || null
 }

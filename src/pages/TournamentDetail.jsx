@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapPin, Clock, BedDouble, Plane, Users, MessageCircle, FileText, ChevronLeft, ArrowRight, Check, X, CalendarCheck, ShieldCheck, Shield, Upload } from 'lucide-react'
-import { tournaments, myMatches } from '../data.js'
-import { Pill } from '../components/ui.jsx'
+import { myMatches } from '../data.js'
+import { getTournament, getMyApplications, LIVE } from '../lib/dataSource.js'
+import { Pill, Skel } from '../components/ui.jsx'
 
 function PayModal({ t, onClose, onPaid }) {
   const [paying, setPaying] = useState(false)
@@ -13,6 +14,45 @@ function PayModal({ t, onClose, onPaid }) {
     setPaying(true)
     setTimeout(() => { setPaying(false); setDone(true) }, 900)
   }
+
+  // Phase 1 (live): no in-app payment. Send the referee to the existing
+  // WooCommerce checkout for this tournament; the order and payment happen
+  // there and WordPress stays the source of truth.
+  if (LIVE) {
+    const canCheckout = !!t.applyUrl
+    return (
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
+        <div className="w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-3xl p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between">
+            <p className="text-lg font-extrabold text-ink">Apply &amp; pay</p>
+            <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
+          </div>
+          <p className="text-sm text-neutral-500 font-medium mt-0.5">{t.name}</p>
+          <div className="mt-4 bg-page rounded-xl p-4 text-sm">
+            <div className="flex justify-between py-1 font-medium text-neutral-600"><span>Participation fee</span><span>{t.price != null ? '€' + t.price : 'See checkout'}</span></div>
+          </div>
+          <p className="mt-3 text-[13px] text-neutral-500 font-medium">
+            You complete your application and payment on the secure Referee Abroad checkout. Your spot updates here once the payment is in.
+          </p>
+          {canCheckout ? (
+            <a
+              href={t.applyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className="mt-4 w-full h-12 rounded-full bg-brand text-white font-bold flex items-center justify-center gap-2 active:scale-[0.99]"
+            >
+              Continue to checkout <ArrowRight size={17} />
+            </a>
+          ) : (
+            <p className="mt-4 text-sm text-neutral-500 font-medium text-center">Checkout link is not available for this tournament yet.</p>
+          )}
+          <p className="mt-2.5 text-[11px] text-neutral-500 font-medium flex items-center justify-center gap-1"><ShieldCheck size={13} /> Secure payment via the existing checkout</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
       <div className="w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-3xl p-5" onClick={(e) => e.stopPropagation()}>
@@ -38,7 +78,7 @@ function PayModal({ t, onClose, onPaid }) {
             <button onClick={pay} disabled={paying} className="mt-4 w-full h-12 rounded-full bg-brand text-white font-bold flex items-center justify-center gap-2 disabled:opacity-60">
               {paying ? 'Processing…' : <>Pay €{total} <ArrowRight size={17} /></>}
             </button>
-            <p className="mt-2.5 text-[11px] text-neutral-400 font-medium flex items-center justify-center gap-1"><ShieldCheck size={13} /> Secure payment via the existing checkout</p>
+            <p className="mt-2.5 text-[11px] text-neutral-500 font-medium flex items-center justify-center gap-1"><ShieldCheck size={13} /> Secure payment via the existing checkout</p>
           </>
         )}
       </div>
@@ -52,9 +92,36 @@ export default function TournamentDetail() {
   const [requested, setRequested] = useState(false)
   const [pay, setPay] = useState(false)
   const [docsUploaded, setDocsUploaded] = useState(false)
-  const t = tournaments.find((x) => x.id === id)
+  const [t, setT] = useState(null)
+  const [appStatus, setAppStatus] = useState(null) // the referee's own application status for this tournament
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let alive = true
+    setLoading(true)
+    Promise.all([getTournament(id), getMyApplications().catch(() => ({}))])
+      .then(([x, apps]) => {
+        if (!alive) return
+        setT(x)
+        if (x) setAppStatus(apps[String(x.productId)] ?? apps[x.id] ?? null)
+      })
+      .catch(() => { if (alive) setT(null) })
+      .finally(() => { if (alive) setLoading(false) })
+    return () => { alive = false }
+  }, [id])
+
+  if (loading) return (
+    <div>
+      <Skel className="h-48 rounded-none" />
+      <div className="p-4 space-y-3">
+        <Skel className="h-5 w-2/3" />
+        <Skel className="h-3 w-1/2" />
+        {[0, 1, 2].map((i) => <Skel key={i} className="h-16" />)}
+      </div>
+    </div>
+  )
   if (!t) return <div className="p-6">Not found.</div>
-  const showApplied = requested || t.applied
+  const showApplied = requested || t.applied || !!appStatus
   const matches = myMatches.filter((m) => m.tournamentId === t.id)
 
   return (
@@ -87,6 +154,48 @@ export default function TournamentDetail() {
           {t.clubs != null && <Pill><Shield size={12} /> {t.clubs} clubs</Pill>}
           {t.matches != null && <Pill><CalendarCheck size={12} /> {t.matches} matches</Pill>}
         </div>
+
+        {(() => {
+          const fmt = (v) => { const d = new Date(v); return isNaN(d.getTime()) ? v : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) }
+          const rows = [
+            ['Category', t.category],
+            ['Accommodation', t.accommodation],
+            ['Referee experience', t.refereeExperience],
+            ['Accepted levels', (t.acceptedLevels || []).join(', ')],
+            ['Application deadline', t.deadline ? fmt(t.deadline) : ''],
+          ].filter(([, v]) => v)
+          if (rows.length === 0) return null
+          return (
+            <section className="mt-4">
+              <h2 className="text-sm font-extrabold text-ink mb-2">Good to know</h2>
+              <div className="bg-white rounded-2xl border border-neutral-200 divide-y divide-neutral-100">
+                {rows.map(([l, v]) => (
+                  <div key={l} className="flex items-start justify-between gap-4 px-4 py-2.5">
+                    <span className="text-[13px] font-semibold text-neutral-500 flex-none">{l}</span>
+                    <span className="text-[14px] font-semibold text-ink text-right">{v}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )
+        })()}
+
+        {t.description && (
+          <section className="mt-4">
+            <h2 className="text-sm font-extrabold text-ink mb-2">About this tournament</h2>
+            <p className="text-[14px] text-neutral-600 font-medium leading-relaxed whitespace-pre-line">{t.description}</p>
+          </section>
+        )}
+
+        {(t.images || []).length > 1 && (
+          <section className="mt-4 -mx-4 px-4">
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+              {t.images.map((src, i) => (
+                <img key={i} src={src} alt="" className="h-28 w-40 flex-none rounded-2xl object-cover" />
+              ))}
+            </div>
+          </section>
+        )}
 
         {t.applied ? (
           <>
@@ -166,21 +275,23 @@ export default function TournamentDetail() {
             <p className="text-brand-dark text-[30px] font-extrabold mt-3">€{t.price}</p>
           </div>
 
-          <div className="mt-3 bg-white rounded-2xl p-4 shadow-card">
-            <div className="flex items-start gap-3">
-              <span className="w-9 h-9 rounded-xl bg-brand-light flex items-center justify-center flex-none"><FileText size={18} className="text-brand-dark" /></span>
-              <div className="flex-1">
-                <p className="text-[15px] font-bold text-ink">Get a head start on your travel documents</p>
-                <p className="text-[13px] text-neutral-500 font-medium mt-0.5">You can already upload your passport, certificate and travel details before you pay. They stay with your profile.</p>
+          {!LIVE && (
+            <div className="mt-3 bg-white rounded-2xl p-4 shadow-card">
+              <div className="flex items-start gap-3">
+                <span className="w-9 h-9 rounded-xl bg-brand-light flex items-center justify-center flex-none"><FileText size={18} className="text-brand-dark" /></span>
+                <div className="flex-1">
+                  <p className="text-[15px] font-bold text-ink">Get a head start on your travel documents</p>
+                  <p className="text-[13px] text-neutral-500 font-medium mt-0.5">You can already upload your passport, certificate and travel details before you pay. They stay with your profile.</p>
+                </div>
               </div>
+              <button
+                onClick={() => setDocsUploaded(true)}
+                className={`mt-3 w-full h-11 rounded-full font-semibold flex items-center justify-center gap-2 active:scale-[0.99] ${docsUploaded ? 'bg-brand-light text-brand-dark' : 'bg-white border-[1.5px] border-brand text-brand-dark'}`}
+              >
+                {docsUploaded ? (<><Check size={16} /> Documents uploaded</>) : (<><Upload size={16} /> Upload travel documents</>)}
+              </button>
             </div>
-            <button
-              onClick={() => setDocsUploaded(true)}
-              className={`mt-3 w-full h-11 rounded-full font-semibold flex items-center justify-center gap-2 active:scale-[0.99] ${docsUploaded ? 'bg-brand-light text-brand-dark' : 'bg-white border-[1.5px] border-brand text-brand-dark'}`}
-            >
-              {docsUploaded ? (<><Check size={16} /> Documents uploaded</>) : (<><Upload size={16} /> Upload travel documents</>)}
-            </button>
-          </div>
+          )}
           </>
         )}
 

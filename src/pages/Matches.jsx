@@ -38,7 +38,7 @@ export default function Matches() {
                 <span className="block text-[15px] font-extrabold text-ink truncate">{tournament}</span>
                 <span className="block text-[12px] font-semibold text-neutral-500">{list.length} {list.length === 1 ? 'match' : 'matches'}</span>
               </span>
-              <ChevronDown size={20} className={`text-neutral-400 flex-none transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={20} className={`text-neutral-500 flex-none transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             {isOpen && (
             <div className="space-y-3 mt-3">

@@ -69,7 +69,7 @@ export default function GroupChat() {
       </div>
 
       <form onSubmit={send} className="shrink-0 bg-white border-t border-neutral-200 px-3 py-2.5 flex items-center gap-2 pb-3">
-        <Smile size={20} className="text-neutral-400" />
+        <Smile size={20} className="text-neutral-500" />
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}

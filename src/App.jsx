@@ -27,6 +27,7 @@ import Availability from './pages/Availability.jsx'
 import NotificationPrefs from './pages/NotificationPrefs.jsx'
 import Assistant from './pages/Assistant.jsx'
 import Notifications from './pages/Notifications.jsx'
+import Faq from './pages/Faq.jsx'
 
 function PhoneShell() {
   return (
@@ -77,6 +78,7 @@ export default function App() {
         <Route path="/match/:id" element={<MatchDetail />} />
         <Route path="/chat" element={<ChatOrg />} />
         <Route path="/assistant" element={<Assistant />} />
+        <Route path="/faq" element={<Faq />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/notification-settings" element={<NotificationPrefs />} />
         <Route path="/availability" element={<Availability />} />

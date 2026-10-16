@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Download, FileText, Ticket, Shirt, FileType, PenLine, Check, Upload, Plus, CalendarClock } from 'lucide-react'
-import { TopBar } from '../components/ui.jsx'
+import { useEffect, useState } from 'react'
+import { Download, FileText, Ticket, Shirt, FileType, PenLine, Check, Upload, Plus, CalendarClock, Lock, ReceiptText } from 'lucide-react'
+import { TopBar, Skel } from '../components/ui.jsx'
 import { tournaments, generalDocs, ownDocuments } from '../data.js'
+import { getMyDocuments, LIVE } from '../lib/dataSource.js'
 
 const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 }
 // Parse a start date like "Jul 1 to Jul 5" (season year 2026).
@@ -60,7 +61,101 @@ function DocRow({ d, onSign }) {
   )
 }
 
+// Live (Phase 1) documents: read-only. Upload deadlines + payment confirmations.
+function LiveDocuments() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const load = () => {
+    setLoading(true); setError(null)
+    getMyDocuments()
+      .then((d) => setData(d))
+      .catch((e) => setError(e.message || 'Could not load documents'))
+      .finally(() => setLoading(false))
+  }
+  useEffect(() => { load() }, [])
+
+  if (loading) return (
+    <div>
+      <TopBar title="Documents" back />
+      <div className="p-4 space-y-3">{[0, 1, 2, 3].map((i) => <Skel key={i} className="h-16" />)}</div>
+    </div>
+  )
+  if (error) return (
+    <div>
+      <TopBar title="Documents" back />
+      <div className="p-6 text-center">
+        <p className="text-[15px] font-bold text-ink">Could not load your documents</p>
+        <p className="text-[13px] text-neutral-500 font-medium mt-1">{error}</p>
+        <button onClick={load} className="mt-4 h-10 px-5 rounded-full bg-brand text-white font-semibold">Retry</button>
+      </div>
+    </div>
+  )
+
+  const deadlines = data?.deadlines || []
+  const receipts = data?.receipts || []
+  const empty = deadlines.length === 0 && receipts.length === 0
+
+  return (
+    <div className="pb-6">
+      <TopBar title="Documents" back />
+      <div className="px-4 pt-4 space-y-6">
+        {deadlines.length > 0 && (
+          <section>
+            <h2 className="text-sm font-extrabold text-ink mb-2.5">Upload deadlines</h2>
+            <div className="space-y-2.5">
+              {deadlines.map((t) => (
+                <div key={t.id} className="bg-white rounded-2xl border border-neutral-200 p-3.5 flex items-center gap-3.5">
+                  <span className="w-11 h-11 rounded-2xl flex items-center justify-center flex-none bg-amber-100 text-amber-700"><CalendarClock size={20} /></span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-bold text-ink truncate">{t.name}</p>
+                    <p className="text-[12px] font-semibold text-neutral-500">{t.deadline ? `Travel documents due ${fmtDate(new Date(t.deadline))} · 8 weeks before the start` : 'Travel documents required'}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${t.confirmed ? 'bg-brand-light text-brand-dark' : 'bg-amber-100 text-amber-700'}`}>{t.confirmed ? 'Confirmed' : 'Awaiting'}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {receipts.length > 0 && (
+          <section>
+            <h2 className="text-sm font-extrabold text-ink mb-2.5">Payment confirmations</h2>
+            <div className="space-y-2.5">
+              {receipts.map((r) => (
+                <div key={r.id} className="bg-white rounded-2xl border border-neutral-200 p-3.5 flex items-center gap-3.5">
+                  <span className="w-11 h-11 rounded-2xl flex items-center justify-center flex-none bg-brand-light text-brand-dark"><ReceiptText size={20} /></span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-bold text-ink truncate">{r.name}</p>
+                    <p className="text-[12px] font-semibold text-neutral-500">Payment confirmed{r.date ? ` · ${fmtDate(new Date(r.date))}` : ''}</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-brand-light text-brand-dark">Paid</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section>
+          <h2 className="text-sm font-extrabold text-ink mb-2.5">Your documents</h2>
+          <div className="rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-500 py-6 px-4 flex flex-col items-center text-center gap-1.5">
+            <Lock size={20} className="text-neutral-500" />
+            <span className="text-[13px] font-bold text-ink">Uploading documents in the app is coming soon</span>
+            <span className="text-[12px] font-medium text-neutral-500">For now, upload your passport and certificates through your Referee Abroad account.</span>
+          </div>
+        </section>
+
+        {empty && (
+          <p className="text-center text-neutral-500 font-semibold py-6">Your documents appear here once you apply for a tournament.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Documents() {
+  if (LIVE) return <LiveDocuments />
   const [signed, setSigned] = useState({})
   const [own, setOwn] = useState(ownDocuments)
   const withDocs = tournaments.filter((t) => t.documents?.length)
@@ -117,7 +212,7 @@ export default function Documents() {
           </div>
           <div className="space-y-2.5">
             {own.map((d, i) => <DocRow key={i} d={d} />)}
-            <button onClick={upload} className="w-full rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-400 hover:text-brand-dark hover:border-brand py-4 flex flex-col items-center gap-1 transition">
+            <button onClick={upload} className="w-full rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-500 hover:text-brand-dark hover:border-brand py-4 flex flex-col items-center gap-1 transition">
               <Upload size={22} />
               <span className="text-[13px] font-bold">Upload passport, certificate…</span>
             </button>

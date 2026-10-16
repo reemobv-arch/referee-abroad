@@ -1,6 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 
+// Loading placeholder block with a subtle pulse, for skeleton screens (U5).
+export function Skel({ className = '' }) {
+  return <span className={`block bg-neutral-200/70 rounded-lg animate-pulse ${className}`} />
+}
+
 export function StatusBadge({ status }) {
   const map = {
     approved: { label: 'Confirmed', cls: 'bg-brand-light text-brand-dark' },
@@ -54,7 +59,7 @@ export function SectionHeader({ title, action, onAction }) {
     <div className="flex items-center justify-between mt-1 mb-2">
       <h2 className="text-xl font-extrabold text-ink">{title}</h2>
       {action && (
-        <button onClick={onAction} className="text-brand-dark text-[13px] font-bold">
+        <button onClick={onAction} className="text-brand-dark text-[13px] font-bold -mr-2 px-2 py-2 rounded-lg active:bg-brand-light/60">
           {action}
         </button>
       )}

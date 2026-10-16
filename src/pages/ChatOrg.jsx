@@ -37,7 +37,7 @@ export default function ChatOrg() {
       </header>
 
       <div className="flex-1 min-h-0 px-3.5 py-3 space-y-2 overflow-y-auto no-scrollbar">
-        <p className="text-center text-[11px] text-neutral-400 font-medium">Today</p>
+        <p className="text-center text-[11px] text-neutral-500 font-medium">Today</p>
         {msgs.map((m, i) => (
           m.attachment ? (
             <div key={i} className="ml-auto max-w-[80%] bg-brand text-white rounded-3xl rounded-br-md p-2.5">
@@ -57,7 +57,7 @@ export default function ChatOrg() {
       </div>
 
       <form onSubmit={send} className="shrink-0 bg-white border-t border-neutral-200 px-3 py-2.5 flex items-center gap-2 pb-3">
-        <button type="button" onClick={attach} aria-label="Attach photo"><Paperclip size={20} className="text-neutral-400" /></button>
+        <button type="button" onClick={attach} aria-label="Attach photo"><Paperclip size={20} className="text-neutral-500" /></button>
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}

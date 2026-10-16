@@ -35,8 +35,8 @@ export default function MatchDetail() {
           <div className="flex items-center gap-3 px-4 py-3">
             <Eye size={18} className="text-brand-dark" />
             {m.observer
-              ? <span className="text-[14px] font-semibold text-ink">{m.observer} <span className="text-neutral-400 font-medium">· observer</span></span>
-              : <span className="text-[14px] font-medium text-neutral-400">No observer appointed</span>}
+              ? <span className="text-[14px] font-semibold text-ink">{m.observer} <span className="text-neutral-500 font-medium">· observer</span></span>
+              : <span className="text-[14px] font-medium text-neutral-500">No observer appointed</span>}
           </div>
         </div>
 
@@ -54,31 +54,31 @@ export default function MatchDetail() {
             ) : (
               <div className="bg-white rounded-2xl border border-neutral-200 p-4 space-y-4">
                 <div>
-                  <p className="text-[12px] font-bold uppercase tracking-wide text-neutral-400 mb-2">Final score</p>
+                  <p className="text-[12px] font-bold uppercase tracking-wide text-neutral-500 mb-2">Final score</p>
                   <div className="flex items-center gap-3">
                     <input inputMode="numeric" value={score.h} onChange={(e) => setScore((s) => ({ ...s, h: e.target.value.replace(/\D/g, '') }))} placeholder="0" className="w-16 h-14 text-center text-2xl font-extrabold rounded-2xl border border-neutral-200 outline-none focus:border-brand" />
-                    <span className="text-neutral-400 font-bold">–</span>
+                    <span className="text-neutral-500 font-bold">–</span>
                     <input inputMode="numeric" value={score.a} onChange={(e) => setScore((s) => ({ ...s, a: e.target.value.replace(/\D/g, '') }))} placeholder="0" className="w-16 h-14 text-center text-2xl font-extrabold rounded-2xl border border-neutral-200 outline-none focus:border-brand" />
-                    <div className="flex-1 text-right text-[12px] font-semibold text-neutral-400 leading-tight">{m.home}<br />{m.away}</div>
+                    <div className="flex-1 text-right text-[12px] font-semibold text-neutral-500 leading-tight">{m.home}<br />{m.away}</div>
                   </div>
                 </div>
                 <div>
-                  <p className="text-[12px] font-bold uppercase tracking-wide text-neutral-400 mb-2">Cards</p>
+                  <p className="text-[12px] font-bold uppercase tracking-wide text-neutral-500 mb-2">Cards</p>
                   <div className="flex items-center gap-5">
                     <div className="flex items-center gap-2">
                       <CardIcon color="#F4C400" />
                       <input inputMode="numeric" value={cards.y} onChange={(e) => setCards((c) => ({ ...c, y: e.target.value.replace(/\D/g, '') }))} placeholder="0" aria-label="Yellow cards" className="w-14 h-11 text-center text-lg font-extrabold rounded-xl border border-neutral-200 outline-none focus:border-brand" />
-                      <span className="text-[12px] font-semibold text-neutral-400">yellow</span>
+                      <span className="text-[12px] font-semibold text-neutral-500">yellow</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <CardIcon color="#E03131" />
                       <input inputMode="numeric" value={cards.r} onChange={(e) => setCards((c) => ({ ...c, r: e.target.value.replace(/\D/g, '') }))} placeholder="0" aria-label="Red cards" className="w-14 h-11 text-center text-lg font-extrabold rounded-xl border border-neutral-200 outline-none focus:border-brand" />
-                      <span className="text-[12px] font-semibold text-neutral-400">red</span>
+                      <span className="text-[12px] font-semibold text-neutral-500">red</span>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <p className="text-[12px] font-bold uppercase tracking-wide text-neutral-400 mb-2">Fair play rating</p>
+                  <p className="text-[12px] font-bold uppercase tracking-wide text-neutral-500 mb-2">Fair play rating</p>
                   <div className="flex gap-1.5">
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button key={n} onClick={() => setRating(n)} aria-label={`${n} stars`}>
@@ -88,7 +88,7 @@ export default function MatchDetail() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-[12px] font-bold uppercase tracking-wide text-neutral-400 mb-2">Notes</p>
+                  <p className="text-[12px] font-bold uppercase tracking-wide text-neutral-500 mb-2">Notes</p>
                   <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Any incidents, cards or remarks…" className="w-full p-3 rounded-2xl border border-neutral-200 text-[14px] font-medium outline-none focus:border-brand resize-none" />
                 </div>
                 <button onClick={() => setSubmitted(true)} className="w-full h-12 rounded-full bg-brand text-white font-bold active:scale-[0.99]">Submit report</button>
@@ -97,7 +97,7 @@ export default function MatchDetail() {
           </div>
         ) : (
           <div className="mt-6 bg-white rounded-2xl border border-neutral-200 p-5 flex items-start gap-3">
-            <span className="w-9 h-9 rounded-xl bg-page text-neutral-400 flex items-center justify-center flex-none"><Lock size={18} /></span>
+            <span className="w-9 h-9 rounded-xl bg-page text-neutral-500 flex items-center justify-center flex-none"><Lock size={18} /></span>
             <div>
               <p className="text-[15px] font-bold text-ink">Report filed by the main referee</p>
               <p className="text-[13px] font-medium text-neutral-500 mt-0.5">As assistant referee you don’t submit the match report. The appointed main referee takes care of it.</p>

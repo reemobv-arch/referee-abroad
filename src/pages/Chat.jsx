@@ -50,7 +50,7 @@ export default function Chat() {
               <span className="flex-1 min-w-0">
                 <span className="flex items-center justify-between gap-2">
                   <span className="font-extrabold text-ink text-[15px] truncate">{c.name}</span>
-                  <span className="text-[11px] text-neutral-400 font-semibold flex-none">{c.time}</span>
+                  <span className="text-[11px] text-neutral-500 font-semibold flex-none">{c.time}</span>
                 </span>
                 <span className="flex items-center gap-2 mt-1">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${c.kind === 'org' ? 'bg-brand-light text-brand-dark' : 'bg-sky-100 text-sky-700'}`}>{c.tag}</span>

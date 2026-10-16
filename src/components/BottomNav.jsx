@@ -22,26 +22,26 @@ const tabs = [
 
 export default function BottomNav() {
   return (
-    <nav className="shrink-0 bg-white border-t border-neutral-200">
+    <nav aria-label="Main" className="shrink-0 bg-white border-t border-neutral-200">
       <div className="flex justify-around px-1 pt-2 pb-5">
         {tabs.map(({ to, label, Icon, end }) => (
           <NavLink key={to} to={to} end={end} className="flex flex-col items-center gap-1 flex-1 py-1">
             {({ isActive }) => (
               <>
-                <span className={`flex items-center justify-center h-8 w-12 rounded-2xl transition ${isActive ? 'bg-brand-light text-brand-dark' : 'text-neutral-400'}`}>
+                <span className={`flex items-center justify-center h-8 w-12 rounded-2xl transition ${isActive ? 'bg-brand-light text-brand-dark' : 'text-neutral-500'}`}>
                   <Icon size={22} strokeWidth={2.2} />
                 </span>
-                <span className={`text-[11px] font-bold ${isActive ? 'text-brand-dark' : 'text-neutral-400'}`}>{label}</span>
+                <span className={`text-[11px] font-bold ${isActive ? 'text-brand-dark' : 'text-neutral-500'}`}>{label}</span>
               </>
             )}
           </NavLink>
         ))}
         {/* External: Referee Abroad webshop (merchandise) */}
-        <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 flex-1 py-1">
-          <span className="flex items-center justify-center h-8 w-12 rounded-2xl text-neutral-400">
-            <ShoppingBag size={22} strokeWidth={2.2} />
+        <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" aria-label="Shop (opens the Referee Abroad webshop in a new tab)" className="flex flex-col items-center gap-1 flex-1 py-1">
+          <span className="flex items-center justify-center h-8 w-12 rounded-2xl text-neutral-500">
+            <ShoppingBag size={22} strokeWidth={2.2} aria-hidden="true" />
           </span>
-          <span className="text-[11px] font-bold text-neutral-400">Shop</span>
+          <span className="text-[11px] font-bold text-neutral-500">Shop</span>
         </a>
       </div>
     </nav>
