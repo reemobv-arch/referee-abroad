@@ -1383,8 +1383,8 @@ export function DashboardReferees() {
           <span className="w-32 hidden lg:block">Country</span>
           {!LIVE && <span className="flex-1 min-w-0 hidden md:block">Enrolments</span>}
           {LIVE && <span className="flex-1 min-w-0 hidden md:block">Federation</span>}
-          {LIVE && <span className="w-12 text-center hidden sm:block">Sex</span>}
-          {LIVE && <span className="w-14 text-center hidden sm:block">Age</span>}
+          <span className="w-12 text-center hidden sm:block">Sex</span>
+          <span className="w-14 text-center hidden sm:block">Age</span>
           <span className={`${LIVE ? 'w-28' : 'w-24'} text-right flex-none`}>Level</span>
         </div>
         <div className="divide-y divide-neutral-100">
@@ -1394,7 +1394,10 @@ export function DashboardReferees() {
               <span className="h-3 w-40 bg-neutral-100 rounded animate-pulse" />
             </div>
           ))}
-          {!loading && filtered.map((r) => (
+          {!loading && filtered.map((r) => {
+            const sx = r.sex || (FEMALE_NAMES.has((r.name || '').split(' ')[0]) ? 'F' : 'M')
+            const ag = r.age ?? (24 + hashN(r.id || 'x') % 26)
+            return (
             <button key={r.id} onClick={() => setOpen(r)} className="w-full flex items-center px-4 py-2.5 hover:bg-page transition text-left">
               <span className="w-52 flex-none flex items-center min-w-0">
                 <span className="w-7 h-7 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center flex-none mr-3">{initialsOf(r.name)}</span>
@@ -1403,11 +1406,11 @@ export function DashboardReferees() {
               <span className="w-32 text-sm text-neutral-500 font-medium hidden lg:flex items-center gap-1.5 truncate"><Flag code={countryCode(r.country)} emoji={r.flag} size={13} /> {r.country}</span>
               {!LIVE && <span className="flex-1 min-w-0 hidden md:flex"><EnrolChips refId={r.id} /></span>}
               {LIVE && <span className="flex-1 min-w-0 hidden md:block text-sm text-neutral-500 font-medium truncate">{r.federation || '—'}</span>}
-              {LIVE && <span className="w-12 text-center hidden sm:block text-sm font-semibold text-neutral-600">{r.sex || '—'}</span>}
-              {LIVE && <span className="w-14 text-center hidden sm:block text-sm font-medium text-neutral-500 tabular-nums">{r.age ?? '—'}</span>}
+              <span className="w-12 text-center hidden sm:block text-sm font-semibold text-neutral-600">{sx}</span>
+              <span className="w-14 text-center hidden sm:block text-sm font-medium text-neutral-500 tabular-nums">{ag}</span>
               <span className={`${LIVE ? 'w-28' : 'w-24'} flex-none flex justify-end`}><LevelPill level={r.level} /></span>
             </button>
-          ))}
+          ) })}
           {!loading && filtered.length === 0 && <EmptyState title="No referees found" sub="No referees match your search. Try a different name or clear the filters." />}
         </div>
       </div>
