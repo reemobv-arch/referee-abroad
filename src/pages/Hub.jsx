@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import { Route, Smartphone, LayoutDashboard, Receipt, FileSignature, ArrowRight, ArrowUpRight, Wrench, Layers } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
+import { phase1Progress } from '../phase1Data.js'
 
-// Rough estimate of how far Phase 1 is (shown as a fill on the Fase 1 card).
-const PHASE1_PCT = 40
+// How far Phase 1 is, derived from the build timeline (Source of truth) so the
+// fill on the Fase 1 card always matches that page.
+const PHASE1_PCT = phase1Progress
 
 const cardCls =
   'group flex flex-col rounded-2xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-4 min-h-[160px] shadow-card active:scale-[0.98] transition'

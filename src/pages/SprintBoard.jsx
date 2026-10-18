@@ -220,7 +220,7 @@ export default function SprintBoard({ phase = 1 }) {
         backgroundAttachment: 'fixed',
       }}
     >
-      <div className="max-w-5xl mx-auto px-5 py-10">
+      <div className="max-w-[1600px] mx-auto px-6 sm:px-8 py-10">
         <Link to={isP2 ? '/' : '/phase1'} className="inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm mb-8">
           <ArrowLeft size={17} /> {isP2 ? 'Back to hub' : 'Back to Fase 1'}
         </Link>
