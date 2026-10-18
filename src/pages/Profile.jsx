@@ -108,7 +108,7 @@ export default function Profile() {
   const compDone = compFields.filter(Boolean).length
   const compTotal = compFields.length
   const compPct = Math.round((compDone / compTotal) * 100)
-  const R = 52, CIRC = 2 * Math.PI * R
+  const R = 54, CIRC = 2 * Math.PI * R
 
   const saveProfile = async () => {
     if (dietaryInvalid) return
@@ -128,16 +128,16 @@ export default function Profile() {
         <div className="flex flex-col items-center text-center pt-2">
           <input ref={fileRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
           <div className="relative w-28 h-28">
-            <svg className="absolute inset-0 -rotate-90" width="112" height="112" viewBox="0 0 112 112" aria-hidden="true">
-              <circle cx="56" cy="56" r={R} fill="none" stroke="#E7F4E1" strokeWidth="5" />
-              <circle cx="56" cy="56" r={R} fill="none" stroke="#44A546" strokeWidth="5" strokeLinecap="round"
+            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 112 112" aria-hidden="true">
+              <circle cx="56" cy="56" r={R} fill="none" stroke="#E5E7EB" strokeWidth="4" />
+              <circle cx="56" cy="56" r={R} fill="none" stroke="#44A546" strokeWidth="4" strokeLinecap="round"
                 strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - compPct / 100)} style={{ transition: 'stroke-dashoffset .5s' }} />
             </svg>
             <button onClick={() => fileRef.current && fileRef.current.click()} className="absolute inset-0 m-auto w-24 h-24 active:scale-95 transition" aria-label="Upload profile photo">
-              <span className={`w-24 h-24 rounded-3xl overflow-hidden flex items-center justify-center text-white text-3xl font-extrabold ${photo ? '' : 'ring-2 ring-dashed ring-brand/50'}`} style={{ background: 'linear-gradient(135deg,#3BB65C,#176B33)' }}>
+              <span className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-white text-3xl font-extrabold" style={{ background: 'linear-gradient(135deg,#3BB65C,#176B33)' }}>
                 {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : p.initials}
               </span>
-              <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white border border-neutral-200 shadow flex items-center justify-center text-brand-dark"><Camera size={16} /></span>
+              <span className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white border border-neutral-200 shadow flex items-center justify-center text-brand-dark"><Camera size={16} /></span>
             </button>
           </div>
           <p className="mt-2 text-[13px] font-extrabold text-brand-dark">{compPct}% profile complete</p>
