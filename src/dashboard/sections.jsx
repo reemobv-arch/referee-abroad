@@ -158,7 +158,9 @@ function buildImport(table, map) {
       const home = val(r, 'home'); const away = val(r, 'away')
       if (!home && !away) continue
       addTeam(home, cat); addTeam(away, cat)
-      matches.push({ id: 'm' + Math.random().toString(36).slice(2, 8), day: val(r, 'date') || 'Day 1', time: val(r, 'time') || 'TBD', pitch: val(r, 'field') || 'TBD', home, away, main: null, assistants: [] })
+      matches.push({ id: 'm' + Math.random().toString(36).slice(2, 8), day: val(r, 'date') || 'Day 1', time: val(r, 'time') || 'TBD', pitch: val(r, 'field') || 'TBD', home, away, main: null, assistants: [],
+        // Referee names from the file, matched to the directory on import below.
+        mainName: val(r, 'main') || null, arNames: [val(r, 'ar1'), val(r, 'ar2')].filter(Boolean), fourthName: val(r, 'fourth') || null })
     } else {
       addTeam(val(r, 'team') || val(r, 'home'), cat)
     }
@@ -645,7 +647,7 @@ function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-[12px] font-medium text-neutral-500">Detected {table.rows.length} rows. Appointment columns found: {apptCols}. In the real build these referee names map to your pool; here the matches import unassigned.</p>
+            <p className="mt-3 text-[12px] font-medium text-neutral-500">Detected {table.rows.length} rows. Appointment columns found: {apptCols}. Referee names are matched to your directory and appointed automatically; unmatched ones stay open for manual assignment.</p>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setStep('input')} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Back</button>
               <button onClick={() => setStep('preview')} disabled={map.home == null && map.team == null}
@@ -1902,9 +1904,17 @@ function RevisedScheduleModal({ current, onClose, onApply }) {
 
 export function DashboardAppointing({ initialTournament, lockTournament = false }) {
   const startTid = initialTournament || dashTournaments[0].id
+  // Referee names imported from the file are matched to the directory by full
+  // name (case-insensitive), so the schedule comes in with referees already
+  // appointed; unmatched names stay open for manual assignment.
+  const byRefName = Object.fromEntries(dashReferees.map((r) => [(r.name || '').trim().toLowerCase(), r.id]))
+  const resolveRef = (n) => byRefName[(n || '').trim().toLowerCase()] || null
   const toSlots = (data) => Object.fromEntries(Object.entries(data).map(([k, arr]) => [k, arr.map((m) => ({
     id: m.id, day: m.day || DAY_FALLBACK, time: m.time, pitch: m.pitch, home: m.home, away: m.away,
-    main: m.main || null, a1: m.assistants?.[0] || null, a2: m.assistants?.[1] || null, fourth: null, observer: m.observer || null,
+    main: m.main || resolveRef(m.mainName) || null,
+    a1: m.assistants?.[0] || resolveRef(m.arNames?.[0]) || null,
+    a2: m.assistants?.[1] || resolveRef(m.arNames?.[1]) || null,
+    fourth: resolveRef(m.fourthName) || null, observer: m.observer || null,
   }))]))
   const [tid, setTid] = useState(startTid)
   const [matches, setMatches] = useState(() => toSlots(JSON.parse(JSON.stringify(dashMatches))))
@@ -1951,7 +1961,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
     setOpenId(next ? next.id : null)
   }
   const publish = () => {
-    setToast(`Appointments published. The officials for ${dashTournaments.find((t) => t.id === tid).name} are notified in their app.`)
+    setToast(`Appointments published. The officials for ${dashTournaments.find((t) => t.id === tid)?.name || 'this tournament'} are notified in their app.`)
     setPublishDirty(false); setEdited(new Set()); setConfirmPublish(false)
   }
   const runAI = (prompt) => {
@@ -2006,7 +2016,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
       {teams.length === 0 && (
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-10 text-center">
           <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto"><Lock size={22} /></div>
-          <p className="mt-3 text-sm font-bold text-ink">Appointing is locked for {dashTournaments.find((t) => t.id === tid).name}</p>
+          <p className="mt-3 text-sm font-bold text-ink">Appointing is locked for {dashTournaments.find((t) => t.id === tid)?.name || 'this tournament'}</p>
           <p className="mt-1 text-[13px] text-neutral-500 font-medium max-w-md mx-auto">You can only appoint referees once the participating teams are imported. Import the teams on the tournament page (Teams tab), then build the schedule here.</p>
         </div>
       )}
@@ -2159,7 +2169,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
           <div className="p-5">
             <div className="w-11 h-11 rounded-2xl bg-brand-light text-brand-dark flex items-center justify-center"><Send size={20} /></div>
             <h3 className="mt-3 text-xl font-extrabold text-ink">Publish appointments?</h3>
-            <p className="mt-1.5 text-sm text-neutral-600 font-medium">The saved changes are communicated to the officials for {dashTournaments.find((t) => t.id === tid).name}, and each appointed official sees their matches in their app.</p>
+            <p className="mt-1.5 text-sm text-neutral-600 font-medium">The saved changes are communicated to the officials for {dashTournaments.find((t) => t.id === tid)?.name || 'this tournament'}, and each appointed official sees their matches in their app.</p>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setConfirmPublish(false)} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
               <button onClick={publish} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><Send size={16} /> Publish</button>

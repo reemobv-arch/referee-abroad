@@ -250,13 +250,14 @@ export const phase1Timeline = [
     ],
   },
   {
-    n: 7, tag: 'Sprint 5', status: 'active', title: 'Referee appointing system',
+    n: 7, tag: 'Sprint 5', status: 'delivered', title: 'Referee appointing system',
     summary: 'Assign referees to matches and push it straight to their app.',
     points: [
       'Create matches per tournament (teams, time, pitch)',
       'Appoint referees with roles (main, assistant)',
       'Double booking and time-conflict warnings',
-      'Appointment pushed to the referee’s webapp',
+      'Fixture import maps referee names to the directory and appoints them',
+      'Appointment pushed to the referee’s webapp and shown in the app',
     ],
   },
   {
