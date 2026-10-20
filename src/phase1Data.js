@@ -184,7 +184,7 @@ export const reqCount = requirements.reduce((a, g) => a + g.items.length, 0)
 // always stay in sync. status: 'delivered' | 'active' | 'planned'.
 export const phase1Timeline = [
   {
-    n: 1, tag: 'Kickoff', status: 'active', title: 'Discovery & access',
+    n: 1, tag: 'Kickoff', status: 'delivered', title: 'Discovery & access',
     summary: 'Get everything in place to start building, mostly through the group chat with the WordPress admin.',
     points: [
       'Dedicated WordPress admin account for Reemo',
