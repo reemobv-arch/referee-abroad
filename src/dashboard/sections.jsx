@@ -816,6 +816,45 @@ function MeetingModal({ kind, value, onClose, onSave }) {
   )
 }
 
+// Who uploaded their travel documents and who still has to.
+function TravelConfirmationModal({ list, onClose, onOpenParticipants }) {
+  const uploaded = list.filter((p) => p.uploaded)
+  const pending = list.filter((p) => !p.uploaded)
+  const Row = ({ p, ok }) => (
+    <div className="flex items-center gap-2.5 px-2.5 py-2">
+      <span className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-none ${ok ? 'bg-brand' : 'bg-neutral-300'}`}>{initialsOf(p.name)}</span>
+      <span className="text-[13px] font-semibold text-ink flex-1 min-w-0 truncate">{p.name}</span>
+      {ok ? <Check size={15} className="text-brand flex-none" /> : <span className="text-[11px] font-semibold text-neutral-400 flex-none">pending</span>}
+    </div>
+  )
+  return (
+    <Modal onClose={onClose} wide>
+      <div className="p-5">
+        <h3 className="text-xl font-extrabold text-ink">Travel documents</h3>
+        <p className="mt-1 text-sm text-neutral-500 font-medium">{uploaded.length} of {list.length} participants uploaded their travel documents.</p>
+        <div className="mt-4 grid sm:grid-cols-2 gap-4">
+          <div>
+            <p className="text-[12px] font-bold uppercase tracking-wide text-brand-dark mb-1.5">Uploaded ({uploaded.length})</p>
+            <div className="bg-page rounded-2xl p-1.5 max-h-[46vh] overflow-y-auto divide-y divide-white">
+              {uploaded.length ? uploaded.map((p) => <Row key={p.id} p={p} ok />) : <p className="px-3 py-2 text-[12px] text-neutral-400 font-medium">None yet</p>}
+            </div>
+          </div>
+          <div>
+            <p className="text-[12px] font-bold uppercase tracking-wide text-neutral-500 mb-1.5">Not uploaded ({pending.length})</p>
+            <div className="bg-page rounded-2xl p-1.5 max-h-[46vh] overflow-y-auto divide-y divide-white">
+              {pending.length ? pending.map((p) => <Row key={p.id} p={p} />) : <p className="px-3 py-2 text-[12px] text-neutral-400 font-medium">Everyone is in</p>}
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Close</button>
+          <button onClick={onOpenParticipants} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold">Open Participants</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 function TournamentView({ t, onBack, onEdit }) {
   const [tab, setTab] = useState('info')
   const [enrol, setEnrol] = useState(dashEnrolments[t.id] || [])
@@ -873,6 +912,8 @@ function TournamentView({ t, onBack, onEdit }) {
   const enrolledCount = summary ? summary.enrolled : (t.enrolled ?? 0)
   // Prototype: a plausible number of uploaded travel docs so the readiness demo reads well.
   const travelCount = Math.round((enrolledCount || 0) * 0.65)
+  const [travelModal, setTravelModal] = useState(false)
+  const travelList = enrol.map((e, i) => ({ id: String(e.refId ?? i), name: (refById[e.refId] && refById[e.refId].name) || `Referee ${i + 1}`, uploaded: i < travelCount }))
   const capacityCount = (summary && summary.capacity != null) ? summary.capacity : (t.capacity ?? 0)
   const awaitingCount = summary ? summary.awaiting : enrol.filter((e) => e.status === 'applied').length
   const steps = [
@@ -904,7 +945,7 @@ function TournamentView({ t, onBack, onEdit }) {
     { title: 'Travel confirmation', status: enrolledCount && travelCount >= enrolledCount ? 'done' : (travelCount > 0 ? 'progress' : 'todo'),
       metric: enrolledCount ? `${travelCount} of ${enrolledCount} participants uploaded travel documents` : 'Participants upload their travel documents in the app',
       pill: enrolledCount && travelCount < enrolledCount && travelCount > 0 ? `${travelCount}/${enrolledCount}` : null,
-      onClick: () => setTab('enrolments') },
+      onClick: () => setTravelModal(true) },
     { title: 'Accommodation', status: config.accommodation.ready ? 'done' : (config.accommodation.options.length ? 'progress' : 'todo'),
       metric: config.accommodation.options.length ? `${config.accommodation.options.length} ${config.accommodation.options.length === 1 ? 'hotel' : 'hotels'} · ${Object.keys(config.accommodation.byRef).length} assigned${config.accommodation.ready ? ' · rooms arranged' : ''}` : 'Add the hotels, then assign participants',
       onClick: () => setAccomModal(true) },
@@ -1056,6 +1097,7 @@ function TournamentView({ t, onBack, onEdit }) {
         onSave={({ options, ready }) => { applyConfig({ accommodationOptions: options, accommodationReady: ready }); setAccomModal(false) }} />}
       {meetingModal && <MeetingModal kind={meetingModal} value={config[meetingModal]} onClose={() => setMeetingModal(null)}
         onSave={(m) => { applyConfig({ [meetingModal]: m }); setMeetingModal(null) }} />}
+      {travelModal && <TravelConfirmationModal list={travelList} onClose={() => setTravelModal(false)} onOpenParticipants={() => { setTravelModal(false); setTab('enrolments') }} />}
     </div>
   )
 }
@@ -2147,7 +2189,7 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
             const hasConf = dm.some((m) => officialsOf(m).some((r) => conflicts.has(`${m.id}::${r}`)))
             const allDone = appointed === dm.length
             return (
-              <button key={day} onClick={() => { setOpenDay(day); setOpenId(dm[0]?.id || null) }}
+              <button key={day} onClick={() => { setOpenDay(day); setOpenId(null) }}
                 className="group aspect-square flex flex-col text-left bg-white rounded-2xl border border-neutral-200 shadow-sm p-5 hover:bg-brand hover:border-brand transition">
                 <div className="flex items-center justify-between">
                   <span className="w-10 h-10 rounded-xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center font-extrabold transition">{di + 1}</span>
