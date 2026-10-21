@@ -272,7 +272,7 @@ export const phase1Timeline = [
     ],
   },
   {
-    n: 9, tag: 'Sprint 6', status: 'planned', title: 'Integration, testing & launch',
+    n: 9, tag: 'Sprint 6', status: 'active', title: 'Integration, testing & launch',
     summary: 'Finish the wiring, test everything and go live.',
     points: [
       'WordPress and WooCommerce API and webhooks finalised',
