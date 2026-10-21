@@ -398,6 +398,10 @@ function ParticipantsTable({ t, enrol, onAction }) {
   const [roleOv, setRoleOv] = useState({})
   const [faMap, setFaMap] = useState({})
   const [sel, setSel] = useState(() => new Set())
+  // Prototype accommodation options + per-row pick (the real build reads these
+  // from the tournament config and persists them).
+  const ACCOM_OPTIONS = ['Hotel Centro', 'Hotel Rio', 'Guesthouse Park']
+  const [accomPick, setAccomPick] = useState({})
   const roleOf = (d) => roleOv[d.num] ?? d.role
   const faOf = (d) => faMap[d.num] ?? !!d.fa
   const toggleFa = (d) => {
@@ -436,7 +440,13 @@ function ParticipantsTable({ t, enrol, onAction }) {
     { key: 'sex', label: 'Sex', cell: (d) => dash(d.sex) },
     { key: 'fee', label: 'Fee', cell: (d) => <span className={d.paid ? 'text-brand-dark font-semibold' : 'text-neutral-500'}>{dash(d.fee)}</span> },
     { key: 'cost', label: 'Cost', cell: (d) => dash(d.cost) },
-    { key: 'accom', label: 'Accommodation', cell: (d) => dash(d.accom) },
+    { key: 'accom', label: 'Accommodation', cell: (d) => (
+      <select value={accomPick[d.num] ?? d.accom ?? ''} onChange={(e) => setAccomPick((p) => ({ ...p, [d.num]: e.target.value }))}
+        className="text-[11px] font-semibold pl-2 pr-1 py-1 rounded-full border border-neutral-200 outline-none cursor-pointer bg-white max-w-[150px]">
+        <option value="">—</option>
+        {[...new Set([...(d.accom ? [d.accom] : []), ...ACCOM_OPTIONS])].map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    ) },
     { key: 'arrival', label: 'Arrival', cell: (d) => dash(d.arrival) },
     { key: 'arrflight', label: 'Arrival flight', cell: (d) => dash(d.arrflight) },
     { key: 'departure', label: 'Departure', cell: (d) => dash(d.departure) },
@@ -745,6 +755,67 @@ function ReadinessCheck({ label, sub, checked, onToggle }) {
   )
 }
 
+// Admin enters the tournament's hotels; participants are assigned one and see it in the app.
+function AccommodationModal({ accommodation, onClose, onSave }) {
+  const [options, setOptions] = useState(accommodation.options.length ? [...accommodation.options] : [''])
+  const [ready, setReady] = useState(!!accommodation.ready)
+  const setAt = (i, v) => setOptions((o) => o.map((x, j) => (j === i ? v : x)))
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <h3 className="text-xl font-extrabold text-ink">Accommodation</h3>
+        <p className="mt-1 text-sm text-neutral-500 font-medium">Add the hotels for this tournament. You assign each participant a hotel in the Participants table, and they see it in the app.</p>
+        <div className="mt-4 space-y-2">
+          {options.map((o, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input value={o} onChange={(e) => setAt(i, e.target.value)} placeholder={`Hotel ${String.fromCharCode(65 + i)}`} className={inputCls} />
+              <button onClick={() => setOptions((arr) => arr.filter((_, j) => j !== i))} className="w-9 h-9 rounded-xl border border-neutral-200 text-neutral-400 hover:text-red-500 flex items-center justify-center flex-none"><X size={16} /></button>
+            </div>
+          ))}
+          <button onClick={() => setOptions((o) => [...o, ''])} className="inline-flex items-center gap-1.5 text-[13px] font-bold text-brand-dark"><Plus size={15} /> Add hotel</button>
+        </div>
+        <label className="mt-4 flex items-center gap-2 cursor-pointer select-none">
+          <span onClick={() => setReady((v) => !v)} className={`w-10 h-6 rounded-full transition relative ${ready ? 'bg-brand' : 'bg-neutral-300'}`}><span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition ${ready ? 'left-[18px]' : 'left-0.5'}`} /></span>
+          <span className="text-sm font-semibold text-ink">Rooms arranged</span>
+        </label>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+          <button onClick={() => onSave({ options: options.map((o) => o.trim()).filter(Boolean), ready })} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold">Save</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+// Briefing / staff kick-off details (meeting link, date, time), shown in the app.
+function MeetingModal({ kind, value, onClose, onSave }) {
+  const [link, setLink] = useState(value?.link || '')
+  const [date, setDate] = useState(value?.date || '')
+  const [time, setTime] = useState(value?.time || '')
+  const title = kind === 'kickoff' ? 'Staff kick-off' : 'Tournament briefing'
+  const lbl = 'text-[12px] font-bold uppercase tracking-wide text-neutral-500 mb-1.5'
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <h3 className="text-xl font-extrabold text-ink">{title}</h3>
+        <p className="mt-1 text-sm text-neutral-500 font-medium">The referees and staff see this in their app.</p>
+        <div className="mt-4 space-y-3">
+          <div><p className={lbl}>Meeting link</p><input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://meet.google.com/..." className={inputCls} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><p className={lbl}>Date</p><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} /></div>
+            <div><p className={lbl}>Time</p><input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputCls} /></div>
+          </div>
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="h-11 px-4 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+          {value && <button onClick={() => onSave(null)} className="h-11 px-4 rounded-full border border-neutral-200 text-neutral-500 font-semibold">Clear</button>}
+          <button onClick={() => { const l = link.trim(), d = date.trim(), ti = time.trim(); onSave(l || d || ti ? { link: l, date: d, time: ti } : null) }} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold">Save</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 function TournamentView({ t, onBack, onEdit }) {
   const [tab, setTab] = useState('info')
   const [enrol, setEnrol] = useState(dashEnrolments[t.id] || [])
@@ -756,9 +827,19 @@ function TournamentView({ t, onBack, onEdit }) {
   const [showFields, setShowFields] = useState(false)
   const [matchCount, setMatchCount] = useState((dashMatches[t.id] || []).length)
   // Extra readiness (prototype local state).
-  const [accommodation, setAccommodation] = useState(null) // null | 'yes' | 'no'
-  const [briefing, setBriefing] = useState(false) // briefing arranged (link shared outside the dashboard)
-  const [kickoff, setKickoff] = useState(false)   // staff kick-off arranged
+  // Prototype: accommodation options + briefing / kick-off details, kept in local
+  // state (the real build persists these to the config store).
+  const [config, setConfig] = useState({ accommodation: { options: [], byRef: {}, ready: false }, briefing: null, kickoff: null })
+  const [accomModal, setAccomModal] = useState(false)
+  const [meetingModal, setMeetingModal] = useState(null) // null | 'briefing' | 'kickoff'
+  const applyConfig = (patch) => setConfig((prev) => {
+    const next = { ...prev, accommodation: { ...prev.accommodation, byRef: { ...prev.accommodation.byRef } } }
+    if (Array.isArray(patch.accommodationOptions)) next.accommodation.options = patch.accommodationOptions
+    if (typeof patch.accommodationReady === 'boolean') next.accommodation.ready = patch.accommodationReady
+    if ('briefing' in patch) next.briefing = patch.briefing
+    if ('kickoff' in patch) next.kickoff = patch.kickoff
+    return next
+  })
   const onEnrolAction = (refId, action) => setEnrol((prev) =>
     action === 'decline' ? prev.filter((e) => e.refId !== refId)
       : prev.map((e) => e.refId === refId ? { ...e, status: action === 'promote' ? 'applied' : 'confirmed' } : e))
@@ -820,6 +901,19 @@ function TournamentView({ t, onBack, onEdit }) {
     { title: 'Publish appointments', status: 'todo', publish: true,
       metric: 'Communicate the saved changes to the officials',
       onClick: () => setTab('appointing') },
+    { title: 'Travel confirmation', status: enrolledCount && travelCount >= enrolledCount ? 'done' : (travelCount > 0 ? 'progress' : 'todo'),
+      metric: enrolledCount ? `${travelCount} of ${enrolledCount} participants uploaded travel documents` : 'Participants upload their travel documents in the app',
+      pill: enrolledCount && travelCount < enrolledCount && travelCount > 0 ? `${travelCount}/${enrolledCount}` : null,
+      onClick: () => setTab('enrolments') },
+    { title: 'Accommodation', status: config.accommodation.ready ? 'done' : (config.accommodation.options.length ? 'progress' : 'todo'),
+      metric: config.accommodation.options.length ? `${config.accommodation.options.length} ${config.accommodation.options.length === 1 ? 'hotel' : 'hotels'} · ${Object.keys(config.accommodation.byRef).length} assigned${config.accommodation.ready ? ' · rooms arranged' : ''}` : 'Add the hotels, then assign participants',
+      onClick: () => setAccomModal(true) },
+    { title: 'Tournament briefing', status: config.briefing ? 'done' : 'todo',
+      metric: config.briefing ? `${config.briefing.date || 'Date TBC'}${config.briefing.time ? ` · ${config.briefing.time}` : ''}${config.briefing.link ? ' · meeting link set' : ''}` : 'Set the meeting link, date and time',
+      onClick: () => setMeetingModal('briefing') },
+    { title: 'Staff kick-off', status: config.kickoff ? 'done' : 'todo',
+      metric: config.kickoff ? `${config.kickoff.date || 'Date TBC'}${config.kickoff.time ? ` · ${config.kickoff.time}` : ''}${config.kickoff.link ? ' · meeting link set' : ''}` : 'Set the staff kick-off details',
+      onClick: () => setMeetingModal('kickoff') },
   ]
   const doneCount = steps.filter((s) => s.status === 'done').length
 
@@ -900,28 +994,6 @@ function TournamentView({ t, onBack, onEdit }) {
                 })}
               </div>
 
-              {/* Extra readiness */}
-              <div className="mt-4 pt-4 border-t border-neutral-100 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[14px] font-bold text-ink">Travel confirmation</span>
-                    <span className="block text-[12px] font-medium text-neutral-500">{enrolledCount ? `${travelCount} of ${enrolledCount} participants uploaded travel documents` : 'Participants upload their travel documents in the app'}</span>
-                  </span>
-                  <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full flex-none ${enrolledCount && travelCount >= enrolledCount ? 'bg-brand-light text-brand-dark' : travelCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-500'}`}>{enrolledCount && travelCount >= enrolledCount ? 'All in' : travelCount > 0 ? `${travelCount}/${enrolledCount || '—'}` : 'Awaiting uploads'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[14px] font-bold text-ink">Accommodation ready</span>
-                    <span className="block text-[12px] font-medium text-neutral-500">{accommodation === 'yes' ? 'Confirmed by admin' : accommodation === 'no' ? 'Not confirmed' : 'Confirm once rooms are arranged'}</span>
-                  </span>
-                  <span className="flex gap-1.5 flex-none">
-                    <button onClick={() => setAccommodation('yes')} className={`text-[11px] font-bold px-3 h-7 rounded-full ${accommodation === 'yes' ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}>Yes</button>
-                    <button onClick={() => setAccommodation('no')} className={`text-[11px] font-bold px-3 h-7 rounded-full ${accommodation === 'no' ? 'bg-red-500 text-white' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}`}>No</button>
-                  </span>
-                </div>
-                <ReadinessCheck label="Tournament briefing" sub="Tick once the referee and staff briefing is arranged. The meeting link is shared outside the dashboard." checked={briefing} onToggle={setBriefing} />
-                <ReadinessCheck label="Staff kick-off" sub="Tick once the on-site staff kick-off is arranged." checked={kickoff} onToggle={setKickoff} />
-              </div>
             </div>
 
             {/* Right column */}
@@ -979,6 +1051,10 @@ function TournamentView({ t, onBack, onEdit }) {
       {showStaff && <AppointStaffModal tournamentName={t.name} assigned={staff} onToggle={(name) => setStaff((prev) => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })} onClose={() => setShowStaff(false)} />}
       {showImport && <SmartImportModal tournamentName={t.name} existing={teams.length} onClose={() => setShowImport(false)} onImport={importTeams} />}
       {showFields && <FieldsModal tournamentName={t.name} initial={fields} onClose={() => setShowFields(false)} onSave={(list) => { setFields(list); dashFields[t.id] = list; setShowFields(false) }} />}
+      {accomModal && <AccommodationModal accommodation={config.accommodation} onClose={() => setAccomModal(false)}
+        onSave={({ options, ready }) => { applyConfig({ accommodationOptions: options, accommodationReady: ready }); setAccomModal(false) }} />}
+      {meetingModal && <MeetingModal kind={meetingModal} value={config[meetingModal]} onClose={() => setMeetingModal(null)}
+        onSave={(m) => { applyConfig({ [meetingModal]: m }); setMeetingModal(null) }} />}
     </div>
   )
 }
