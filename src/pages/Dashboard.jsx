@@ -37,13 +37,13 @@ function DashboardLogin({ onSignIn }) {
   const submit = (e) => { e.preventDefault(); onSignIn() }
   const inputCls = 'w-full h-11 px-3.5 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand bg-white'
   return (
-    <div className="h-screen flex font-sans bg-white text-ink">
-      <div className="hidden md:block flex-1 relative bg-ink">
+    <div className="h-screen relative flex font-sans bg-white text-ink overflow-hidden">
+      <div className="hidden md:block absolute inset-y-0 left-0 w-[80%]">
         <img src="/cc-login.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent" />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 45%, rgba(255,255,255,0.55) 80%, #ffffff 100%)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 50%, rgba(255,255,255,0.7) 80%, #ffffff 100%)' }} />
       </div>
-      <div className="flex-1 flex flex-col px-8 sm:px-14 py-10 relative">
+      <div className="relative z-10 ml-auto w-full md:w-[42%] md:min-w-[400px] md:max-w-[560px] flex flex-col px-8 sm:px-14 py-10">
         <div className="flex items-center gap-2.5">
           <RaMark />
           <div className="leading-none">
