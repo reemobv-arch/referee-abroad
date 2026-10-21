@@ -913,7 +913,7 @@ function TournamentView({ t, onBack, onEdit }) {
   // Prototype: a plausible number of uploaded travel docs so the readiness demo reads well.
   const travelCount = Math.round((enrolledCount || 0) * 0.65)
   const [travelModal, setTravelModal] = useState(false)
-  const travelList = enrol.map((e, i) => ({ id: String(e.refId ?? i), name: (refById[e.refId] && refById[e.refId].name) || `Referee ${i + 1}`, uploaded: i < travelCount }))
+  const travelList = enrol.map((e, i) => ({ id: String(e.refId ?? i), name: (refById[e.refId] && refById[e.refId].name) || `Referee ${i + 1}`, uploaded: i < Math.round(enrol.length * 0.65) }))
   const capacityCount = (summary && summary.capacity != null) ? summary.capacity : (t.capacity ?? 0)
   const awaitingCount = summary ? summary.awaiting : enrol.filter((e) => e.status === 'applied').length
   const steps = [
