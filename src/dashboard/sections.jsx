@@ -3150,8 +3150,30 @@ export function DashboardSync() {
 }
 
 /* ---------------- Settings ---------------- */
+const TEAM_CURRENT_USER = 'Reemo van Dijk'
+const TEAM_ROLES = ['Admin', 'Coordinator', 'Communication', 'Viewer']
+const TEAM_ROLE_ACCESS = { Admin: 'Full access', Coordinator: 'Tournaments, communication', Communication: 'Inbox, communication', Viewer: 'Read only' }
+function RolePill({ role, editable, onChange }) {
+  const [open, setOpen] = useState(false)
+  if (!editable) return <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-brand-light text-brand-dark w-32 text-center inline-block">{role}</span>
+  return (
+    <span className="relative inline-block w-32">
+      <button onClick={() => setOpen((o) => !o)} className="w-full text-[11px] font-semibold px-2.5 py-1 rounded-full bg-brand-light text-brand-dark inline-flex items-center justify-center gap-1 hover:bg-brand/20 transition">{role} <ChevronDown size={12} /></button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 mt-1 z-20 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden min-w-[150px]">
+            {TEAM_ROLES.map((r) => (
+              <button key={r} onClick={() => { setOpen(false); onChange(r) }} className={`w-full text-left px-3 py-2 text-[12px] font-semibold hover:bg-page ${r === role ? 'text-brand-dark' : 'text-ink'}`}>{r}</button>
+            ))}
+          </div>
+        </>
+      )}
+    </span>
+  )
+}
 const roleRows = [
-  { name: 'Reemo van Dijk', role: 'Owner', access: 'Full access' },
+  { name: 'Reemo van Dijk', role: 'Admin', access: 'Full access' },
   { name: 'Sara Mendes', role: 'Coordinator', access: 'Tournaments, communication' },
   { name: 'Nadia Haddad', role: 'Communication', access: 'Inbox, communication' },
   { name: 'Paulo Reis', role: 'Viewer', access: 'Read only' },
@@ -3169,6 +3191,8 @@ export function DashboardSettings() {
   const [org, setOrg] = useState({ name: 'Referee Abroad', email: 'info@refereeabroad.com', country: 'Netherlands' })
   const [integrations, setIntegrations] = useState({ wordpress: true, woocommerce: true, push: true, llm: true })
   const [saved, setSaved] = useState(false)
+  const [team, setTeam] = useState(roleRows)
+  const setRole = (i, role) => setTeam((prev) => prev.map((x, j) => j === i ? { ...x, role, access: TEAM_ROLE_ACCESS[role] || x.access } : x))
   const set = (k) => (e) => { setOrg((s) => ({ ...s, [k]: e.target.value })); setSaved(false) }
   const toggle = (k) => setIntegrations((s) => ({ ...s, [k]: !s[k] }))
   const intList = [
@@ -3207,16 +3231,22 @@ export function DashboardSettings() {
       </div>
 
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
-        <div className="flex items-center gap-2 mb-4 text-sm font-bold text-ink"><Users size={17} className="text-brand-dark" /> Team & roles</div>
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <span className="flex items-center gap-2 text-sm font-bold text-ink"><Users size={17} className="text-brand-dark" /> Team &amp; roles</span>
+          <span className="text-[12px] font-medium text-neutral-400">Click a role to change it</span>
+        </div>
         <div className="divide-y divide-neutral-100">
-          {roleRows.map((r, i) => (
-            <div key={i} className="flex items-center gap-3 py-2.5">
-              <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{r.name.split(' ').map((w) => w[0]).join('')}</span>
-              <span className="flex-1 text-sm font-semibold text-ink">{r.name}</span>
-              <span className="text-xs font-medium text-neutral-500 hidden sm:block w-56">{r.access}</span>
-              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-brand-light text-brand-dark w-28 text-center">{r.role}</span>
-            </div>
-          ))}
+          {team.map((r, i) => {
+            const isYou = r.name === TEAM_CURRENT_USER
+            return (
+              <div key={i} className="flex items-center gap-3 py-2.5">
+                <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{r.name.split(' ').map((w) => w[0]).join('')}</span>
+                <span className="flex-1 min-w-0 text-sm font-semibold text-ink flex items-center gap-2"><span className="truncate">{r.name}</span>{isYou && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand text-white flex-none">You</span>}</span>
+                <span className="text-xs font-medium text-neutral-500 hidden sm:block w-56">{r.access}</span>
+                <RolePill role={r.role} editable={!isYou} onChange={(role) => setRole(i, role)} />
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
