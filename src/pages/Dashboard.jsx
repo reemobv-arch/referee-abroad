@@ -35,32 +35,32 @@ function DashboardLogin({ onSignIn }) {
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
   const submit = (e) => { e.preventDefault(); onSignIn() }
-  const inputCls = 'w-full h-11 px-3.5 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand bg-white'
+  const inputCls = 'w-full h-11 px-3.5 rounded-xl border border-white/15 bg-white/5 text-sm font-medium text-white placeholder-white/35 outline-none focus:border-brand'
   return (
-    <div className="h-screen relative flex font-sans bg-white text-ink overflow-hidden">
-      <div className="hidden md:block absolute inset-y-0 left-0 w-[80%]">
+    <div className="h-screen relative flex font-sans bg-ink text-white overflow-hidden">
+      <div className="hidden md:block absolute inset-y-0 w-[80%]" style={{ left: '-5%' }}>
         <img src="/cc-login.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent" />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 50%, rgba(255,255,255,0.7) 80%, #ffffff 100%)' }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 45%, rgba(27,27,27,0.7) 78%, #1b1b1b 100%)' }} />
       </div>
       <div className="relative z-10 ml-auto w-full md:w-[42%] md:min-w-[400px] md:max-w-[560px] flex flex-col px-8 sm:px-14 py-10">
         <div className="flex items-center gap-2.5">
           <RaMark />
           <div className="leading-none">
-            <p className="font-extrabold text-base">Referee <span className="text-brand">abroad</span></p>
-            <p className="text-[10px] font-medium text-neutral-400 mt-0.5">Command Centre</p>
+            <p className="font-extrabold text-base text-white">Referee <span className="text-brand">abroad</span></p>
+            <p className="text-[10px] font-medium text-white/50 mt-0.5">Command Centre</p>
           </div>
         </div>
         <form onSubmit={submit} className="m-auto w-full max-w-[340px]">
-          <h2 className="text-2xl font-extrabold text-ink">Sign in</h2>
-          <p className="text-[13px] text-neutral-500 font-medium mt-1 mb-6">Use your Referee Abroad account.</p>
-          <label className="block mb-3.5"><span className="block text-xs font-semibold text-neutral-500 mb-1.5">Email or username</span><input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@refereeabroad.com" className={inputCls} autoFocus /></label>
-          <label className="block mb-2"><span className="block text-xs font-semibold text-neutral-500 mb-1.5">Password</span><input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" className={inputCls} /></label>
-          <div className="text-right mb-5"><a href="#" onClick={(e) => e.preventDefault()} className="text-xs font-semibold text-brand-dark hover:underline">Forgot password?</a></div>
-          <button type="submit" className="w-full h-12 rounded-full bg-brand text-white font-semibold active:scale-[0.99] transition">Sign in</button>
+          <h2 className="text-2xl font-extrabold text-white">Sign in</h2>
+          <p className="text-[13px] text-white/60 font-medium mt-1 mb-6">Use your Referee Abroad account.</p>
+          <label className="block mb-3.5"><span className="block text-xs font-semibold text-white/60 mb-1.5">Email or username</span><input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@refereeabroad.com" className={inputCls} autoFocus /></label>
+          <label className="block mb-2"><span className="block text-xs font-semibold text-white/60 mb-1.5">Password</span><input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" className={inputCls} /></label>
+          <div className="text-right mb-5"><a href="#" onClick={(e) => e.preventDefault()} className="text-xs font-semibold text-brand hover:underline">Forgot password?</a></div>
+          <button type="submit" className="w-full h-12 rounded-full bg-brand text-white font-semibold active:scale-[0.99] transition hover:bg-brand-dark">Sign in</button>
         </form>
-        <div className="absolute bottom-3.5 right-5 flex items-center gap-1.5 text-[10px] font-medium text-neutral-400">
-          <span className="w-3.5 h-3.5 rounded bg-neutral-300" /> built by Reemo
+        <div className="absolute bottom-3.5 right-5 flex items-center gap-1.5 text-[10px] font-medium text-white/40">
+          <span className="w-3.5 h-3.5 rounded bg-white/20" /> built by Reemo
         </div>
       </div>
     </div>
