@@ -39,7 +39,7 @@ function DashboardLogin({ onSignIn }) {
   return (
     <div className="h-screen relative flex font-sans bg-ink text-white overflow-hidden">
       <div className="hidden md:block absolute inset-y-0 w-[80%]" style={{ left: '-5%' }}>
-        <img src="/cc-login.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src="/cc-login.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'contrast(1.07) saturate(1.08)' }} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 45%, rgba(27,27,27,0.7) 78%, #1b1b1b 100%)' }} />
       </div>
