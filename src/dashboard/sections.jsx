@@ -591,6 +591,12 @@ function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
 
         {step === 'input' && (
           <>
+            {existing > 0 && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3.5 mb-3 flex items-start gap-2.5">
+                <AlertTriangle size={16} className="text-amber-600 flex-none mt-0.5" />
+                <p className="text-[12.5px] font-medium text-amber-800 leading-snug"><span className="font-bold">This replaces the current teams and schedule.</span> Referee appointments on the existing matches are cleared, unless the new file includes referee columns. To update the schedule and keep the appointments, use <span className="font-bold">Revised schedule</span> on the Appointing tab instead.</p>
+              </div>
+            )}
             <div className="rounded-2xl border border-neutral-200 bg-page p-4">
               <p className="text-[13px] font-bold text-ink flex items-center gap-1.5"><HelpCircle size={14} className="text-brand-dark" /> Works with any file</p>
               <ul className="mt-2 space-y-1 text-[12.5px] text-neutral-600 font-medium list-disc pl-4">
