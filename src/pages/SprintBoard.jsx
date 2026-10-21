@@ -208,6 +208,8 @@ export default function SprintBoard({ phase = 1 }) {
   }
 
   const count = (k) => board.cols[k].length
+  const cardIsExtra = (c) => c.extra || /extra \(no charge\)/i.test(c.note || '')
+  const extraCount = (k) => board.cols[k].filter(cardIsExtra).length
   const statusText = { saving: 'Saving…', saved: 'Saved', local: 'Saved on this device' }[status] || ''
 
   return (
@@ -257,7 +259,10 @@ export default function SprintBoard({ phase = 1 }) {
               <div className="flex items-center gap-2 px-2 py-1.5">
                 <span className={`w-2.5 h-2.5 rounded-full ${col.dot}`} />
                 <h2 className="text-sm font-bold">{col.title}</h2>
-                <span className={`ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full ${col.chip}`}>{count(col.key)}</span>
+                {extraCount(col.key) > 0 && (
+                  <span className="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700" title={`${extraCount(col.key)} free-extra ${extraCount(col.key) === 1 ? 'card' : 'cards'}`}>{extraCount(col.key)} extra</span>
+                )}
+                <span className={`${extraCount(col.key) > 0 ? '' : 'ml-auto'} text-[11px] font-bold px-2 py-0.5 rounded-full ${col.chip}`}>{count(col.key)}</span>
               </div>
 
               <div className="mt-1 space-y-2.5 max-h-[68vh] overflow-y-auto no-scrollbar pr-0.5">
