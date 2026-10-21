@@ -780,8 +780,18 @@ function TournamentView({ t, onBack, onEdit }) {
   const matchesArr = dashMatches[t.id] || []
   const appointedCount = matchesArr.filter((m) => m.main).length
   const clubCount = new Set(teams.map((x) => x.club)).size
+  // Days fully appointed: a day counts when every match that day has a main referee.
+  const dayGroups = matchesArr.reduce((acc, m) => { const d = m.day || 'Day 1'; (acc[d] = acc[d] || []).push(m); return acc }, {})
+  const dayNames = Object.keys(dayGroups)
+  const fullDays = dayNames.filter((d) => dayGroups[d].length && dayGroups[d].every((m) => m.main)).length
+  // Fields come from the imported schedule (the pitch/field column), not manual entry.
+  const importedFields = [...new Set(matchesArr.map((m) => m.pitch).filter(Boolean))]
+  const fieldsReady = fields.length > 0 || importedFields.length > 0
+  const fieldCount = Math.max(fields.length, importedFields.length)
   // Enrolment numbers: live from orders when available, else the tournament/mock figures.
   const enrolledCount = summary ? summary.enrolled : (t.enrolled ?? 0)
+  // Prototype: a plausible number of uploaded travel docs so the readiness demo reads well.
+  const travelCount = Math.round((enrolledCount || 0) * 0.65)
   const capacityCount = (summary && summary.capacity != null) ? summary.capacity : (t.capacity ?? 0)
   const awaitingCount = summary ? summary.awaiting : enrol.filter((e) => e.status === 'applied').length
   const steps = [
@@ -791,15 +801,18 @@ function TournamentView({ t, onBack, onEdit }) {
     { title: 'Participants', status: capacityCount && enrolledCount >= capacityCount ? 'done' : (enrolledCount > 0 ? 'progress' : 'todo'),
       metric: `${enrolledCount} of ${capacityCount} spots filled${awaitingCount ? ` · ${awaitingCount} awaiting approval` : ''}`,
       onClick: () => setTab('enrolments') },
-    { title: 'Fields uploaded', status: fields.length ? 'done' : 'todo',
-      metric: fields.length ? `${fields.length} fields` : 'No fields yet',
-      onClick: () => setShowFields(true) },
+    { title: 'Fields uploaded', status: fieldsReady ? 'done' : 'todo',
+      metric: fieldsReady ? `${fieldCount} ${fieldCount === 1 ? 'pitch' : 'pitches'} from the import` : 'Comes with the team / fixture import',
+      onClick: () => teams.length ? setTab('appointing') : setShowImport(true) },
     { title: 'Match schedule', status: teams.length === 0 ? 'todo' : (matchesArr.length ? 'done' : 'todo'),
       metric: teams.length === 0 ? 'Import the teams first' : (matchesArr.length ? `${matchesArr.length} matches scheduled` : 'No matches yet'),
       onClick: () => teams.length ? setTab('appointing') : setShowImport(true) },
     { title: 'Referees appointed', status: matchesArr.length === 0 ? 'todo' : (appointedCount >= matchesArr.length ? 'done' : 'progress'),
       metric: matchesArr.length === 0 ? 'Add matches first' : `${appointedCount} of ${matchesArr.length} matches have a main referee`,
       pill: matchesArr.length && appointedCount < matchesArr.length ? `${matchesArr.length - appointedCount} open` : null,
+      onClick: () => setTab('appointing') },
+    { title: 'Days fully appointed', status: dayNames.length === 0 ? 'todo' : (fullDays >= dayNames.length ? 'done' : (fullDays > 0 ? 'progress' : 'todo')),
+      metric: dayNames.length === 0 ? 'Add matches first' : `${fullDays} of ${dayNames.length} ${dayNames.length === 1 ? 'day' : 'days'} fully appointed`,
       onClick: () => setTab('appointing') },
     { title: 'On-site staff', status: staff.size ? 'done' : 'todo',
       metric: staff.size ? `${staff.size} staff assigned` : 'No staff yet',
@@ -861,7 +874,7 @@ function TournamentView({ t, onBack, onEdit }) {
                   <h3 className="font-bold text-ink text-sm">Tournament readiness</h3>
                   <p className="text-[12.5px] text-neutral-500 font-medium">What is done and what still needs attention</p>
                 </div>
-                <span className="text-[13px] font-bold text-brand-dark whitespace-nowrap">{doneCount} / {steps.length} done</span>
+                <span className="text-[13px] font-bold text-brand-dark whitespace-nowrap">{Math.round((doneCount / steps.length) * 100)}% · {doneCount}/{steps.length} done</span>
               </div>
               <div className="h-2 rounded-full bg-neutral-200/80 overflow-hidden mb-2">
                 <span className="block h-full rounded-full bg-brand transition-all" style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }} />
@@ -892,9 +905,9 @@ function TournamentView({ t, onBack, onEdit }) {
                 <div className="flex items-center gap-2">
                   <span className="flex-1 min-w-0">
                     <span className="block text-[14px] font-bold text-ink">Travel confirmation</span>
-                    <span className="block text-[12px] font-medium text-neutral-500">Participants upload their travel documents in the app</span>
+                    <span className="block text-[12px] font-medium text-neutral-500">{enrolledCount ? `${travelCount} of ${enrolledCount} participants uploaded travel documents` : 'Participants upload their travel documents in the app'}</span>
                   </span>
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-500 flex-none">Awaiting uploads</span>
+                  <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full flex-none ${enrolledCount && travelCount >= enrolledCount ? 'bg-brand-light text-brand-dark' : travelCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-500'}`}>{enrolledCount && travelCount >= enrolledCount ? 'All in' : travelCount > 0 ? `${travelCount}/${enrolledCount || '—'}` : 'Awaiting uploads'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="flex-1 min-w-0">
