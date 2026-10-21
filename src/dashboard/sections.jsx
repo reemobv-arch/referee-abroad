@@ -730,18 +730,30 @@ function ClubsTab({ teams, onOpenImport }) {
         <p className="text-[13px] font-semibold text-neutral-500">{teams.length} teams · {clubs.length} clubs</p>
         <button onClick={onOpenImport} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Upload size={15} /> Re-import</button>
       </div>
-      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
-        {clubs.map((club) => (
-          <div key={club} className="flex items-center gap-3 px-4 py-3 flex-wrap">
-            <span className="w-8 h-8 rounded-lg bg-brand-light text-brand-dark text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(club)}</span>
-            <span className="flex-1 min-w-[120px] text-sm font-semibold text-ink">{club}</span>
-            <span className="flex flex-wrap gap-1.5">
-              {byClub[club].slice().sort((a, b) => a.ageGroup.localeCompare(b.ageGroup)).map((tm, i) => (
-                <span key={i} className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${genderPill(tm.gender)}`}>{tm.ageGroup} {GENDER_SHORT[tm.gender] || ''}</span>
-              ))}
-            </span>
-          </div>
-        ))}
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-neutral-100">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-500">Club</span>
+          <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-500">Teams · age and gender</span>
+        </div>
+        <div className="divide-y divide-neutral-100">
+          {clubs.map((club) => {
+            const tms = byClub[club].slice().sort((a, b) => a.ageGroup.localeCompare(b.ageGroup))
+            return (
+              <div key={club} className="flex items-center gap-3 px-4 py-3 flex-wrap">
+                <span className="w-9 h-9 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{initialsOf(club)}</span>
+                <span className="flex-1 min-w-[120px]">
+                  <span className="block text-sm font-semibold text-ink">{club}</span>
+                  <span className="block text-[12px] font-medium text-neutral-400">{tms.length} {tms.length === 1 ? 'team' : 'teams'}</span>
+                </span>
+                <span className="flex flex-wrap gap-1.5 justify-end">
+                  {tms.map((tm, i) => (
+                    <span key={i} className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${genderPill(tm.gender)}`}>{tm.ageGroup} · {tm.gender || 'Mixed'}</span>
+                  ))}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
@@ -1659,8 +1671,8 @@ export function DashboardReferees() {
   )
 }
 
-function AddStaffModal({ onClose, onAdd }) {
-  const [f, setF] = useState({ name: '', role: 'Logistics coordinator', tournament: dashTournaments[0].name, email: '', phone: '', languages: '', country: '', city: '', iban: '' })
+function AddStaffModal({ onClose, onAdd, initial = null }) {
+  const [f, setF] = useState({ name: '', role: 'Logistics coordinator', tournament: dashTournaments[0].name, email: '', phone: '', languages: '', country: '', city: '', iban: '', ...(initial || {}) })
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
   const roles = ['Tournament director', 'Logistics coordinator', 'Referee mentor', 'Communication', 'Onsite host', 'Media & content']
   const [tried, setTried] = useState(false)
@@ -1673,7 +1685,7 @@ function AddStaffModal({ onClose, onAdd }) {
     <Modal onClose={onClose}>
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-extrabold text-ink">Add staff member</h3>
+          <h3 className="text-xl font-extrabold text-ink">{initial ? 'Edit staff member' : 'Add staff member'}</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
         </div>
         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
@@ -1695,7 +1707,7 @@ function AddStaffModal({ onClose, onAdd }) {
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
-          <button onClick={submit} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><Plus size={16} /> Add staff</button>
+          <button onClick={submit} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2">{initial ? <><Check size={16} /> Save changes</> : <><Plus size={16} /> Add staff</>}</button>
         </div>
       </div>
     </Modal>
@@ -1706,41 +1718,44 @@ function AddStaffModal({ onClose, onAdd }) {
 export function DashboardStaff({ createSignal }) {
   const [staff, setStaff] = useState(dashStaff)
   const [adding, setAdding] = useState(false)
+  const [editIdx, setEditIdx] = useState(null)
   useEffect(() => { if (createSignal) setAdding(true) }, [createSignal])
   const add = (s) => { setStaff((prev) => [...prev, s]); setAdding(false) }
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
       {staff.map((s, i) => (
-        <div key={i} className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
+        <button key={i} onClick={() => setEditIdx(i)} className="text-left bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 hover:border-brand hover:shadow-card transition">
           <div className="flex items-center gap-3">
             <span className="w-11 h-11 rounded-full bg-brand text-white flex items-center justify-center font-bold text-sm">{s.initials}</span>
-            <div>
-              <p className="font-bold text-ink text-sm">{s.name}</p>
+            <div className="min-w-0">
+              <p className="font-bold text-ink text-sm truncate">{s.name}</p>
               <p className="text-xs text-neutral-500 font-medium">{s.role}</p>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-neutral-100 text-xs font-medium text-neutral-500 space-y-1.5">
-            <div><span className="text-neutral-500">Assigned to</span> {s.tournament}</div>
-            {s.languages && <div className="flex items-center gap-1.5"><Globe size={12} className="text-neutral-500 flex-none" /> {s.languages}</div>}
-            {s.email && <div className="flex items-center gap-1.5 truncate"><Mail size={12} className="text-neutral-500 flex-none" /> {s.email}</div>}
-            {s.phone && <div className="flex items-center gap-1.5"><Phone size={12} className="text-neutral-500 flex-none" /> {s.phone}</div>}
-            {(s.city || s.country) && <div className="flex items-center gap-1.5"><MapPin size={12} className="text-neutral-500 flex-none" /> {[s.city, s.country].filter(Boolean).join(', ')}</div>}
-            {s.iban && <div className="flex items-center gap-1.5"><span className="text-neutral-500 flex-none">IBAN</span> <span className="font-mono text-[11px] truncate">{s.iban}</span></div>}
+          <div className="mt-3 pt-3 border-t border-neutral-100 space-y-1.5">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-neutral-400">{s.tournament || 'Not assigned'}</div>
+            {[[Globe, s.languages], [Mail, s.email], [Phone, s.phone], [MapPin, [s.city, s.country].filter(Boolean).join(', ')], [Building2, s.iban]].map(([Icon, val], j) => (
+              <div key={j} className="flex items-center gap-2 text-[13px]">
+                <Icon size={14} className="text-neutral-400 flex-none" />
+                {val ? <span className="text-ink truncate">{val}</span> : <span className="text-neutral-400 italic">Not provided</span>}
+              </div>
+            ))}
           </div>
-        </div>
+        </button>
       ))}
       <button onClick={() => setAdding(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-500 hover:text-brand-dark hover:border-brand min-h-[128px] transition">
         <Plus size={24} />
         <span className="text-sm font-semibold">Add staff member</span>
       </button>
       {adding && <AddStaffModal onClose={() => setAdding(false)} onAdd={add} />}
+      {editIdx != null && <AddStaffModal initial={staff[editIdx]} onClose={() => setEditIdx(null)} onAdd={(s) => { setStaff((prev) => prev.map((x, j) => j === editIdx ? { ...x, ...s } : x)); setEditIdx(null) }} />}
     </div>
   )
 }
 
 /* ---------------- Observers & Guests / VIP ---------------- */
-function AddPersonModal({ title, roles, cta, onClose, onAdd }) {
-  const [f, setF] = useState({ name: '', role: roles[0], tournament: dashTournaments[0].name })
+function AddPersonModal({ title, roles, cta, initial = null, onClose, onAdd }) {
+  const [f, setF] = useState({ name: initial?.name || '', role: initial?.role || roles[0], tournament: initial?.tournament || dashTournaments[0].name })
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
   return (
     <Modal onClose={onClose}>
@@ -1757,7 +1772,7 @@ function AddPersonModal({ title, roles, cta, onClose, onAdd }) {
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
           <button onClick={() => f.name.trim() && onAdd({ name: f.name.trim(), role: f.role, tournament: f.tournament, initials: initialsOf(f.name.trim()) })}
-            disabled={!f.name.trim()} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50"><Plus size={16} /> {cta}</button>
+            disabled={!f.name.trim()} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">{initial ? <Check size={16} /> : <Plus size={16} />} {cta}</button>
         </div>
       </div>
     </Modal>
@@ -1767,10 +1782,12 @@ function AddPersonModal({ title, roles, cta, onClose, onAdd }) {
 function PeopleGrid({ seed, roles, addTitle, addCta, emptyAdd }) {
   const [people, setPeople] = useState(seed)
   const [adding, setAdding] = useState(false)
+  const [editIdx, setEditIdx] = useState(null)
+  const editTitle = addTitle.replace(/^Add/i, 'Edit')
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
       {people.map((s, i) => (
-        <div key={i} className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
+        <button key={i} onClick={() => setEditIdx(i)} className="text-left bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 hover:border-brand hover:shadow-card transition">
           <div className="flex items-center gap-3">
             <span className="w-11 h-11 rounded-full bg-brand text-white flex items-center justify-center font-bold text-sm">{s.initials}</span>
             <div className="min-w-0">
@@ -1778,15 +1795,17 @@ function PeopleGrid({ seed, roles, addTitle, addCta, emptyAdd }) {
               <p className="text-xs text-neutral-500 font-medium">{s.role}</p>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-neutral-100 text-xs font-medium text-neutral-500">
-            <span className="text-neutral-500">{s.org ? 'Organisation' : 'Assigned to'}</span><br />{s.org || s.tournament || '—'}
+          <div className="mt-3 pt-3 border-t border-neutral-100 text-[13px]">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 block">{s.org ? 'Organisation' : 'Assigned to'}</span>
+            <span className="text-ink">{s.org || s.tournament || 'Not assigned'}</span>
           </div>
-        </div>
+        </button>
       ))}
       <button onClick={() => setAdding(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-500 hover:text-brand-dark hover:border-brand min-h-[128px] transition">
         <Plus size={24} /><span className="text-sm font-semibold">{emptyAdd}</span>
       </button>
       {adding && <AddPersonModal title={addTitle} roles={roles} cta={addCta} onClose={() => setAdding(false)} onAdd={(p) => { setPeople((prev) => [...prev, p]); setAdding(false) }} />}
+      {editIdx != null && <AddPersonModal title={editTitle} roles={roles} cta="Save changes" initial={people[editIdx]} onClose={() => setEditIdx(null)} onAdd={(p) => { setPeople((prev) => prev.map((x, j) => j === editIdx ? { ...x, ...p } : x)); setEditIdx(null) }} />}
     </div>
   )
 }
