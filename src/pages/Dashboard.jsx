@@ -18,7 +18,57 @@ const MENU = [
   { key: 'settings', label: 'Settings', Icon: Settings, title: 'Settings', desc: 'Organisation, integrations and roles.', Comp: DashboardSettingsHub },
 ]
 
+function RaMark({ size = 34 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="22" fill="#E7F4E1" />
+      <path d="M14 30c-4-2-6-8-2-12s10-2 12 2c2-5 9-6 13-2s2 12-4 13c3 3 1 9-4 9-4 0-6-3-6-6-3 3-9 2-9-4z" fill="#44A546" />
+      <circle cx="20" cy="22" r="5" fill="#17201A" /><circle cx="21.5" cy="20.5" r="1.6" fill="#fff" />
+      <circle cx="31" cy="27" r="3" fill="#17201A" />
+    </svg>
+  )
+}
+
+// Command Centre login. In the prototype any sign-in goes straight through, like
+// the referee app; the real dashboard wires this to WordPress admin auth.
+function DashboardLogin({ onSignIn }) {
+  const [email, setEmail] = useState('')
+  const [pw, setPw] = useState('')
+  const submit = (e) => { e.preventDefault(); onSignIn() }
+  const inputCls = 'w-full h-11 px-3.5 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand bg-white'
+  return (
+    <div className="h-screen flex font-sans bg-white text-ink">
+      <div className="hidden md:block flex-1 relative bg-ink">
+        <img src="/cc-login.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+      </div>
+      <div className="flex-1 flex flex-col px-8 sm:px-14 py-10 relative">
+        <div className="flex items-center gap-2.5">
+          <RaMark />
+          <div className="leading-none">
+            <p className="font-extrabold text-base">Referee <span className="text-brand">abroad</span></p>
+            <p className="text-[10px] font-medium text-neutral-400 mt-0.5">Command Centre</p>
+          </div>
+        </div>
+        <form onSubmit={submit} className="m-auto w-full max-w-[340px]">
+          <h2 className="text-2xl font-extrabold text-ink">Sign in</h2>
+          <p className="text-[13px] text-neutral-500 font-medium mt-1 mb-6">Use your Referee Abroad account.</p>
+          <label className="block mb-3.5"><span className="block text-xs font-semibold text-neutral-500 mb-1.5">Email or username</span><input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@refereeabroad.com" className={inputCls} autoFocus /></label>
+          <label className="block mb-2"><span className="block text-xs font-semibold text-neutral-500 mb-1.5">Password</span><input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" className={inputCls} /></label>
+          <div className="text-right mb-5"><a href="#" onClick={(e) => e.preventDefault()} className="text-xs font-semibold text-brand-dark hover:underline">Forgot password?</a></div>
+          <button type="submit" className="w-full h-12 rounded-full bg-brand text-white font-semibold active:scale-[0.99] transition">Sign in</button>
+        </form>
+        <div className="absolute bottom-3.5 right-5 flex items-center gap-1.5 text-[10px] font-medium text-neutral-400">
+          <span className="w-3.5 h-3.5 rounded bg-neutral-300" /> built by Reemo
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
+  const [authed, setAuthed] = useState(() => { try { return sessionStorage.getItem('ra_cc_authed') === '1' } catch { return false } })
+  const signIn = () => { try { sessionStorage.setItem('ra_cc_authed', '1') } catch { /* ignore */ } setAuthed(true) }
   const [active, setActive] = useState('tournaments')
   const [createSignal, setCreateSignal] = useState(0)
   const [focusT, setFocusT] = useState({ id: null, n: 0 })
@@ -39,6 +89,8 @@ export default function Dashboard() {
     window.addEventListener('ra-nav', go)
     return () => window.removeEventListener('ra-nav', go)
   }, [])
+
+  if (!authed) return <DashboardLogin onSignIn={signIn} />
 
   return (
     <div className="h-screen bg-page text-ink font-sans flex overflow-hidden">
