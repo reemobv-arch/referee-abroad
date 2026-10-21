@@ -263,6 +263,8 @@ export default function SprintBoard({ phase = 1 }) {
               <div className="mt-1 space-y-2.5 max-h-[68vh] overflow-y-auto no-scrollbar pr-0.5">
                 {board.cols[col.key].map((c) => {
                   const ci = ORDER.indexOf(col.key)
+                  const isExtra = c.extra || /extra \(no charge\)/i.test(c.note || '')
+                  const noteText = isExtra ? (c.note || '').replace(/\s*·?\s*extra \(no charge\)/i, '').trim() : c.note
                   return (
                     <div
                       key={c.id}
@@ -271,7 +273,7 @@ export default function SprintBoard({ phase = 1 }) {
                       onDragEnd={() => { setDragId(null); busy.current = false }}
                       onDragOver={(e) => { if (dragId && dragId !== c.id) e.preventDefault() }}
                       onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (dragId) { moveTo(dragId, col.key, c.id); setDragId(null); busy.current = false } }}
-                      className={`group bg-white rounded-xl border border-neutral-200 shadow-card p-3.5 border-l-4 border-l-brand cursor-grab active:cursor-grabbing ${dragId === c.id ? 'opacity-50' : ''}`}
+                      className={`group bg-white rounded-xl border border-neutral-200 shadow-card p-3.5 border-l-4 ${isExtra ? 'border-l-amber-500' : 'border-l-brand'} cursor-grab active:cursor-grabbing ${dragId === c.id ? 'opacity-50' : ''}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-[13px] font-bold leading-snug">{c.title}</p>
@@ -279,7 +281,8 @@ export default function SprintBoard({ phase = 1 }) {
                           <X size={14} />
                         </button>
                       </div>
-                      {c.note && <p className="mt-1 text-[11px] font-medium text-neutral-500 leading-snug">{c.note}</p>}
+                      {isExtra && <span className="mt-1.5 inline-block text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Free extra</span>}
+                      {noteText && <p className="mt-1 text-[11px] font-medium text-neutral-500 leading-snug">{noteText}</p>}
                       <div className="mt-2 flex items-center justify-between gap-2">
                         {c.sprint
                           ? <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-400">{c.sprint}</span>
