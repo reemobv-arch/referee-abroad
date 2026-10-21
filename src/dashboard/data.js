@@ -85,9 +85,9 @@ export const dashFields = {
 
 // Observer pool (match observers / mentors) and guest / VIP pool.
 export const dashObservers = [
-  { id: 'o1', name: 'Giorgio Bruno', role: 'Observer', initials: 'GB', country: 'Italy', flag: '🇮🇹' },
-  { id: 'o2', name: 'Helena Vik', role: 'Observer', initials: 'HV', country: 'Norway', flag: '🇳🇴' },
-  { id: 'o3', name: 'Paul Ainsworth', role: 'Referee mentor', initials: 'PA', country: 'England', flag: '🏴' },
+  { id: 'o1', name: 'Giorgio Bruno', role: 'Observer', category: 'International', initials: 'GB', country: 'Italy', flag: '🇮🇹' },
+  { id: 'o2', name: 'Helena Vik', role: 'Observer', category: 'National', initials: 'HV', country: 'Norway', flag: '🇳🇴' },
+  { id: 'o3', name: 'Paul Ainsworth', role: 'Referee mentor', category: 'Regional', initials: 'PA', country: 'England', flag: '🏴' },
 ]
 export const obsById = Object.fromEntries(dashObservers.map((o) => [o.id, o]))
 

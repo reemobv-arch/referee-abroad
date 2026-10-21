@@ -1754,8 +1754,26 @@ export function DashboardStaff({ createSignal }) {
 }
 
 /* ---------------- Observers & Guests / VIP ---------------- */
-function AddPersonModal({ title, roles, cta, initial = null, onClose, onAdd }) {
-  const [f, setF] = useState({ name: initial?.name || '', role: initial?.role || roles[0], tournament: initial?.tournament || dashTournaments[0].name })
+// Observer grading level. Filled with a dropdown when adding an observer and
+// shown as a coloured chip on the observer card and in the appointing selector.
+export const OBSERVER_CATEGORIES = ['International', 'National', 'Regional', 'Grassroots']
+const OBS_CAT_PILL = {
+  International: 'bg-violet-100 text-violet-700',
+  National: 'bg-sky-100 text-sky-700',
+  Regional: 'bg-teal-100 text-teal-700',
+  Grassroots: 'bg-amber-100 text-amber-700',
+}
+function CategoryPill({ category, className = '' }) {
+  if (!category) return null
+  return <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${OBS_CAT_PILL[category] || 'bg-neutral-100 text-neutral-600'} ${className}`}>{category}</span>
+}
+
+function AddPersonModal({ title, roles, categories = null, cta, initial = null, onClose, onAdd }) {
+  const [f, setF] = useState({
+    name: initial?.name || '', role: initial?.role || roles[0],
+    category: initial?.category || (categories ? categories[0] : ''),
+    tournament: initial?.tournament || dashTournaments[0].name,
+  })
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
   return (
     <Modal onClose={onClose}>
@@ -1767,11 +1785,12 @@ function AddPersonModal({ title, roles, cta, initial = null, onClose, onAdd }) {
         <div className="space-y-3">
           <Field label="Full name"><input value={f.name} onChange={set('name')} placeholder="e.g. Giorgio Bruno" className={inputCls} autoFocus /></Field>
           <Field label="Role"><select value={f.role} onChange={set('role')} className={inputCls}>{roles.map((r) => <option key={r}>{r}</option>)}</select></Field>
+          {categories && <Field label="Category"><select value={f.category} onChange={set('category')} className={inputCls}>{categories.map((c) => <option key={c}>{c}</option>)}</select></Field>}
           <Field label="Assigned to"><select value={f.tournament} onChange={set('tournament')} className={inputCls}>{dashTournaments.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
-          <button onClick={() => f.name.trim() && onAdd({ name: f.name.trim(), role: f.role, tournament: f.tournament, initials: initialsOf(f.name.trim()) })}
+          <button onClick={() => f.name.trim() && onAdd({ name: f.name.trim(), role: f.role, ...(categories ? { category: f.category } : {}), tournament: f.tournament, initials: initialsOf(f.name.trim()) })}
             disabled={!f.name.trim()} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">{initial ? <Check size={16} /> : <Plus size={16} />} {cta}</button>
         </div>
       </div>
@@ -1779,7 +1798,7 @@ function AddPersonModal({ title, roles, cta, initial = null, onClose, onAdd }) {
   )
 }
 
-function PeopleGrid({ seed, roles, addTitle, addCta, emptyAdd }) {
+function PeopleGrid({ seed, roles, categories = null, addTitle, addCta, emptyAdd }) {
   const [people, setPeople] = useState(seed)
   const [adding, setAdding] = useState(false)
   const [editIdx, setEditIdx] = useState(null)
@@ -1790,11 +1809,12 @@ function PeopleGrid({ seed, roles, addTitle, addCta, emptyAdd }) {
         <button key={i} onClick={() => setEditIdx(i)} className="text-left bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 hover:border-brand hover:shadow-card transition">
           <div className="flex items-center gap-3">
             <span className="w-11 h-11 rounded-full bg-brand text-white flex items-center justify-center font-bold text-sm">{s.initials}</span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="font-bold text-ink text-sm truncate">{s.name}</p>
               <p className="text-xs text-neutral-500 font-medium">{s.role}</p>
             </div>
           </div>
+          {s.category && <div className="mt-2.5"><CategoryPill category={s.category} /></div>}
           <div className="mt-3 pt-3 border-t border-neutral-100 text-[13px]">
             <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 block">{s.org ? 'Organisation' : 'Assigned to'}</span>
             <span className="text-ink">{s.org || s.tournament || 'Not assigned'}</span>
@@ -1804,14 +1824,14 @@ function PeopleGrid({ seed, roles, addTitle, addCta, emptyAdd }) {
       <button onClick={() => setAdding(true)} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 text-neutral-500 hover:text-brand-dark hover:border-brand min-h-[128px] transition">
         <Plus size={24} /><span className="text-sm font-semibold">{emptyAdd}</span>
       </button>
-      {adding && <AddPersonModal title={addTitle} roles={roles} cta={addCta} onClose={() => setAdding(false)} onAdd={(p) => { setPeople((prev) => [...prev, p]); setAdding(false) }} />}
-      {editIdx != null && <AddPersonModal title={editTitle} roles={roles} cta="Save changes" initial={people[editIdx]} onClose={() => setEditIdx(null)} onAdd={(p) => { setPeople((prev) => prev.map((x, j) => j === editIdx ? { ...x, ...p } : x)); setEditIdx(null) }} />}
+      {adding && <AddPersonModal title={addTitle} roles={roles} categories={categories} cta={addCta} onClose={() => setAdding(false)} onAdd={(p) => { setPeople((prev) => [...prev, p]); setAdding(false) }} />}
+      {editIdx != null && <AddPersonModal title={editTitle} roles={roles} categories={categories} cta="Save changes" initial={people[editIdx]} onClose={() => setEditIdx(null)} onAdd={(p) => { setPeople((prev) => prev.map((x, j) => j === editIdx ? { ...x, ...p } : x)); setEditIdx(null) }} />}
     </div>
   )
 }
 
 export function DashboardObservers() {
-  return <PeopleGrid seed={dashObservers} roles={['Observer', 'Referee mentor', 'Assessor']} addTitle="Add observer" addCta="Add observer" emptyAdd="Add observer" />
+  return <PeopleGrid seed={dashObservers} roles={['Observer', 'Referee mentor', 'Assessor']} categories={OBSERVER_CATEGORIES} addTitle="Add observer" addCta="Add observer" emptyAdd="Add observer" />
 }
 export function DashboardGuests() {
   return <PeopleGrid seed={dashGuests} roles={['VIP guest', 'Sponsor', 'Federation', 'Press']} addTitle="Add guest / VIP" addCta="Add guest" emptyAdd="Add guest / VIP" />
@@ -2159,9 +2179,9 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
     if (filled > 0) { setPublishDirty(true); setToast(`AI filled ${filled} open slot${filled === 1 ? '' : 's'}. Review and publish.`) }
     else setToast('No open slots to fill.')
   }
-  const APPT_HEAD = ['Day', 'Time', 'Field', 'Home', 'Away', 'Main referee', 'Assistant 1', 'Assistant 2', '4th official', 'Observer']
+  const APPT_HEAD = ['Day', 'Time', 'Field', 'Home', 'Away', 'Main referee', 'Assistant 1', 'Assistant 2', '4th official', 'Observer', 'Observer category']
   const appointmentRows = () => list.map((m) => [m.day || '', m.time || '', m.pitch || '', m.home || '', m.away || '',
-    refById[m.main]?.name || '', refById[m.a1]?.name || '', refById[m.a2]?.name || '', refById[m.fourth]?.name || '', obsById[m.observer]?.name || ''])
+    refById[m.main]?.name || '', refById[m.a1]?.name || '', refById[m.a2]?.name || '', refById[m.fourth]?.name || '', obsById[m.observer]?.name || '', obsById[m.observer]?.category || ''])
   const apptFile = () => `${(dashTournaments.find((t) => t.id === tid)?.name || 'tournament')} - appointments`
   const exportCsv = () => {
     const rows = [APPT_HEAD, ...appointmentRows()]
@@ -2358,8 +2378,9 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
                           <select value={m.observer || ''} onChange={(e) => setSlot(m.id, 'observer', e.target.value)}
                             className={`w-full h-9 px-2.5 rounded-lg border text-sm font-medium outline-none focus:border-brand ${m.observer ? 'border-neutral-200' : 'border-neutral-200 text-neutral-500'}`}>
                             <option value="">No observer</option>
-                            {dashObservers.map((o) => <option key={o.id} value={o.id}>{o.name} ({o.role})</option>)}
+                            {dashObservers.map((o) => <option key={o.id} value={o.id}>{o.name}{o.category ? ` · ${o.category}` : ` (${o.role})`}</option>)}
                           </select>
+                          {obsById[m.observer]?.category && <div className="mt-1.5"><CategoryPill category={obsById[m.observer].category} /></div>}
                         </div>
                       </div>
                       <div className="flex justify-end mt-4">
