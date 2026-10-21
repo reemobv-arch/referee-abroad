@@ -960,7 +960,7 @@ function TournamentView({ t, onBack, onEdit }) {
         )}
         {tab === 'clubs' && <ClubsTab teams={teams} onOpenImport={() => setShowImport(true)} />}
         {tab === 'enrolments' && <ParticipantsTable t={t} enrol={enrol} onAction={onEnrolAction} />}
-        {tab === 'appointing' && <DashboardAppointing initialTournament={t.id} lockTournament />}
+        {tab === 'appointing' && <DashboardAppointing initialTournament={t.id} onImport={() => setShowImport(true)} lockTournament />}
         {tab === 'broadcast' && <TournamentBroadcast tournamentName={t.name} />}
       </div>
       {showStaff && <AppointStaffModal tournamentName={t.name} assigned={staff} onToggle={(name) => setStaff((prev) => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })} onClose={() => setShowStaff(false)} />}
@@ -1902,7 +1902,7 @@ function RevisedScheduleModal({ current, onClose, onApply }) {
   )
 }
 
-export function DashboardAppointing({ initialTournament, lockTournament = false }) {
+export function DashboardAppointing({ initialTournament, onImport, lockTournament = false }) {
   const startTid = initialTournament || dashTournaments[0].id
   // Referee names imported from the file are matched to the directory by full
   // name (case-insensitive), so the schedule comes in with referees already
@@ -2002,6 +2002,7 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
           <div className="ml-auto flex items-center gap-2 flex-wrap">
             <button onClick={() => setShowAI(true)} className="inline-flex items-center gap-1.5 border border-brand text-brand-dark text-sm font-semibold px-4 h-10 rounded-full hover:bg-brand-light transition"><Sparkles size={15} /> Appoint with AI</button>
             <button onClick={() => setShowRevised(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><RefreshCw size={15} /> Revised schedule</button>
+            {onImport && <button onClick={onImport} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Upload size={15} /> Import CSV/Excel</button>}
             <button onClick={exportCsv} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><FileText size={15} /> Export CSV</button>
             <button onClick={exportXlsx} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Download size={15} /> Export Excel</button>
             <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Plus size={15} /> Add match</button>
@@ -2017,7 +2018,8 @@ export function DashboardAppointing({ initialTournament, lockTournament = false 
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-10 text-center">
           <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto"><Lock size={22} /></div>
           <p className="mt-3 text-sm font-bold text-ink">Appointing is locked for {dashTournaments.find((t) => t.id === tid)?.name || 'this tournament'}</p>
-          <p className="mt-1 text-[13px] text-neutral-500 font-medium max-w-md mx-auto">You can only appoint referees once the participating teams are imported. Import the teams on the tournament page (Teams tab), then build the schedule here.</p>
+          <p className="mt-1 text-[13px] text-neutral-500 font-medium max-w-md mx-auto">You can only appoint referees once the participating teams are imported. Import a CSV/Excel below (fixtures with referee columns are appointed automatically), or import on the Teams tab.</p>
+          {onImport && <button onClick={onImport} className="mt-4 inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-5 h-11 rounded-full"><Upload size={16} /> Import CSV/Excel</button>}
         </div>
       )}
 
