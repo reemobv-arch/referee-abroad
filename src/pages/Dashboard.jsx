@@ -40,7 +40,8 @@ function DashboardLogin({ onSignIn }) {
     <div className="h-screen flex font-sans bg-white text-ink">
       <div className="hidden md:block flex-1 relative bg-ink">
         <img src="/cc-login.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 45%, rgba(255,255,255,0.55) 80%, #ffffff 100%)' }} />
       </div>
       <div className="flex-1 flex flex-col px-8 sm:px-14 py-10 relative">
         <div className="flex items-center gap-2.5">
