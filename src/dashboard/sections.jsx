@@ -2870,23 +2870,38 @@ function HBarCard({ title, data, color = '#44A546' }) {
 
 // Simple responsive line chart. `data` is [{ month|m, value|v }]; `format`
 // turns a value into its label (e.g. a euro amount).
+const niceStep = (r) => { const base = Math.max(r, 1); const p = Math.pow(10, Math.floor(Math.log10(base))); const n = base / p; const s = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10; return s * p }
+
 function LineChartCard({ title, data, color = '#44A546', format = (n) => String(n) }) {
   const pts = data.map((d) => ({ label: d.month ?? d.m, value: Number(d.value ?? d.v) || 0 }))
   const max = Math.max(1, ...pts.map((p) => p.value))
-  const x = (i) => 20 + (i * 300) / Math.max(1, pts.length - 1)
-  const y = (v) => 130 - (v / max) * 100
+  const step = niceStep(max / 4)
+  const niceMax = Math.max(step, step * Math.ceil(max / step))
+  const ticks = []; for (let v = 0; v <= niceMax + 0.001; v += step) ticks.push(v)
+  const W = 680, H = 220, x0 = 54, x1 = W - 16, y0 = 18, y1 = H - 28
+  const x = (i) => x0 + (i * (x1 - x0)) / Math.max(1, pts.length - 1)
+  const y = (v) => y1 - (v / niceMax) * (y1 - y0)
   const line = pts.map((p, i) => `${x(i)},${y(p.value)}`).join(' ')
+  const area = `M${x(0)},${y1} ${pts.map((p, i) => `L${x(i)},${y(p.value)}`).join(' ')} L${x(pts.length - 1)},${y1} Z`
+  const gid = `lcg-${title.replace(/\W/g, '')}`
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 lg:col-span-2">
-      <p className="font-bold text-ink text-sm mb-2 flex items-center gap-1.5"><TrendingUp size={16} className="text-brand" /> {title}</p>
-      <svg viewBox="0 0 340 150" className="w-full h-44">
-        {[0, 1, 2, 3].map((g) => <line key={g} x1="20" x2="320" y1={30 + g * 33} y2={30 + g * 33} stroke="#eee" strokeWidth="1" />)}
+    <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
+      <p className="font-bold text-ink text-sm mb-1 flex items-center gap-1.5"><TrendingUp size={16} className="text-brand" /> {title}</p>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" preserveAspectRatio="xMidYMid meet" className="block">
+        <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={color} stopOpacity="0.2" /><stop offset="1" stopColor={color} stopOpacity="0.02" /></linearGradient></defs>
+        {ticks.map((v, i) => (
+          <g key={i}>
+            <line x1={x0} x2={x1} y1={y(v)} y2={y(v)} stroke="#eef0ee" strokeWidth="1" />
+            <text x={x0 - 8} y={y(v) + 4} textAnchor="end" fontSize="11" fill="#9ca3af">{format(v)}</text>
+          </g>
+        ))}
+        <path d={area} fill={`url(#${gid})`} />
         <polyline points={line} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         {pts.map((p, i) => (
           <g key={i}>
             <circle cx={x(i)} cy={y(p.value)} r="3.5" fill={color} />
-            <text x={x(i)} y={y(p.value) - 8} textAnchor="middle" fontSize="9" fill="#7c837e" fontWeight="600">{format(p.value)}</text>
-            <text x={x(i)} y="145" textAnchor="middle" fontSize="10" fill="#7c837e" fontWeight="500">{p.label}</text>
+            <text x={x(i)} y={y(p.value) - 9} textAnchor="middle" fontSize="11" fill="#6b7280" fontWeight="600">{format(p.value)}</text>
+            <text x={x(i)} y={y1 + 18} textAnchor="middle" fontSize="11" fill="#9ca3af">{p.label}</text>
           </g>
         ))}
       </svg>
