@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Plus, MapPin, Calendar, Users, X, Send, MessageSquare, Search, TrendingUp,
   Mail, MessageCircle, AlertTriangle, AlertCircle, Check, Sparkles, Star, Globe, Phone, ClipboardList,
@@ -13,7 +13,7 @@ import {
 import { FAQ_ITEMS } from '../faqContent.js'
 import Flag from '../components/Flag.jsx'
 import { countryCode } from '../regions.js'
-import { getDashTournaments, getEnrolmentSummary, getParticipants, getReferees, getPnl, getAnalytics, approveApplication, getRefereeApplications, updateApplication, getSyncLog, LIVE } from '../lib/dataSource.js'
+import { getDashTournaments, getEnrolmentSummary, getParticipants, getReferees, getPnl, getAnalytics, approveApplication, getRefereeApplications, updateApplication, getSyncLog, getDmThreads, getDmThread, sendDmReply, markDmReadAdmin, LIVE } from '../lib/dataSource.js'
 
 const euro = (n) => '€' + n.toLocaleString('en-US')
 const initialsOf = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
@@ -2572,14 +2572,142 @@ function TournamentBroadcast({ tournamentName }) {
 // AI assistant knowledge base all live here as tabs.
 export function DashboardCommunication() {
   const [tab, setTab] = useState('inbox')
+  const [dmUnread, setDmUnread] = useState(0)
+  useEffect(() => { if (LIVE) getDmThreads().then((d) => setDmUnread(d.totalUnread || 0)).catch(() => {}) }, [tab])
+  const dmLabel = dmUnread > 0 ? `Direct messages (${dmUnread})` : 'Direct messages'
   return (
     <div>
       <SubTabs tabs={[
         { k: 'inbox', label: 'Inbox' },
+        { k: 'dm', label: dmLabel },
         { k: 'assistant', label: 'Assistant' },
       ]} active={tab} onChange={setTab} />
       {tab === 'inbox' && <DashboardInbox />}
+      {tab === 'dm' && <DashboardDirectMessages onUnread={setDmUnread} />}
       {tab === 'assistant' && <DashboardAssistant />}
+    </div>
+  )
+}
+
+/* ---------------- Direct messages (referee <-> org) ---------------- */
+const dmMockThreads = {
+  'm-sofia': {
+    refId: 'm-sofia', name: 'Sofia Marques',
+    messages: [
+      { from: 'ref', text: 'Hi! Is lunch provided on match days in Porto?', at: new Date(Date.now() - 55 * 60000).toISOString() },
+      { from: 'ref', text: 'And can I arrive a day earlier?', at: new Date(Date.now() - 54 * 60000).toISOString() },
+    ],
+  },
+  'm-alex': {
+    refId: 'm-alex', name: 'Alex Berg',
+    messages: [
+      { from: 'ref', text: 'Quick question about my kit size', at: new Date(Date.now() - 26 * 3600000).toISOString() },
+      { from: 'admin', text: 'Sure, what do you need?', at: new Date(Date.now() - 25 * 3600000).toISOString() },
+      { from: 'ref', text: 'Thanks, see you in Porto!', at: new Date(Date.now() - 24 * 3600000).toISOString() },
+    ],
+  },
+}
+const dmMockList = {
+  threads: [
+    { refId: 'm-sofia', name: 'Sofia Marques', last: 'And can I arrive a day earlier?', at: dmMockThreads['m-sofia'].messages.at(-1).at, unread: 2 },
+    { refId: 'm-alex', name: 'Alex Berg', last: 'Thanks, see you in Porto!', at: dmMockThreads['m-alex'].messages.at(-1).at, unread: 0 },
+  ],
+  totalUnread: 2,
+}
+
+export function DashboardDirectMessages({ onUnread }) {
+  const [list, setList] = useState(LIVE ? { threads: [], totalUnread: 0 } : dmMockList)
+  const [selId, setSelId] = useState(LIVE ? null : dmMockList.threads[0].refId)
+  const [thread, setThread] = useState(LIVE ? null : dmMockThreads[dmMockList.threads[0].refId])
+  const [reply, setReply] = useState('')
+  const scrollRef = useRef(null)
+
+  // Report the unread total to the parent tab label and to the sidebar badge
+  // (via a window event, like ra-nav), so both stay in sync in live and demo.
+  const reportUnread = (total) => { onUnread?.(total); window.dispatchEvent(new CustomEvent('ra-dm-unread', { detail: total })) }
+
+  const loadList = () => {
+    if (!LIVE) return
+    getDmThreads().then((d) => { setList(d); reportUnread(d.totalUnread || 0) }).catch(() => {})
+  }
+  useEffect(() => {
+    if (LIVE) loadList()
+    else reportUnread(dmMockList.totalUnread) // seed the demo badge
+  }, [])
+
+  const openThread = async (refId) => {
+    setSelId(refId)
+    if (!LIVE) { setThread(dmMockThreads[refId]); markReadLocal(refId); return }
+    const t = await getDmThread(refId)
+    setThread(t)
+    await markDmReadAdmin(refId)
+    loadList()
+  }
+
+  // Mock: clear the unread badge locally when a thread is opened.
+  const markReadLocal = (refId) => {
+    setList((l) => {
+      const threads = l.threads.map((t) => t.refId === refId ? { ...t, unread: 0 } : t)
+      const totalUnread = threads.reduce((n, t) => n + t.unread, 0)
+      reportUnread(totalUnread)
+      return { threads, totalUnread }
+    })
+  }
+
+  useEffect(() => { scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight) }, [thread])
+
+  const send = async () => {
+    const t = reply.trim()
+    if (!t || !selId) return
+    setReply('')
+    setThread((th) => ({ ...th, messages: [...(th?.messages || []), { from: 'admin', text: t, at: new Date().toISOString() }] }))
+    if (LIVE) { try { await sendDmReply(selId, t) } catch { /* keep optimistic */ } loadList() }
+  }
+
+  return (
+    <div className="grid md:grid-cols-[300px_1fr] gap-4 h-[calc(100vh-220px)] min-h-[420px]">
+      {/* Thread list */}
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-y-auto no-scrollbar divide-y divide-neutral-100">
+        {list.threads.length === 0 && <div className="p-5 text-sm font-medium text-neutral-500">No direct messages yet. Referees can message the organisation from the app.</div>}
+        {list.threads.map((t) => (
+          <button key={t.refId} onClick={() => openThread(t.refId)} className={`w-full text-left px-4 py-3 flex items-center gap-3 transition ${selId === t.refId ? 'bg-brand-light/60' : 'hover:bg-neutral-50'}`}>
+            <span className="w-9 h-9 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center flex-none">{(t.name || '?').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}</span>
+            <span className="flex-1 min-w-0">
+              <span className="flex items-center justify-between gap-2">
+                <span className="text-sm font-bold text-ink truncate">{t.name}</span>
+                <span className="text-[10px] text-neutral-400 font-semibold flex-none">{relativeTime(t.at)}</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="text-xs text-neutral-500 font-medium truncate flex-1">{t.last}</span>
+                {t.unread > 0 && <span className="flex-none min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center">{t.unread}</span>}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Conversation */}
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm flex flex-col overflow-hidden">
+        {!thread ? (
+          <div className="flex-1 flex items-center justify-center text-sm font-medium text-neutral-500">Select a conversation</div>
+        ) : (
+          <>
+            <div className="px-4 h-14 flex items-center gap-3 border-b border-neutral-100 shrink-0">
+              <span className="w-9 h-9 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center">{(thread.name || '?').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}</span>
+              <div><p className="text-sm font-bold text-ink leading-tight">{thread.name}</p><p className="text-[11px] text-neutral-500 font-medium">Direct message</p></div>
+            </div>
+            <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-4 space-y-2 bg-page/40">
+              {(thread.messages || []).map((m, i) => (
+                <div key={i} className={`max-w-[75%] px-3.5 py-2 text-sm font-medium leading-snug ${m.from === 'admin' ? 'ml-auto bg-brand text-white rounded-2xl rounded-br-sm' : 'bg-white border border-neutral-200 text-ink rounded-2xl rounded-bl-sm'}`}>{m.text}</div>
+              ))}
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); send() }} className="shrink-0 border-t border-neutral-100 p-3 flex items-center gap-2">
+              <input value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Reply to this referee…" className="flex-1 bg-page rounded-full px-4 h-10 text-sm font-medium outline-none border border-neutral-200 focus:border-brand" />
+              <button type="submit" className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center active:scale-95"><Send size={17} /></button>
+            </form>
+          </>
+        )}
+      </div>
     </div>
   )
 }

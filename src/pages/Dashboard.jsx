@@ -8,7 +8,7 @@ import {
   DashboardTournaments, DashboardPeople, DashboardCommunication,
   DashboardInsights, DashboardSettingsHub,
 } from '../dashboard/sections.jsx'
-import { LIVE } from '../lib/dataSource.js'
+import { LIVE, getDmThreads } from '../lib/dataSource.js'
 
 const MENU = [
   { key: 'tournaments', label: 'Tournaments', Icon: Trophy, title: 'Tournaments', desc: 'Plan and manage every tournament.', action: 'New tournament' },
@@ -95,6 +95,25 @@ export default function Dashboard() {
     return () => window.removeEventListener('ra-nav', go)
   }, [])
 
+  // Unread direct messages, shown as a badge on the Inbox nav item (D9). The DM
+  // panel broadcasts changes via ra-dm-unread; when live we also poll so the
+  // badge is right before the panel is ever opened.
+  const [dmUnread, setDmUnread] = useState(0)
+  useEffect(() => {
+    const onDm = (e) => setDmUnread(e.detail || 0)
+    window.addEventListener('ra-dm-unread', onDm)
+    return () => window.removeEventListener('ra-dm-unread', onDm)
+  }, [])
+  useEffect(() => {
+    if (!authed) return
+    if (!LIVE) { setDmUnread(2); return } // demo badge for the prototype
+    let alive = true
+    const tick = () => getDmThreads().then((d) => { if (alive) setDmUnread(d.totalUnread || 0) }).catch(() => {})
+    tick()
+    const h = setInterval(tick, 30000)
+    return () => { alive = false; clearInterval(h) }
+  }, [authed, active])
+
   if (!authed) return <DashboardLogin onSignIn={signIn} />
 
   return (
@@ -123,7 +142,10 @@ export default function Dashboard() {
                 active === key ? 'bg-brand text-white' : 'text-neutral-400 hover:text-white hover:bg-white/5'
               }`}
             >
-              <Icon size={18} /> {label}
+              <Icon size={18} /> <span className="flex-1 text-left">{label}</span>
+              {key === 'communication' && dmUnread > 0 && (
+                <span className={`flex-none min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center ${active === key ? 'bg-white text-brand' : 'bg-brand text-white'}`}>{dmUnread}</span>
+              )}
             </button>
           ))}
         </nav>

@@ -498,3 +498,50 @@ export async function getSyncLog() {
   if (!res.ok) return null
   return res.json()
 }
+
+// Direct messages between the logged-in referee and the organisation (D8) +
+// unread counts (D9). This clickable prototype runs in mock mode, so these are
+// no-ops / empty; the real build wires them to /api/dm.
+export async function getOrgThread() {
+  if (!LIVE) return null
+  const token = sessionToken()
+  const res = await apiFetch('/api/dm', { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  if (!res.ok) return null
+  return res.json()
+}
+export async function sendOrgMessage(text, name) {
+  if (!LIVE) return { ok: true }
+  const token = sessionToken()
+  const res = await apiFetch('/api/dm', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ text, name }) })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || `Send failed (${res.status})`)
+  return data
+}
+export async function markOrgRead() {
+  if (!LIVE) return
+  const token = sessionToken()
+  await apiFetch('/api/dm', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ read: 1 }) }).catch(() => {})
+}
+export async function getDmThreads() {
+  if (!LIVE) return { threads: [], totalUnread: 0 }
+  const res = await apiFetch('/api/dm?admin=1')
+  if (!res.ok) return { threads: [], totalUnread: 0 }
+  return res.json()
+}
+export async function getDmThread(refId) {
+  if (!LIVE) return null
+  const res = await apiFetch(`/api/dm?ref=${encodeURIComponent(refId)}`)
+  if (!res.ok) return null
+  return (await res.json()).thread || null
+}
+export async function sendDmReply(refId, text) {
+  if (!LIVE) return { ok: true }
+  const res = await apiFetch('/api/dm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: refId, text, from: 'admin' }) })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || `Reply failed (${res.status})`)
+  return data
+}
+export async function markDmReadAdmin(refId) {
+  if (!LIVE) return
+  await apiFetch('/api/dm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: refId, read: 1, from: 'admin' }) }).catch(() => {})
+}

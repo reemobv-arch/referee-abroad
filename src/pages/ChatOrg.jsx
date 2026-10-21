@@ -1,21 +1,50 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, Phone, Paperclip, Send, Image as ImageIcon, Users } from 'lucide-react'
 import { orgChat } from '../data.js'
+import { LIVE, getOrgThread, sendOrgMessage, markOrgRead, getMyProfile } from '../lib/dataSource.js'
 
 export default function ChatOrg() {
   const nav = useNavigate()
   const team = useLocation().state?.team
+  const liveOrg = LIVE && !team // the organisation DM is wired live; team group chats stay demo
   const [msgs, setMsgs] = useState(team
     ? [{ from: 'them', text: `Group chat for the officials of ${team.title}. ${team.members.join(', ')} are here. Say hi 👋` }]
-    : orgChat)
+    : (liveOrg ? [] : orgChat))
   const [text, setText] = useState('')
+  const [loading, setLoading] = useState(liveOrg)
+  const nameRef = useRef(null)
+  const scrollRef = useRef(null)
 
-  function send(e) {
+  // Map a stored DM message (from: 'ref'|'admin') to the bubble side.
+  const toBubble = (m) => ({ from: m.from === 'ref' ? 'me' : 'them', text: m.text })
+
+  useEffect(() => {
+    if (!liveOrg) return
+    let alive = true
+    ;(async () => {
+      try {
+        const [thread, profile] = await Promise.all([getOrgThread(), getMyProfile().catch(() => null)])
+        if (!alive) return
+        nameRef.current = profile?.name || null
+        setMsgs((thread?.messages || []).map(toBubble))
+        markOrgRead() // opening the thread clears the unread badge
+      } finally { if (alive) setLoading(false) }
+    })()
+    return () => { alive = false }
+  }, [liveOrg])
+
+  useEffect(() => { scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight) }, [msgs])
+
+  async function send(e) {
     e.preventDefault()
-    if (!text.trim()) return
-    setMsgs((m) => [...m, { from: 'me', text: text.trim() }])
+    const t = text.trim()
+    if (!t) return
+    setMsgs((m) => [...m, { from: 'me', text: t }])
     setText('')
+    if (liveOrg) {
+      try { await sendOrgMessage(t, nameRef.current) } catch { /* keep the optimistic bubble */ }
+    }
   }
 
   function attach() {
@@ -36,8 +65,11 @@ export default function ChatOrg() {
         </div>
       </header>
 
-      <div className="flex-1 min-h-0 px-3.5 py-3 space-y-2 overflow-y-auto no-scrollbar">
+      <div ref={scrollRef} className="flex-1 min-h-0 px-3.5 py-3 space-y-2 overflow-y-auto no-scrollbar">
         <p className="text-center text-[11px] text-neutral-500 font-medium">Today</p>
+        {liveOrg && !loading && msgs.length === 0 && (
+          <p className="text-center text-[13px] text-neutral-500 font-medium mt-6">Send a message to the Referee Abroad team. They usually reply quickly.</p>
+        )}
         {msgs.map((m, i) => (
           m.attachment ? (
             <div key={i} className="ml-auto max-w-[80%] bg-brand text-white rounded-3xl rounded-br-md p-2.5">

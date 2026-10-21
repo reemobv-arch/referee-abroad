@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Sparkles, ArrowRight } from 'lucide-react'
 import { TopBar } from '../components/ui.jsx'
 import ProfileCircle from '../components/ProfileCircle.jsx'
+import { LIVE, getOrgThread } from '../lib/dataSource.js'
 
-const convos = [
+const baseConvos = [
   { id: 'org', name: 'Referee Abroad', kind: 'org', last: "Done 👍 Updated to L, it's set in your profile.", time: '14:32', unread: 0, to: '/chat', tag: 'Organisation' },
   { id: 'porto', name: 'Porto International Cup', kind: 'group', last: "Ana N.: Don't forget your yellow kit 😄", time: '09:12', unread: 2, to: '/tournament/porto/group', tag: 'Group' },
   { id: 'copenhagen', name: 'Copenhagen Cup', kind: 'group', last: 'Marco (org): Welcome everyone! 👋', time: 'Yesterday', unread: 0, to: '/tournament/copenhagen/group', tag: 'Group' },
@@ -11,6 +13,24 @@ const convos = [
 
 export default function Chat() {
   const nav = useNavigate()
+  const [convos, setConvos] = useState(baseConvos)
+
+  // Live: fold the referee's real direct-message thread with the org into the
+  // first row (last message + unread badge). Group chats stay demo in Phase 1.
+  useEffect(() => {
+    if (!LIVE) return
+    let alive = true
+    getOrgThread().then((t) => {
+      if (!alive || !t) return
+      const msgs = t.messages || []
+      const last = msgs[msgs.length - 1]
+      setConvos((cs) => cs.map((c) => c.id === 'org'
+        ? { ...c, unread: t.unread || 0, last: last ? last.text : 'Message the Referee Abroad team', time: '' }
+        : c))
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [])
+
   return (
     <div className="pb-4">
       <TopBar title="Chat" right={<ProfileCircle />} />
