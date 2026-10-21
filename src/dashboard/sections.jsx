@@ -544,7 +544,7 @@ function ParticipantsTable({ t, enrol, onAction }) {
 
 const genderPill = (g) => g === 'Girls' ? 'bg-pink-100 text-pink-700' : g === 'Boys' ? 'bg-sky-100 text-sky-700' : 'bg-neutral-100 text-neutral-500'
 
-function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
+function SmartImportModal({ tournamentName, existing = 0, dayScope = null, onClose, onImport }) {
   const [step, setStep] = useState('input')
   const [text, setText] = useState('')
   const [map, setMap] = useState({})
@@ -580,23 +580,28 @@ function SmartImportModal({ tournamentName, existing = 0, onClose, onImport }) {
     <Modal onClose={onClose} wide>
       <div className="p-5">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-xl font-extrabold text-ink">Import teams & fixtures</h3>
+          <h3 className="text-xl font-extrabold text-ink">{dayScope ? `Import into ${dayScope}` : 'Import teams & fixtures'}</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center"><X size={18} /></button>
         </div>
         <p className="text-[12px] font-medium text-neutral-500 mb-4">
-          {step === 'input' && `Upload the schedule for ${tournamentName}. Any organiser format works, we map the columns in the next step.`}
+          {step === 'input' && (dayScope ? `Upload the schedule for ${dayScope} of ${tournamentName}. Any organiser format works, we map the columns in the next step.` : `Upload the schedule for the whole of ${tournamentName}. Any organiser format works, we map the columns in the next step.`)}
           {step === 'map' && 'Check the detected columns. We read age and gender from the team names or the category column.'}
           {step === 'preview' && 'Review what will be imported, then confirm.'}
         </p>
 
         {step === 'input' && (
           <>
-            {existing > 0 && (
+            {dayScope ? (
+              <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3.5 mb-3 flex items-start gap-2.5">
+                <AlertTriangle size={16} className="text-sky-600 flex-none mt-0.5" />
+                <p className="text-[12.5px] font-medium text-sky-800 leading-snug"><span className="font-bold">This imports only into {dayScope}.</span> It replaces the matches on {dayScope} and leaves the other days untouched. To import the whole tournament at once, use <span className="font-bold">Import</span> on the Teams tab instead.</p>
+              </div>
+            ) : existing > 0 ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3.5 mb-3 flex items-start gap-2.5">
                 <AlertTriangle size={16} className="text-amber-600 flex-none mt-0.5" />
-                <p className="text-[12.5px] font-medium text-amber-800 leading-snug"><span className="font-bold">This replaces the current teams and schedule.</span> Referee appointments on the existing matches are cleared, unless the new file includes referee columns. To update the schedule and keep the appointments, use <span className="font-bold">Revised schedule</span> on the Appointing tab instead.</p>
+                <p className="text-[12.5px] font-medium text-amber-800 leading-snug"><span className="font-bold">This replaces the whole tournament's teams and schedule.</span> Referee appointments on the existing matches are cleared, unless the new file includes referee columns. To update the schedule and keep the appointments, use <span className="font-bold">Revised schedule</span>; to change one day only, open that day and use <span className="font-bold">Import into Day X</span>.</p>
               </div>
-            )}
+            ) : null}
             <div className="rounded-2xl border border-neutral-200 bg-page p-4">
               <p className="text-[13px] font-bold text-ink flex items-center gap-1.5"><HelpCircle size={14} className="text-brand-dark" /> Works with any file</p>
               <ul className="mt-2 space-y-1 text-[12.5px] text-neutral-600 font-medium list-disc pl-4">
@@ -969,9 +974,9 @@ function TournamentView({ t, onBack, onEdit }) {
     { k: 'clubs', label: `Teams (${teams.length})` },
     { k: 'enrolments', label: `Participants (${enrol.length})` },
     { k: 'appointing', label: `Appointing (${matchCount})` },
-    { k: 'broadcast', label: 'Broadcast' },
+    { k: 'broadcast', label: 'Communication' },
   ]
-  const crumbLabel = { info: 'Tournament information', clubs: 'Teams', enrolments: 'Participants', appointing: 'Appointing', broadcast: 'Broadcast' }[tab]
+  const crumbLabel = { info: 'Tournament information', clubs: 'Teams', enrolments: 'Participants', appointing: 'Appointing', broadcast: 'Communication' }[tab]
 
   return (
     <div>
@@ -2062,6 +2067,9 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
   const [addingMatch, setAddingMatch] = useState(false)
   const [publishDirty, setPublishDirty] = useState(false)
   const [confirmPublish, setConfirmPublish] = useState(false)
+  const [conflictHidden, setConflictHidden] = useState(false)
+  const [extraDays, setExtraDays] = useState([])
+  const [showDayImport, setShowDayImport] = useState(null)
   const [showAI, setShowAI] = useState(false)
   const [showRevised, setShowRevised] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
@@ -2071,9 +2079,14 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
   const teams = dashClubs[tid] || []
   const fields = dashFields[tid] || []
   const days = useMemo(() => { const seen = []; for (const m of list) { const d = m.day || DAY_FALLBACK; if (!seen.includes(d)) seen.push(d) } return seen }, [list])
+  const allDays = useMemo(() => [...days, ...extraDays.filter((d) => !days.includes(d))], [days, extraDays])
+  const nextDayName = () => {
+    const nums = allDays.map((d) => { const m = /day\s*(\d+)/i.exec(d); return m ? Number(m[1]) : 0 })
+    return `Day ${Math.max(0, ...nums, allDays.length) + 1}`
+  }
   const dayList = openDay ? list.filter((m) => (m.day || DAY_FALLBACK) === openDay) : []
 
-  useEffect(() => { setOpenDay(null); setOpenId(null) }, [tid])
+  useEffect(() => { setOpenDay(null); setOpenId(null); setExtraDays([]) }, [tid])
 
   const conflicts = useMemo(() => {
     const seen = {}; const bad = new Set()
@@ -2083,6 +2096,7 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
     }
     return bad
   }, [list])
+  useEffect(() => { setConflictHidden(false) }, [conflicts.size])
 
   const setSlot = (mid, slot, ref) => {
     setEdited((p) => new Set(p).add(mid))
@@ -2093,6 +2107,22 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
     setMatches((prev) => ({ ...prev, [tid]: [...(prev[tid] || []), { id, day: openDay || days[0] || DAY_FALLBACK, main: null, a1: null, a2: null, fourth: null, observer: null, ...m }] }))
     setAddingMatch(false)
     setOpenId(id)
+  }
+  const importIntoDay = (day, { teams: list, matches: fixtures }) => {
+    const slots = toSlots({ _: (fixtures || []).map((m) => ({ ...m, day })) })._ || []
+    setMatches((prev) => {
+      const others = (prev[tid] || []).filter((m) => (m.day || DAY_FALLBACK) !== day)
+      return { ...prev, [tid]: [...others, ...slots] }
+    })
+    const otherFixtures = (dashMatches[tid] || []).filter((m) => (m.day || DAY_FALLBACK) !== day)
+    dashMatches[tid] = [...otherFixtures, ...(fixtures || []).map((m) => ({ ...m, day }))]
+    if (list && list.length) {
+      const key = (x) => `${x.club}::${x.ageGroup}::${x.gender}`.toLowerCase()
+      const existing = dashClubs[tid] || []; const seen = new Set(existing.map(key))
+      dashClubs[tid] = [...existing, ...list.filter((x) => !seen.has(key(x)))]
+    }
+    setExtraDays((d) => d.filter((x) => x !== day))
+    setPublishDirty(true); setShowDayImport(null); setOpenDay(day); setOpenId(null)
   }
   const saveMatch = (m, i) => {
     if (edited.has(m.id)) { setPublishDirty(true); setEdited((p) => { const n = new Set(p); n.delete(m.id); return n }) }
@@ -2172,13 +2202,14 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
         </div>
       )}
 
-      {teams.length > 0 && conflicts.size > 0 && (
+      {teams.length > 0 && conflicts.size > 0 && !conflictHidden && (
         <div className="mb-4 flex items-center gap-2 bg-red-50 text-red-700 text-sm font-semibold px-4 py-2.5 rounded-xl border border-red-100">
-          <AlertTriangle size={16} /> A referee is double-booked at the same time. Check the highlighted matches.
+          <AlertTriangle size={16} className="flex-none" /> <span className="flex-1">A referee is double-booked at the same time. Check the highlighted matches.</span>
+          <button onClick={() => setConflictHidden(true)} aria-label="Dismiss" className="flex-none text-red-400 hover:text-red-700"><X size={16} /></button>
         </div>
       )}
 
-      {teams.length > 0 && list.length === 0 && (
+      {teams.length > 0 && list.length === 0 && extraDays.length === 0 && (
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-10 text-center">
           <p className="text-sm font-semibold text-ink">No matches scheduled yet</p>
           <p className="text-xs text-neutral-500 font-medium mt-1">Add matches to start appointing officials.</p>
@@ -2187,30 +2218,37 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
       )}
 
       {/* Day blocks */}
-      {teams.length > 0 && list.length > 0 && !openDay && (
+      {teams.length > 0 && allDays.length > 0 && !openDay && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {days.map((day, di) => {
+          {allDays.map((day, di) => {
             const dm = list.filter((m) => (m.day || DAY_FALLBACK) === day)
             const appointed = dm.filter((m) => m.main).length
             const hasConf = dm.some((m) => officialsOf(m).some((r) => conflicts.has(`${m.id}::${r}`)))
-            const allDone = appointed === dm.length
+            const empty = dm.length === 0
+            const allDone = !empty && appointed === dm.length
             return (
               <button key={day} onClick={() => { setOpenDay(day); setOpenId(null) }}
                 className="group aspect-square flex flex-col text-left bg-white rounded-2xl border border-neutral-200 shadow-sm p-5 hover:bg-brand hover:border-brand transition">
                 <div className="flex items-center justify-between">
                   <span className="w-10 h-10 rounded-xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center font-extrabold transition">{di + 1}</span>
-                  {hasConf ? <span className="text-[11px] font-semibold text-red-600 group-hover:text-white flex items-center gap-1"><AlertTriangle size={13} /> conflict</span>
+                  {empty ? <span className="text-[11px] font-semibold text-neutral-400 group-hover:text-white">empty</span>
+                    : hasConf ? <span className="text-[11px] font-semibold text-red-600 group-hover:text-white flex items-center gap-1"><AlertTriangle size={13} /> conflict</span>
                     : allDone ? <span className="text-[11px] font-semibold text-brand-dark group-hover:text-white flex items-center gap-1"><Check size={13} /> complete</span>
                     : <span className="text-[11px] font-semibold text-amber-600 group-hover:text-white">{dm.length - appointed} open</span>}
                 </div>
                 <div className="mt-auto">
                   <p className="text-lg font-extrabold text-ink group-hover:text-white transition">{day}</p>
-                  <p className="text-[13px] font-semibold text-neutral-500 group-hover:text-white/85 transition">{dm.length} matches · {appointed}/{dm.length} appointed</p>
-                  <div className="mt-2.5 h-1.5 rounded-full bg-neutral-200 group-hover:bg-white/30 overflow-hidden transition"><span className="block h-full bg-brand group-hover:bg-white transition" style={{ width: `${Math.round((appointed / dm.length) * 100)}%` }} /></div>
+                  <p className="text-[13px] font-semibold text-neutral-500 group-hover:text-white/85 transition">{empty ? 'No matches yet' : `${dm.length} matches · ${appointed}/${dm.length} appointed`}</p>
+                  <div className="mt-2.5 h-1.5 rounded-full bg-neutral-200 group-hover:bg-white/30 overflow-hidden transition"><span className="block h-full bg-brand group-hover:bg-white transition" style={{ width: `${empty ? 0 : Math.round((appointed / dm.length) * 100)}%` }} /></div>
                 </div>
               </button>
             )
           })}
+          <button onClick={() => setExtraDays((d) => [...d, nextDayName()])}
+            className="aspect-square flex flex-col items-center justify-center gap-2 text-neutral-400 hover:text-brand-dark bg-white/60 rounded-2xl border-2 border-dashed border-neutral-300 hover:border-brand transition">
+            <span className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center"><Plus size={20} /></span>
+            <span className="text-[13px] font-bold">Add a day</span>
+          </button>
         </div>
       )}
 
@@ -2218,7 +2256,19 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
       {teams.length > 0 && openDay && (
         <>
           <button onClick={() => { setOpenDay(null); setOpenId(null) }} className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-dark mb-3"><ChevronRight size={16} className="rotate-180" /> All days</button>
-          <p className="text-sm font-extrabold text-ink mb-2">{openDay} <span className="text-neutral-500 font-medium">· {dayList.length} matches</span></p>
+          <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+            <p className="text-sm font-extrabold text-ink">{openDay} <span className="text-neutral-500 font-medium">· {dayList.length} matches</span></p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-[13px] font-semibold px-3 h-9 rounded-full hover:border-brand transition"><Plus size={14} /> Add match</button>
+              <button onClick={() => setShowDayImport(openDay)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-[13px] font-semibold px-3 h-9 rounded-full hover:border-brand transition"><Upload size={14} /> Import into {openDay}</button>
+            </div>
+          </div>
+          {dayList.length === 0 && (
+            <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-8 text-center mb-2">
+              <p className="text-sm font-semibold text-ink">No matches on {openDay} yet</p>
+              <p className="text-xs text-neutral-500 font-medium mt-1">Add a match, or import a CSV/Excel for this day.</p>
+            </div>
+          )}
           <div className="space-y-2.5">
             {dayList.map((m, i) => {
               const open = openId === m.id
@@ -2309,6 +2359,7 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
       )}
 
       {addingMatch && <AddMatchModal onClose={() => setAddingMatch(false)} onAdd={addMatch} teams={teams} fields={fields} />}
+      {showDayImport && <SmartImportModal tournamentName={dashTournaments.find((x) => x.id === tid)?.name || 'this tournament'} dayScope={showDayImport} existing={dayList.length} onClose={() => setShowDayImport(null)} onImport={(result) => importIntoDay(showDayImport, result)} />}
       {showAI && <AppointAiModal onClose={() => setShowAI(false)} onRun={runAI} />}
       {showRevised && <RevisedScheduleModal current={list} onClose={() => setShowRevised(false)} onApply={(merged, mode) => {
         setMatches((prev) => ({ ...prev, [tid]: merged }))
