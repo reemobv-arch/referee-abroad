@@ -44,14 +44,14 @@ function DashboardLogin({ onSignIn }) {
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 45%, rgba(27,27,27,0.7) 78%, #1b1b1b 100%)' }} />
       </div>
       <div className="relative z-10 ml-auto w-full md:w-[42%] md:min-w-[400px] md:max-w-[560px] flex flex-col px-8 sm:px-14 py-10">
-        <div className="flex items-center gap-2.5">
-          <RaMark />
-          <div className="leading-none">
-            <p className="font-extrabold text-base text-white">Referee <span className="text-brand">abroad</span></p>
-            <p className="text-[10px] font-medium text-white/50 mt-0.5">Command Centre</p>
-          </div>
-        </div>
         <form onSubmit={submit} className="m-auto w-full max-w-[340px]">
+          <div className="flex items-center gap-3.5 mb-9">
+            <RaMark size={76} />
+            <div className="leading-none">
+              <p className="font-extrabold text-[26px] text-white">Referee <span className="text-brand">abroad</span></p>
+              <p className="text-xs font-medium text-white/50 mt-1.5">Command Centre</p>
+            </div>
+          </div>
           <h2 className="text-2xl font-extrabold text-white">Sign in</h2>
           <p className="text-[13px] text-white/60 font-medium mt-1 mb-6">Use your Referee Abroad account.</p>
           <label className="block mb-3.5"><span className="block text-xs font-semibold text-white/60 mb-1.5">Email or username</span><input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@refereeabroad.com" className={inputCls} autoFocus /></label>
