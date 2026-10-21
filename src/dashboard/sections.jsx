@@ -1926,6 +1926,7 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
   const [confirmPublish, setConfirmPublish] = useState(false)
   const [showAI, setShowAI] = useState(false)
   const [showRevised, setShowRevised] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [toast, setToast] = useState('')
 
   const list = matches[tid] || []
@@ -2003,8 +2004,18 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
             <button onClick={() => setShowAI(true)} className="inline-flex items-center gap-1.5 border border-brand text-brand-dark text-sm font-semibold px-4 h-10 rounded-full hover:bg-brand-light transition"><Sparkles size={15} /> Appoint with AI</button>
             <button onClick={() => setShowRevised(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><RefreshCw size={15} /> Revised schedule</button>
             {onImport && <button onClick={onImport} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Upload size={15} /> Import CSV/Excel</button>}
-            <button onClick={exportCsv} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><FileText size={15} /> Export CSV</button>
-            <button onClick={exportXlsx} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Download size={15} /> Export Excel</button>
+            <div className="relative">
+              <button onClick={() => setExportOpen((o) => !o)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Download size={15} /> Export <ChevronDown size={14} className="text-neutral-500" /></button>
+              {exportOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setExportOpen(false)} />
+                  <div className="absolute right-0 mt-1 z-20 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden min-w-[150px]">
+                    <button onClick={() => { setExportOpen(false); exportXlsx() }} className="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm font-semibold text-ink hover:bg-page"><Download size={14} className="text-neutral-500" /> Excel (.xlsx)</button>
+                    <button onClick={() => { setExportOpen(false); exportCsv() }} className="w-full flex items-center gap-2 text-left px-4 py-2.5 text-sm font-semibold text-ink hover:bg-page border-t border-neutral-100"><FileText size={14} className="text-neutral-500" /> CSV (.csv)</button>
+                  </div>
+                </>
+              )}
+            </div>
             <button onClick={() => setAddingMatch(true)} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-10 rounded-full hover:border-brand transition"><Plus size={15} /> Add match</button>
             <button onClick={() => publishDirty && setConfirmPublish(true)} disabled={!publishDirty}
               className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 h-10 rounded-full transition ${publishDirty ? 'bg-brand text-white hover:bg-brand-dark' : 'bg-neutral-200 text-neutral-500 cursor-not-allowed'}`}>
