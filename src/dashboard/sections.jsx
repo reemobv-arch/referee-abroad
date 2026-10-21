@@ -13,7 +13,7 @@ import {
 import { FAQ_ITEMS } from '../faqContent.js'
 import Flag from '../components/Flag.jsx'
 import { countryCode } from '../regions.js'
-import { getDashTournaments, getEnrolmentSummary, getParticipants, getReferees, getPnl, getAnalytics, approveApplication, getRefereeApplications, updateApplication, LIVE } from '../lib/dataSource.js'
+import { getDashTournaments, getEnrolmentSummary, getParticipants, getReferees, getPnl, getAnalytics, approveApplication, getRefereeApplications, updateApplication, getSyncLog, LIVE } from '../lib/dataSource.js'
 
 const euro = (n) => '€' + n.toLocaleString('en-US')
 const initialsOf = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
@@ -3124,9 +3124,41 @@ const syncLog = [
   { time: 'Yesterday', event: 'Webhook received: new WooCommerce order', status: 'ok' },
 ]
 
+// "3 min ago" / "2 hours ago" / "Yesterday" from an ISO timestamp.
+function relativeTime(iso) {
+  const t = Date.parse(iso)
+  if (!t) return ''
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000))
+  if (s < 60) return 'Just now'
+  const m = Math.round(s / 60)
+  if (m < 60) return `${m} min ago`
+  const h = Math.round(m / 60)
+  if (h < 24) return `${h} hour${h > 1 ? 's' : ''} ago`
+  const d = Math.round(h / 24)
+  return d === 1 ? 'Yesterday' : `${d} days ago`
+}
+
+// Turn a live webhook delivery into a log row.
+function webhookToRow(e) {
+  const topic = (e.topic || '').replace('order.', '')
+  const label = topic === 'created' ? 'created' : topic === 'updated' ? 'updated' : topic || 'received'
+  return {
+    time: relativeTime(e.at),
+    event: e.orderId ? `Order #${e.orderId} ${label}${e.status ? ` (${e.status})` : ''}` : `WooCommerce order ${label}`,
+    status: e.verified === false ? 'error' : 'ok',
+  }
+}
+
 export function DashboardSync() {
   const [toast, setToast] = useState('')
+  const [live, setLive] = useState(null) // { last, log } from the webhook receiver
   const statusCls = { ok: 'bg-brand-light text-brand-dark', retry: 'bg-amber-100 text-amber-700', error: 'bg-red-50 text-red-600' }
+
+  const loadLive = () => { if (LIVE) getSyncLog().then(setLive).catch(() => {}) }
+  useEffect(loadLive, [])
+
+  const rows = live ? (live.log || []).map(webhookToRow) : syncLog
+  const lastSync = live ? (live.last ? relativeTime(live.last.at) : 'No deliveries yet') : '2 minutes ago'
   return (
     <div>
       <div className="grid sm:grid-cols-3 gap-4">
@@ -3140,19 +3172,20 @@ export function DashboardSync() {
         </div>
         <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 flex items-center gap-3">
           <Clock size={22} className="text-neutral-500" />
-          <div><p className="font-bold text-ink text-sm">Last sync</p><p className="text-xs text-neutral-500 font-semibold">2 minutes ago</p></div>
+          <div><p className="font-bold text-ink text-sm">Last sync</p><p className="text-xs text-neutral-500 font-semibold">{lastSync}</p></div>
         </div>
       </div>
 
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm font-semibold text-ink">Recent sync activity</p>
-        <button onClick={() => setToast('Sync started. WordPress is the source of truth in Phase 1.')} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-9 rounded-full hover:border-brand transition"><RefreshCw size={15} /> Sync now</button>
+        <button onClick={() => { loadLive(); setToast('Sync refreshed. WordPress is the source of truth in Phase 1.') }} className="inline-flex items-center gap-1.5 border border-neutral-200 text-ink text-sm font-semibold px-4 h-9 rounded-full hover:border-brand transition"><RefreshCw size={15} /> Sync now</button>
       </div>
 
       <div className="mt-3 bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden divide-y divide-neutral-100">
-        {syncLog.map((l, i) => (
+        {rows.length === 0 && <div className="px-4 py-6 text-sm font-medium text-neutral-500 text-center">No webhook deliveries yet. WooCommerce will post here on new and changed orders.</div>}
+        {rows.map((l, i) => (
           <div key={i} className="flex items-center gap-3 px-4 py-3">
-            <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full flex-none ${statusCls[l.status]}`}>{l.status === 'retry' ? 'Retried' : l.status === 'error' ? 'Error' : 'OK'}</span>
+            <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full flex-none ${statusCls[l.status]}`}>{l.status === 'retry' ? 'Retried' : l.status === 'error' ? 'Unverified' : 'OK'}</span>
             <span className="flex-1 text-sm font-medium text-ink">{l.event}</span>
             <span className="text-xs text-neutral-500 font-medium flex-none">{l.time}</span>
           </div>

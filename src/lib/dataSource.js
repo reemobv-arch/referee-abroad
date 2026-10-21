@@ -488,3 +488,13 @@ export async function getAnalytics() {
   if (!res.ok) throw new Error(`Analytics request failed (${res.status})`)
   return res.json()
 }
+
+// Sync activity: the WooCommerce webhook receiver records every delivery in the
+// shared store. In this clickable prototype (mock mode) there is no live store,
+// so this returns null and the Settings panel shows the demo log.
+export async function getSyncLog() {
+  if (!LIVE) return null
+  const res = await fetch('/api/webhook')
+  if (!res.ok) return null
+  return res.json()
+}

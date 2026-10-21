@@ -68,8 +68,12 @@ function DashboardLogin({ onSignIn }) {
 }
 
 export default function Dashboard() {
-  const [authed, setAuthed] = useState(() => { try { return sessionStorage.getItem('ra_cc_authed') === '1' } catch { return false } })
-  const signIn = () => { try { sessionStorage.setItem('ra_cc_authed', '1') } catch { /* ignore */ } setAuthed(true) }
+  // Prototype auth lives in memory only, so every fresh visit to the dashboard
+  // (hard refresh, or re-entering the route) lands on the login screen first.
+  // While you click around the sections the component stays mounted, so you stay
+  // signed in. The real dashboard replaces this with a WordPress admin session.
+  const [authed, setAuthed] = useState(false)
+  const signIn = () => setAuthed(true)
   const [active, setActive] = useState('tournaments')
   const [createSignal, setCreateSignal] = useState(0)
   const [focusT, setFocusT] = useState({ id: null, n: 0 })
