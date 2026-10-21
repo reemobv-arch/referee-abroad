@@ -968,10 +968,11 @@ function TournamentView({ t, onBack, onEdit }) {
                   <h3 className="font-bold text-ink text-sm">Tournament readiness</h3>
                   <p className="text-[12.5px] text-neutral-500 font-medium">What is done and what still needs attention</p>
                 </div>
-                <span className="text-[13px] font-bold text-brand-dark whitespace-nowrap">{Math.round((doneCount / steps.length) * 100)}% · {doneCount}/{steps.length} done</span>
+                <span className="text-[13px] font-bold text-brand-dark whitespace-nowrap">{doneCount}/{steps.length} done</span>
               </div>
-              <div className="h-2 rounded-full bg-neutral-200/80 overflow-hidden mb-2">
-                <span className="block h-full rounded-full bg-brand transition-all" style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }} />
+              <div className="relative h-2.5 rounded-full bg-neutral-200/80 mb-5 mt-1">
+                <span className="absolute inset-y-0 left-0 rounded-full bg-brand transition-all" style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }} />
+                <span className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 h-7 min-w-[34px] px-1.5 rounded-full bg-brand text-white text-[10px] font-extrabold flex items-center justify-center shadow-sm ring-2 ring-white transition-all" style={{ left: `${Math.round((doneCount / steps.length) * 100)}%` }}>{Math.round((doneCount / steps.length) * 100)}%</span>
               </div>
               <div>
                 {steps.map((s, i) => {
