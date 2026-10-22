@@ -261,7 +261,7 @@ export const phase1Timeline = [
     ],
   },
   {
-    n: 8, tag: 'Sprints 5 to 6', status: 'active', title: 'AI communication assistant',
+    n: 8, tag: 'Sprints 5 to 6', status: 'delivered', title: 'AI communication assistant',
     summary: 'LLM chatbot in the app plus a smart inbox that triages and drafts replies.',
     points: [
       'Chatbot in the webapp, grounded in the Referee Abroad FAQ',
