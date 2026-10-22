@@ -2106,6 +2106,7 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
   const [addingMatch, setAddingMatch] = useState(false)
   const [publishDirty, setPublishDirty] = useState(false)
   const [confirmPublish, setConfirmPublish] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   const [conflictHidden, setConflictHidden] = useState(false)
   const [extraDays, setExtraDays] = useState([])
   const [showDayImport, setShowDayImport] = useState(null)
@@ -2179,6 +2180,15 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
     if (filled > 0) { setPublishDirty(true); setToast(`AI filled ${filled} open slot${filled === 1 ? '' : 's'}. Review and publish.`) }
     else setToast('No open slots to fill.')
   }
+  // Empty this tournament's imported content (teams, schedule and appointments)
+  // so a wrong import can be wiped and re-imported from scratch.
+  const resetTournament = () => {
+    setConfirmReset(false)
+    setMatches((prev) => ({ ...prev, [tid]: [] }))
+    dashMatches[tid] = []; dashClubs[tid] = []; dashFields[tid] = []
+    setExtraDays([]); setOpenDay(null); setOpenId(null); setEdited(new Set()); setPublishDirty(false)
+    setToast('Tournament cleared. Import a file to start again.')
+  }
   const APPT_HEAD = ['Day', 'Time', 'Field', 'Home', 'Away', 'Main referee', 'Assistant 1', 'Assistant 2', '4th official', 'Observer', 'Observer category']
   const appointmentRows = () => list.map((m) => [m.day || '', m.time || '', m.pitch || '', m.home || '', m.away || '',
     refById[m.main]?.name || '', refById[m.a1]?.name || '', refById[m.a2]?.name || '', refById[m.fourth]?.name || '', obsById[m.observer]?.name || '', obsById[m.observer]?.category || ''])
@@ -2206,6 +2216,9 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
           </select>
         )}
         <span className="text-xs font-medium text-neutral-500">{teams.length === 0 ? 'Teams not imported' : `${list.length} matches · ${openSlots} without a main referee`}</span>
+        {(teams.length > 0 || list.length > 0) && (
+          <button onClick={() => setConfirmReset(true)} title="Clear this tournament's imported teams, schedule and appointments" className="inline-flex items-center gap-1.5 border border-red-200 text-red-600 text-sm font-semibold px-3.5 h-10 rounded-full hover:bg-red-50 transition"><Trash2 size={15} /> Reset</button>
+        )}
         {teams.length > 0 && list.length > 0 && (
           <div className="ml-auto flex items-center gap-2 flex-wrap">
             <button onClick={() => setShowAI(true)} className="inline-flex items-center gap-1.5 border border-brand text-brand-dark text-sm font-semibold px-4 h-10 rounded-full hover:bg-brand-light transition"><Sparkles size={15} /> Appoint with AI</button>
@@ -2415,6 +2428,19 @@ export function DashboardAppointing({ initialTournament, onImport, lockTournamen
             <div className="flex gap-3 mt-5">
               <button onClick={() => setConfirmPublish(false)} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
               <button onClick={publish} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><Send size={16} /> Publish</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {confirmReset && (
+        <Modal onClose={() => setConfirmReset(false)}>
+          <div className="p-5">
+            <div className="w-11 h-11 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center"><Trash2 size={20} /></div>
+            <h3 className="mt-3 text-xl font-extrabold text-ink">Reset this tournament?</h3>
+            <p className="mt-1.5 text-sm text-neutral-600 font-medium">This clears all imported content for {dashTournaments.find((t) => t.id === tid)?.name || 'this tournament'}: teams, fields, the schedule and every appointment. Use it to start over after a wrong import, then import a corrected file. Already published appointments stay in the app until you publish again.</p>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setConfirmReset(false)} className="h-11 px-5 rounded-full border border-neutral-200 text-neutral-600 font-semibold">Cancel</button>
+              <button onClick={resetTournament} className="flex-1 h-11 rounded-full bg-red-600 text-white font-semibold flex items-center justify-center gap-2"><Trash2 size={16} /> Reset tournament</button>
             </div>
           </div>
         </Modal>
