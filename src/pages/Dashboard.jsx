@@ -29,12 +29,32 @@ function RaMark({ size = 34 }) {
   )
 }
 
-// Command Centre login. In the prototype any sign-in goes straight through, like
-// the referee app; the real dashboard wires this to WordPress admin auth.
+// Command Centre login. Live, it authenticates the WordPress credentials and
+// only lets the admin allowlist through (api/admin-login). In the prototype
+// (mock) any sign-in goes straight through, like the referee app.
 function DashboardLogin({ onSignIn }) {
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
-  const submit = (e) => { e.preventDefault(); onSignIn() }
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!LIVE) { onSignIn(); return } // prototype: click through
+    if (!email.trim() || !pw) { setErr('Enter your username and password.'); return }
+    setErr(''); setBusy(true)
+    try {
+      const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password: pw }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.token) onSignIn(data.token)
+      else setErr(data.error || 'Could not sign in.')
+    } catch {
+      setErr('Could not reach the login service.')
+    } finally { setBusy(false) }
+  }
   const inputCls = 'w-full h-11 px-3.5 rounded-xl border border-white/15 bg-white/5 text-sm font-medium text-white placeholder-white/35 outline-none focus:border-brand'
   return (
     <div className="h-screen relative flex font-sans bg-ink text-white overflow-hidden">
@@ -56,8 +76,9 @@ function DashboardLogin({ onSignIn }) {
           <p className="text-[13px] text-white/60 font-medium mt-1 mb-6">Use your Referee Abroad account.</p>
           <label className="block mb-3.5"><span className="block text-xs font-semibold text-white/60 mb-1.5">Email or username</span><input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@refereeabroad.com" className={inputCls} autoFocus /></label>
           <label className="block mb-2"><span className="block text-xs font-semibold text-white/60 mb-1.5">Password</span><input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" className={inputCls} /></label>
-          <div className="text-right mb-5"><a href="#" onClick={(e) => e.preventDefault()} className="text-xs font-semibold text-brand hover:underline">Forgot password?</a></div>
-          <button type="submit" className="w-full h-12 rounded-full bg-brand text-white font-semibold active:scale-[0.99] transition hover:bg-brand-dark">Sign in</button>
+          {err && <p className="mb-3 text-[13px] font-semibold text-red-300">{err}</p>}
+          <div className="text-right mb-5"><a href="https://refereeabroad.com/wp-login.php?action=lostpassword" target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-brand hover:underline">Forgot password?</a></div>
+          <button type="submit" disabled={busy} className="w-full h-12 rounded-full bg-brand text-white font-semibold active:scale-[0.99] transition hover:bg-brand-dark disabled:opacity-60">{busy ? 'Signing in…' : 'Sign in'}</button>
         </form>
         <div className="absolute bottom-3.5 right-5 flex items-center gap-1.5 text-[10px] font-medium text-white/40">
           <span className="w-3.5 h-3.5 rounded bg-white/20" /> built by Reemo
@@ -68,12 +89,17 @@ function DashboardLogin({ onSignIn }) {
 }
 
 export default function Dashboard() {
-  // Prototype auth lives in memory only, so every fresh visit to the dashboard
-  // (hard refresh, or re-entering the route) lands on the login screen first.
-  // While you click around the sections the component stays mounted, so you stay
-  // signed in. The real dashboard replaces this with a WordPress admin session.
-  const [authed, setAuthed] = useState(false)
-  const signIn = () => setAuthed(true)
+  // Live: the Command Centre keeps its WordPress-admin session across refreshes
+  // (token in localStorage). Prototype (mock): auth lives in memory only, so every
+  // fresh visit lands on the login screen first, while clicking around keeps you in.
+  const [authed, setAuthed] = useState(() => {
+    if (!LIVE) return false
+    try { return !!JSON.parse(localStorage.getItem('ra_cc_session') || 'null')?.token } catch { return false }
+  })
+  const signIn = (token) => {
+    if (LIVE && token) { try { localStorage.setItem('ra_cc_session', JSON.stringify({ token })) } catch { /* ignore */ } }
+    setAuthed(true)
+  }
   const [active, setActive] = useState('tournaments')
   const [createSignal, setCreateSignal] = useState(0)
   const [focusT, setFocusT] = useState({ id: null, n: 0 })
