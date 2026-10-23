@@ -591,3 +591,14 @@ export async function disablePush() {
   } catch { /* ignore */ }
   return 'off'
 }
+
+// Command Centre (admin) auth header. In this clickable prototype (mock) there
+// is no real admin session, so this is empty; the real build attaches the
+// WordPress-admin token and the server enforces the allowlist.
+function ccToken() {
+  try { return JSON.parse(localStorage.getItem('ra_cc_session') || 'null')?.token || null } catch { return null }
+}
+export function ccAuthHeaders() {
+  const t = ccToken()
+  return t ? { Authorization: `Bearer ${t}` } : {}
+}

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
-  Trophy, Users, MessageSquare, BarChart3, ArrowLeft, Plus,
+  Trophy, Users, MessageSquare, BarChart3, LogOut, Plus,
   Search, Settings, X,
 } from 'lucide-react'
 import {
@@ -100,6 +99,11 @@ export default function Dashboard() {
     if (LIVE && token) { try { localStorage.setItem('ra_cc_session', JSON.stringify({ token })) } catch { /* ignore */ } }
     setAuthed(true)
   }
+  const signOut = () => {
+    try { localStorage.removeItem('ra_cc_session') } catch { /* ignore */ }
+    setActive('tournaments')
+    setAuthed(false)
+  }
   const [active, setActive] = useState('tournaments')
   const [createSignal, setCreateSignal] = useState(0)
   const [focusT, setFocusT] = useState({ id: null, n: 0 })
@@ -129,6 +133,13 @@ export default function Dashboard() {
     const onDm = (e) => setDmUnread(e.detail || 0)
     window.addEventListener('ra-dm-unread', onDm)
     return () => window.removeEventListener('ra-dm-unread', onDm)
+  }, [])
+  // An admin API call that comes back 401/403 (expired/invalid session) drops
+  // the dashboard back to its login.
+  useEffect(() => {
+    const onSignout = () => { setActive('tournaments'); setAuthed(false) }
+    window.addEventListener('ra-cc-signout', onSignout)
+    return () => window.removeEventListener('ra-cc-signout', onSignout)
   }, [])
   useEffect(() => {
     if (!authed) return
@@ -177,9 +188,9 @@ export default function Dashboard() {
         </nav>
 
         <div className="px-3 py-3 border-t border-white/10">
-          <Link to="/" className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-neutral-400 hover:text-white transition">
-            <ArrowLeft size={15} /> Back to hub
-          </Link>
+          <button onClick={signOut} className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-neutral-400 hover:text-white transition">
+            <LogOut size={15} /> Log out
+          </button>
         </div>
       </aside>
 
