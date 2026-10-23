@@ -13,7 +13,7 @@ import {
 import { FAQ_ITEMS } from '../faqContent.js'
 import Flag from '../components/Flag.jsx'
 import { countryCode } from '../regions.js'
-import { getDashTournaments, getEnrolmentSummary, getParticipants, getReferees, getPnl, getAnalytics, approveApplication, getRefereeApplications, updateApplication, getSyncLog, getDmThreads, getDmThread, sendDmReply, markDmReadAdmin, LIVE } from '../lib/dataSource.js'
+import { getDashTournaments, getEnrolmentSummary, getParticipants, getReferees, getPnl, getAnalytics, approveApplication, getRefereeApplications, updateApplication, getSyncLog, getAdmins, getDmThreads, getDmThread, sendDmReply, markDmReadAdmin, LIVE } from '../lib/dataSource.js'
 
 const euro = (n) => '€' + n.toLocaleString('en-US')
 const initialsOf = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
@@ -3424,6 +3424,16 @@ export function DashboardSettings() {
   const [saved, setSaved] = useState(false)
   const [team, setTeam] = useState(roleRows)
   const setRole = (i, role) => setTeam((prev) => prev.map((x, j) => j === i ? { ...x, role, access: TEAM_ROLE_ACCESS[role] || x.access } : x))
+  // Live: the real Command Centre allowlist (everyone has full access in Phase 1;
+  // granular roles are a Phase 2 item). The prototype keeps the editable demo.
+  const [liveTeam, setLiveTeam] = useState(null)
+  useEffect(() => {
+    if (!LIVE) return
+    getAdmins().then((rows) => {
+      if (Array.isArray(rows)) setLiveTeam(rows.map((a) => ({ name: a.name, role: 'Admin', access: 'Full access', you: a.you })))
+    }).catch(() => {})
+  }, [])
+  const rows = liveTeam || team
   const set = (k) => (e) => { setOrg((s) => ({ ...s, [k]: e.target.value })); setSaved(false) }
   const toggle = (k) => setIntegrations((s) => ({ ...s, [k]: !s[k] }))
   const intList = [
@@ -3464,21 +3474,22 @@ export function DashboardSettings() {
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
         <div className="flex items-center justify-between gap-2 mb-4">
           <span className="flex items-center gap-2 text-sm font-bold text-ink"><Users size={17} className="text-brand-dark" /> Team &amp; roles</span>
-          <span className="text-[12px] font-medium text-neutral-400">Click a role to change it</span>
+          <span className="text-[12px] font-medium text-neutral-400">{liveTeam ? 'Accounts that can open the Command Centre' : 'Click a role to change it'}</span>
         </div>
         <div className="divide-y divide-neutral-100">
-          {team.map((r, i) => {
-            const isYou = r.name === TEAM_CURRENT_USER
+          {rows.map((r, i) => {
+            const isYou = liveTeam ? r.you : r.name === TEAM_CURRENT_USER
             return (
               <div key={i} className="flex items-center gap-3 py-2.5">
-                <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{r.name.split(' ').map((w) => w[0]).join('')}</span>
+                <span className="w-8 h-8 rounded-full bg-brand text-white text-[11px] font-bold flex items-center justify-center flex-none">{r.name.split(/[\s.(]+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}</span>
                 <span className="flex-1 min-w-0 text-sm font-semibold text-ink flex items-center gap-2"><span className="truncate">{r.name}</span>{isYou && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand text-white flex-none">You</span>}</span>
                 <span className="text-xs font-medium text-neutral-500 hidden sm:block w-56">{r.access}</span>
-                <RolePill role={r.role} editable={!isYou} onChange={(role) => setRole(i, role)} />
+                <RolePill role={r.role} editable={!liveTeam && !isYou} onChange={(role) => setRole(i, role)} />
               </div>
             )
           })}
         </div>
+        {liveTeam && <p className="mt-3 text-[11px] font-medium text-neutral-400">Everyone listed has full access. Granular roles (Coordinator, Viewer, …) come in Phase 2.</p>}
       </div>
     </div>
   )

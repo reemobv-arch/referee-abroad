@@ -602,3 +602,11 @@ export function ccAuthHeaders() {
   const t = ccToken()
   return t ? { Authorization: `Bearer ${t}` } : {}
 }
+
+// Command Centre team (admin allowlist). Mock prototype: no live source.
+export async function getAdmins() {
+  if (!LIVE) return null
+  const res = await apiFetch('/api/admins', { headers: ccAuthHeaders() })
+  if (!res.ok) return null
+  return (await res.json()).admins || []
+}
