@@ -92,7 +92,8 @@ export default function Tournaments() {
                   onClick={() => { setRegion(r.key); setQ('') }}
                   className="relative w-full h-44 rounded-3xl overflow-hidden shadow-card active:scale-[0.99] transition-transform text-left"
                 >
-                  <div className="absolute inset-0 flex items-center justify-end pr-7 opacity-95 select-none" aria-hidden="true"><Flag code={r.code} emoji={r.flag} size={132} rounded={false} /></div>
+                  {/* Big region hero: use the glossy 3D emoji flag/globe (renders on iOS/Android/macOS). The small inline flags elsewhere stay flag-icons for cross-browser consistency. */}
+                  <div className="absolute inset-0 flex items-center justify-end pr-7 select-none" aria-hidden="true" style={{ filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.35))' }}><Flag emoji={r.flag} size={128} /></div>
                   <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
                   <div className="absolute inset-0 p-5 flex flex-col justify-between text-white">
                     <div>

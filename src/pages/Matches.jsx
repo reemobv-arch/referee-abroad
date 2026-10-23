@@ -32,12 +32,10 @@ export default function Matches() {
           <section key={tournament} className="mb-3">
             <button
               onClick={() => setOpen(isOpen ? null : tournament)}
-              className="w-full flex items-center justify-between gap-2 bg-white rounded-2xl border border-neutral-200 px-4 py-3.5 active:scale-[0.99] transition text-left"
+              className="w-full flex items-center gap-3 bg-white rounded-2xl border border-neutral-200 px-4 py-4 active:scale-[0.99] transition text-left"
             >
-              <span className="min-w-0">
-                <span className="block text-[15px] font-extrabold text-ink truncate">{tournament}</span>
-                <span className="block text-[12px] font-semibold text-neutral-500">{list.length} {list.length === 1 ? 'match' : 'matches'}</span>
-              </span>
+              <span className="flex-1 min-w-0 text-[15px] font-extrabold text-ink truncate">{tournament}</span>
+              <span className="flex-none text-[13px] font-extrabold text-brand-dark">{list.length} {list.length === 1 ? 'match' : 'matches'}</span>
               <ChevronDown size={20} className={`text-neutral-500 flex-none transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             {isOpen && (
