@@ -1,12 +1,12 @@
 // Mock data for the Tournament Command Centre prototype
 
 export const dashTournaments = [
-  { id: 't1', name: 'Porto International Cup', city: 'Porto', country: 'Portugal', img: 'img/porto.jpg', dates: 'Jul 1 to Jul 5', sport: 'Football', status: 'confirmed', enrolled: 48, capacity: 60 },
-  { id: 't2', name: 'Copenhagen Cup', city: 'Copenhagen', country: 'Denmark', img: 'img/copenhagen.jpg', dates: 'Jul 10 to Jul 16', sport: 'Football', status: 'recruiting', enrolled: 31, capacity: 50 },
-  { id: 't3', name: 'IberCup Cascais', city: 'Cascais', country: 'Portugal', img: 'img/ibercup.jpg', dates: 'Jun 2 to Jun 8', sport: 'Football', status: 'recruiting', enrolled: 33, capacity: 40 },
-  { id: 't4', name: 'Costa Brava Cup', city: 'Girona', country: 'Spain', img: 'img/costabrava.jpg', dates: 'Aug 12 to Aug 16', sport: 'Football', status: 'confirmed', enrolled: 48, capacity: 60 },
-  { id: 't5', name: 'Malta Youth Festival', city: 'Valletta', country: 'Malta', img: 'img/malta.jpg', dates: 'Oct 3 to Oct 7', sport: 'Football', status: 'planned', enrolled: 12, capacity: 50 },
-  { id: 't6', name: 'Alpine Hockey Trophy', city: 'Innsbruck', country: 'Austria', img: 'img/alpine.jpg', dates: 'Nov 21 to Nov 24', sport: 'Hockey', status: 'recruiting', enrolled: 12, capacity: 40 },
+  { id: 't1', name: 'Porto International Cup', city: 'Porto', country: 'Portugal', img: 'img/porto.jpg', dates: 'Jul 1 to Jul 5', sport: 'Football', status: 'confirmed', enrolled: 48, capacity: 60, createdAt: '2025-11-02' },
+  { id: 't2', name: 'Copenhagen Cup', city: 'Copenhagen', country: 'Denmark', img: 'img/copenhagen.jpg', dates: 'Jul 10 to Jul 16', sport: 'Football', status: 'recruiting', enrolled: 31, capacity: 50, createdAt: '2025-10-18' },
+  { id: 't3', name: 'IberCup Cascais', city: 'Cascais', country: 'Portugal', img: 'img/ibercup.jpg', dates: 'Jun 2 to Jun 8', sport: 'Football', status: 'recruiting', enrolled: 33, capacity: 40, createdAt: '2025-09-30' },
+  { id: 't4', name: 'Costa Brava Cup', city: 'Girona', country: 'Spain', img: 'img/costabrava.jpg', dates: 'Aug 12 to Aug 16', sport: 'Football', status: 'confirmed', enrolled: 48, capacity: 60, createdAt: '2025-09-12' },
+  { id: 't5', name: 'Malta Youth Festival', city: 'Valletta', country: 'Malta', img: 'img/malta.jpg', dates: 'Oct 3 to Oct 7', sport: 'Football', status: 'planned', enrolled: 12, capacity: 50, createdAt: '2025-08-21' },
+  { id: 't6', name: 'Alpine Hockey Trophy', city: 'Innsbruck', country: 'Austria', img: 'img/alpine.jpg', dates: 'Nov 21 to Nov 24', sport: 'Hockey', status: 'recruiting', enrolled: 12, capacity: 40, createdAt: '2025-08-05' },
 ]
 
 // 12 referees in the pool, richer profiles.

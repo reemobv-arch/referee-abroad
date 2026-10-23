@@ -184,6 +184,11 @@ function LevelPill({ level }) {
   return <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize whitespace-nowrap ${map[level] || 'bg-brand-light text-brand-dark'}`}>{level}</span>
 }
 
+// Short creation date for the tournament card, e.g. "15 Sep 2025".
+function fmtCreated(iso) {
+  try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) } catch { return '' }
+}
+
 function StatusPill({ status }) {
   const map = {
     confirmed: 'bg-brand-light text-brand-dark',
@@ -1405,9 +1410,12 @@ export function DashboardTournaments({ createSignal, focusT, onListChange, searc
               className="group relative text-left bg-white/90 backdrop-blur-sm border border-white/90 rounded-[22px] p-5 overflow-hidden shadow-[0_12px_34px_rgba(23,32,26,0.14)] hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(23,32,26,0.20)] transition-all duration-200"
             >
               <span className={`absolute left-0 top-0 bottom-0 w-1.5 ${barCls(t.status)}`} />
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between gap-2 mb-3">
                 <StatusPill status={t.status} />
-                <ChevronRight size={18} className="text-neutral-300 group-hover:text-brand-dark transition" />
+                <span className="flex items-center gap-2">
+                  {t.createdAt && <span className="text-[11px] font-semibold text-neutral-400" title="Date this tournament was created (drives the default order)">Added {fmtCreated(t.createdAt)}</span>}
+                  <ChevronRight size={18} className="text-neutral-300 group-hover:text-brand-dark transition" />
+                </span>
               </div>
               <p className="text-[21px] font-extrabold text-ink leading-tight">{t.name}</p>
               <p className="mt-1.5 flex items-center gap-2 text-[13px] font-semibold text-neutral-500 flex-wrap">
