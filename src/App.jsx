@@ -23,7 +23,6 @@ import ChatOrg from './pages/ChatOrg.jsx'
 import GroupChat from './pages/GroupChat.jsx'
 import Matches from './pages/Matches.jsx'
 import MatchDetail from './pages/MatchDetail.jsx'
-import Availability from './pages/Availability.jsx'
 import NotificationPrefs from './pages/NotificationPrefs.jsx'
 import Assistant from './pages/Assistant.jsx'
 import Notifications from './pages/Notifications.jsx'
@@ -80,9 +79,7 @@ export default function App() {
         <Route path="/assistant" element={<Assistant />} />
         <Route path="/faq" element={<Faq />} />
         <Route path="/notifications" element={<Notifications />} />
-        <Route path="/notification-settings" element={<NotificationPrefs />} />
-        <Route path="/availability" element={<Availability />} />
-      </Route>
+        <Route path="/notification-settings" element={<NotificationPrefs />} />      </Route>
     </Routes>
   )
 }

@@ -15,7 +15,7 @@ export default function Matches() {
     return acc
   }, {})
   const tournaments = Object.keys(byTournament)
-  const [open, setOpen] = useState(tournaments[0] || null)
+  const [open, setOpen] = useState(null) // cards start collapsed, expand on tap
 
   return (
     <div className="pb-4">

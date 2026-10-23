@@ -9,7 +9,7 @@ const initialsOf = (n) => (n || '').split(' ').map((w) => w[0]).join('').slice(0
 
 // Round profile avatar, top-right in the app. Shows the uploaded photo when
 // present, otherwise the signed-in referee's initials.
-export default function ProfileCircle({ size = 36 }) {
+export default function ProfileCircle({ size = 40 }) {
   const nav = useNavigate()
   const [photo, setPhotoState] = useState(getPhoto())
   useEffect(() => subscribePhoto(setPhotoState), [])

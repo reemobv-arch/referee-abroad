@@ -99,9 +99,10 @@ export default function Profile() {
     ? [['Email', p.email], ['Country', p.country], ['Nationality', p.nationality], ['Federation', p.federation]]
     : [['Email', f.email], ['Phone', f.phone], ['Date of birth', f.dob], ['Emergency contact', f.emergencyContact], ['Kit size', f.kit], ['Dietary', dietaryText], ['Languages', f.languages]]
 
-  // Profile completeness: 13 items. The ring around the photo shows the %.
+  // Profile completeness. The ring around the avatar shows the %. Profile photos
+  // are a Phase 2 feature, so the photo is not part of the completeness yet.
   const compFields = [
-    f.name || p.name, photo, f.dob || p.dob, p.age, p.gender || p.sex || f.sex,
+    f.name || p.name, f.dob || p.dob, p.age, p.gender || p.sex || f.sex,
     p.country, p.nationality, f.email || p.email, f.phone || p.phone,
     dietaryAnswered, f.emergencyContact, f.level || p.level, f.kit || p.kit,
   ]
@@ -126,25 +127,21 @@ export default function Profile() {
       <TopBar title="Profile" />
       <div className="px-4 pt-4 space-y-5">
         <div className="flex flex-col items-center text-center pt-2">
-          <input ref={fileRef} type="file" accept="image/*" onChange={onPick} className="hidden" />
           <div className="relative w-28 h-28">
             <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 112 112" aria-hidden="true">
               <circle cx="56" cy="56" r={R} fill="none" stroke="#E5E7EB" strokeWidth="4" />
               <circle cx="56" cy="56" r={R} fill="none" stroke="#44A546" strokeWidth="4" strokeLinecap="round"
                 strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - compPct / 100)} style={{ transition: 'stroke-dashoffset .5s' }} />
             </svg>
-            <button onClick={() => fileRef.current && fileRef.current.click()} className="absolute inset-0 m-auto w-24 h-24 active:scale-95 transition" aria-label="Upload profile photo">
+            {/* Profile photos arrive in Phase 2; for now the avatar shows initials. */}
+            <div className="absolute inset-0 m-auto w-24 h-24">
               <span className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-white text-3xl font-extrabold" style={{ background: 'linear-gradient(135deg,#3BB65C,#176B33)' }}>
-                {photo ? <img src={photo} alt="" className="w-full h-full object-cover" /> : p.initials}
+                {p.initials}
               </span>
-              <span className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white border border-neutral-200 shadow flex items-center justify-center text-brand-dark"><Camera size={16} /></span>
-            </button>
+            </div>
           </div>
           <p className="mt-2 text-[13px] font-extrabold text-brand-dark">{compPct}% profile complete</p>
           {compPct < 100 && <p className="text-[11px] font-medium text-neutral-500">{compDone} of {compTotal} details filled</p>}
-          {!photo && (
-            <p className="mt-1.5 text-[12px] font-semibold text-amber-600 flex items-center gap-1"><AlertCircle size={13} /> Profile photo required. Tap to upload.</p>
-          )}
           <p className="mt-3 text-2xl font-extrabold text-ink">{f.name || p.name}</p>
           <div className="flex items-center justify-center gap-2 mt-1.5">
             {p.level && <Pill>{p.level}</Pill>}
@@ -154,7 +151,6 @@ export default function Profile() {
 
         <div className="space-y-2.5">
           <LinkRow icon={FileText} tint="var(--mint,#E7F4E1)" color="#1F7A3A" title="Documents" sub="Tickets, itinerary, agreement" onClick={() => nav('/documents')} />
-          <LinkRow icon={CalendarClock} tint="#E4F0FB" color="#0C447C" title="Availability" sub="Set when you can referee" onClick={() => nav('/availability')} />
           <LinkRow icon={Bell} tint="#FDEFD3" color="#7A5206" title="Notifications" sub="Push and email" onClick={() => nav('/notification-settings')} />
           <LinkRow icon={HelpCircle} tint="#EDE9FB" color="#5B4BA6" title="Help & FAQ" sub="How tournaments, travel and fees work" onClick={() => nav('/faq')} />
         </div>
