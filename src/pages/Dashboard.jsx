@@ -17,14 +17,12 @@ const MENU = [
   { key: 'settings', label: 'Settings', Icon: Settings, title: 'Settings', desc: 'Organisation, integrations and roles.', Comp: DashboardSettingsHub },
 ]
 
+// The real brand icon on a light chip so it reads on the dark Command Centre.
 function RaMark({ size = 34 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
-      <circle cx="24" cy="24" r="22" fill="#E7F4E1" />
-      <path d="M14 30c-4-2-6-8-2-12s10-2 12 2c2-5 9-6 13-2s2 12-4 13c3 3 1 9-4 9-4 0-6-3-6-6-3 3-9 2-9-4z" fill="#44A546" />
-      <circle cx="20" cy="22" r="5" fill="#17201A" /><circle cx="21.5" cy="20.5" r="1.6" fill="#fff" />
-      <circle cx="31" cy="27" r="3" fill="#17201A" />
-    </svg>
+    <span className="inline-flex items-center justify-center rounded-xl bg-white flex-none" style={{ width: size, height: size }}>
+      <img src="/ra-icon.png" alt="Referee Abroad" style={{ width: Math.round(size * 0.82), height: Math.round(size * 0.82) }} className="block" />
+    </span>
   )
 }
 
@@ -158,12 +156,7 @@ export default function Dashboard() {
       {/* Sidebar */}
       <aside className="w-60 shrink-0 bg-ink text-white flex flex-col">
         <div className="px-5 py-5 flex items-center gap-2.5">
-          <svg width="34" height="34" viewBox="0 0 48 48" aria-hidden="true">
-            <circle cx="24" cy="24" r="22" fill="#E7F4E1" />
-            <path d="M14 30c-4-2-6-8-2-12s10-2 12 2c2-5 9-6 13-2s2 12-4 13c3 3 1 9-4 9-4 0-6-3-6-6-3 3-9 2-9-4z" fill="#44A546" />
-            <circle cx="20" cy="22" r="5" fill="#17201A" /><circle cx="21.5" cy="20.5" r="1.6" fill="#fff" />
-            <circle cx="31" cy="27" r="3" fill="#17201A" />
-          </svg>
+          <RaMark size={34} />
           <div className="leading-none">
             <p className="font-extrabold text-base">Referee <span className="text-brand">abroad</span></p>
             <p className="text-[10px] font-medium text-neutral-400 mt-0.5">Command Centre</p>
