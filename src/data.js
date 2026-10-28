@@ -6,7 +6,8 @@ export const user = {
   phone: '+31 6 12 34 56 78',
   country: 'Netherlands',
   flag: '🇳🇱',
-  level: 'FIFA · Cat. 1',
+  level: 'Adult regional',
+  yearsRegistered: '1-3 years',
   sport: 'Football',
   kit: 'L',
   languages: 'NL · EN · DE',
@@ -104,6 +105,8 @@ export const tournaments = [
     matches: 70,
     status: 'open',
     applied: false,
+    acceptedLevels: ['Youth', 'Adult local', 'Adult regional', 'Adult national'],
+    refereeExperience: '1-3 years',
   },
   {
     id: 'costabrava',
@@ -122,6 +125,8 @@ export const tournaments = [
     matches: 72,
     status: 'open',
     applied: false,
+    acceptedLevels: ['Semi-professional', 'Professional'],
+    refereeExperience: '>3 years',
   },
 ]
 

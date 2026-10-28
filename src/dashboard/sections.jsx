@@ -403,6 +403,7 @@ function ParticipantsTable({ t, enrol, onAction }) {
   const [roleOv, setRoleOv] = useState({})
   const [faMap, setFaMap] = useState({})
   const [sel, setSel] = useState(() => new Set())
+  const [openRef, setOpenRef] = useState(null) // participant popup (same as People > referee)
   // Prototype accommodation options + per-row pick (the real build reads these
   // from the tournament config and persists them).
   const ACCOM_OPTIONS = ['Hotel Centro', 'Hotel Rio', 'Guesthouse Park']
@@ -423,7 +424,7 @@ function ParticipantsTable({ t, enrol, onAction }) {
   const dash = (v) => (v == null || v === '' ? '—' : v)
   const ALL_COLS = [
     { key: 'num', label: '#', cell: (d) => d.num, hideable: false },
-    { key: 'name', label: 'Name', cell: (d) => dash(d.first) },
+    { key: 'name', label: 'Name', cell: (d) => <button onClick={() => setOpenRef(d.e)} className="font-semibold text-ink hover:text-brand-dark hover:underline">{dash(d.first)}</button> },
     { key: 'surname', label: 'Surname', cell: (d) => dash(d.surname) },
     { key: 'country', label: 'Country', cell: (d) => <span className="inline-flex items-center gap-1.5"><Flag code={countryCode(d.country)} emoji={d.flag} size={12} /> {d.country || '—'}</span> },
     { key: 'status', label: 'Status', cell: (d) => <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${enrolMap[d.status]}`}>{d.status}</span> },
@@ -543,7 +544,57 @@ function ParticipantsTable({ t, enrol, onAction }) {
           </tbody>
         </table>
       </div>
+
+      {openRef && <ParticipantModal e={openRef} onClose={() => setOpenRef(null)} onAction={onAction} />}
     </div>
+  )
+}
+
+// The same referee popup you get from People > referee, opened by clicking a
+// participant's name inside a tournament, so an admin can approve/decline here.
+function ParticipantModal({ e, onClose, onAction }) {
+  const r = refById[e.refId] || {}
+  const name = e.name || r.name || `Referee #${e.refId ?? ''}`
+  const country = r.country || e.country || ''
+  const canDecide = e.status === 'applied' || e.status === 'paid'
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <div className="flex items-start gap-3">
+          <span className="w-14 h-14 rounded-full bg-brand text-white text-lg font-bold flex items-center justify-center flex-none">{initialsOf(name)}</span>
+          <div className="flex-1">
+            <h3 className="text-xl font-extrabold text-ink leading-tight">{name}</h3>
+            <p className="text-sm text-neutral-500 font-medium inline-flex items-center gap-1.5"><Flag code={countryCode(country)} emoji={r.flag} size={13} /> {country}</p>
+            <div className="mt-1.5"><LevelPill level={r.level} /></div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center flex-none"><X size={18} /></button>
+        </div>
+
+        {(r.email || r.phone) && (
+          <div className="mt-4 space-y-2.5 text-sm">
+            {r.email && <div className="flex items-center gap-2 text-neutral-600 font-medium"><Mail size={15} className="text-neutral-500" /> {r.email}</div>}
+            {r.phone && <div className="flex items-center gap-2 text-neutral-600 font-medium"><Phone size={15} className="text-neutral-500" /> {r.phone}</div>}
+          </div>
+        )}
+
+        <div className="mt-4">
+          <p className="text-[11px] uppercase tracking-wide text-neutral-500 font-semibold mb-2">This tournament</p>
+          <div className="flex items-center justify-between gap-2 bg-page rounded-xl px-3 py-2.5">
+            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${enrolMap[e.status]}`}>{e.status}</span>
+            {canDecide ? (
+              <span className="flex items-center gap-1.5 flex-none">
+                <button onClick={() => { onAction(e.refId, 'approve'); onClose() }} className="text-[12px] font-bold text-white bg-brand rounded-full px-3 h-8">{e.status === 'paid' ? 'Confirm' : 'Approve'}</button>
+                <button onClick={() => { onAction(e.refId, 'decline'); onClose() }} className="text-[12px] font-bold text-red-600 border border-red-200 rounded-full px-3 h-8 hover:bg-red-50">Decline</button>
+              </span>
+            ) : <span className="text-[12px] font-semibold text-neutral-400">No action needed</span>}
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-5">
+          <button onClick={() => { onClose(); window.dispatchEvent(new CustomEvent('ra-nav', { detail: 'communication' })) }} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><MessageSquare size={16} /> Message</button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 
@@ -3201,11 +3252,22 @@ export function DashboardAnalytics() {
 /* ---------------- Assistant (FAQ + AI usage) ---------------- */
 const fmtTokens = (n) => n == null ? '—' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n)
 
+// Chat model options. Reemo stays on OpenRouter with Gemini; the admin can switch
+// which model answers, and the chosen one doubles as the fallback.
+const ASSISTANT_MODELS = [
+  { id: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'google/gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+]
+
 export function DashboardAssistant() {
   const [items, setItems] = useState(() => FAQ_ITEMS.map((x, i) => ({ id: 'f' + i, q: x.q, a: x.a })))
   const [editing, setEditing] = useState(null) // id or 'new'
   const [draft, setDraft] = useState({ q: '', a: '' })
   const [ai, setAi] = useState(null)
+  const [model, setModel] = useState(ASSISTANT_MODELS[0].id)       // P8: switchable chat model (also the fallback)
+  const [settingsOpen, setSettingsOpen] = useState(false)          // P9: instructions + usage caps
+  const [cfg, setCfg] = useState({ perHour: 30, maxChars: 300, shortAnswers: true, instructions: ['Only answer questions about Referee Abroad; politely decline anything unrelated.'] })
 
   useEffect(() => {
     if (!LIVE) return
@@ -3227,7 +3289,17 @@ export function DashboardAssistant() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-ink"><Coins size={17} className="text-brand" /> AI assistant</div>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink"><Coins size={17} className="text-brand" /> AI assistant</div>
+          <div className="flex items-center gap-2">
+            <label className="text-[12px] font-semibold text-neutral-500 hidden sm:block">Model</label>
+            <select value={model} onChange={(e) => setModel(e.target.value)}
+              className="h-9 px-3 rounded-full border border-neutral-200 bg-white text-[13px] font-semibold text-ink outline-none focus:border-brand cursor-pointer">
+              {ASSISTANT_MODELS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+            </select>
+          </div>
+        </div>
+        <p className="text-xs font-medium text-neutral-500 mb-3 -mt-1">On OpenRouter. The selected model answers in the app and is used as the fallback.</p>
         {LIVE ? (
           ai && ai.configured ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -3254,7 +3326,10 @@ export function DashboardAssistant() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-ink"><HelpCircle size={17} className="text-brand" /> FAQ knowledge base <span className="text-neutral-500 font-medium">({items.length})</span></div>
-          <button onClick={startNew} className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-9 rounded-full hover:bg-brand-dark transition"><Plus size={15} /> Add entry</button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setSettingsOpen(true)} className="inline-flex items-center gap-1.5 bg-white border border-neutral-200 text-ink text-sm font-semibold px-4 h-9 rounded-full hover:border-brand transition"><SlidersHorizontal size={15} /> Instructions & limits</button>
+            <button onClick={startNew} className="inline-flex items-center gap-1.5 bg-brand text-white text-sm font-semibold px-4 h-9 rounded-full hover:bg-brand-dark transition"><Plus size={15} /> Add entry</button>
+          </div>
         </div>
         <p className="text-xs font-medium text-neutral-500 mb-3">This is the source the chatbot and the smart inbox draft replies from. Keep it accurate.</p>
 
@@ -3278,7 +3353,83 @@ export function DashboardAssistant() {
           ))}
         </div>
       </div>
+
+      {settingsOpen && (
+        <AssistantSettingsModal cfg={cfg} setCfg={setCfg} model={model} setModel={setModel} models={ASSISTANT_MODELS} onClose={() => setSettingsOpen(false)} />
+      )}
     </div>
+  )
+}
+
+// P9: steer the chatbot (instructions) and cap its usage per referee. Instructions
+// show as removable lines; the model here mirrors the switch in the header.
+function AssistantSettingsModal({ cfg, setCfg, model, setModel, models, onClose }) {
+  const [text, setText] = useState('')
+  const addInstruction = () => {
+    const v = text.trim()
+    if (!v) return
+    setCfg((c) => ({ ...c, instructions: [...c.instructions, v] }))
+    setText('')
+  }
+  const removeInstruction = (i) => setCfg((c) => ({ ...c, instructions: c.instructions.filter((_, idx) => idx !== i) }))
+  const numCls = 'w-full h-10 px-3 rounded-xl border border-neutral-200 text-sm font-semibold text-ink outline-none focus:border-brand'
+  return (
+    <Modal onClose={onClose}>
+      <div className="p-5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-extrabold text-ink">Assistant instructions & limits</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-page flex items-center justify-center flex-none"><X size={18} /></button>
+        </div>
+        <p className="text-sm text-neutral-500 font-medium mt-0.5">Steer what the chatbot does and cap its usage per referee.</p>
+
+        <div className="mt-4">
+          <span className="block text-xs font-semibold text-ink mb-1">Model (also the fallback)</span>
+          <select value={model} onChange={(e) => setModel(e.target.value)}
+            className="w-full h-10 px-3 rounded-xl border border-neutral-200 bg-white text-sm font-semibold text-ink outline-none focus:border-brand cursor-pointer">
+            {models.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <div>
+            <span className="block text-xs font-semibold text-ink mb-1">Messages per hour</span>
+            <input type="number" min="1" value={cfg.perHour} onChange={(e) => setCfg((c) => ({ ...c, perHour: Number(e.target.value) }))} className={numCls} />
+          </div>
+          <div>
+            <span className="block text-xs font-semibold text-ink mb-1">Max message length (characters)</span>
+            <input type="number" min="1" value={cfg.maxChars} onChange={(e) => setCfg((c) => ({ ...c, maxChars: Number(e.target.value) }))} className={numCls} />
+          </div>
+        </div>
+
+        <label className="flex items-center gap-2 mt-3 text-sm font-medium text-ink cursor-pointer">
+          <input type="checkbox" checked={cfg.shortAnswers} onChange={(e) => setCfg((c) => ({ ...c, shortAnswers: e.target.checked }))} className="accent-brand w-4 h-4" />
+          Keep answers as short as possible (fewer tokens)
+        </label>
+
+        <div className="mt-4">
+          <span className="block text-xs font-semibold text-ink mb-1">Instructions</span>
+          <div className="flex gap-2">
+            <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addInstruction() } }}
+              placeholder="e.g. Always reply in the referee's language." className="flex-1 h-10 px-3 rounded-xl border border-neutral-200 text-sm font-medium outline-none focus:border-brand" />
+            <button onClick={addInstruction} className="h-10 px-4 rounded-xl bg-brand text-white text-sm font-semibold hover:bg-brand-dark">Add</button>
+          </div>
+          <div className="mt-2 space-y-1.5">
+            {cfg.instructions.length === 0
+              ? <p className="text-xs text-neutral-400 font-medium">No instructions yet.</p>
+              : cfg.instructions.map((ins, i) => (
+                <div key={i} className="flex items-start justify-between gap-2 bg-page rounded-xl px-3 py-2">
+                  <span className="text-sm text-ink font-medium">{ins}</span>
+                  <button onClick={() => removeInstruction(i)} className="text-neutral-400 hover:text-red-500 flex-none"><X size={15} /></button>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="flex-1 h-11 rounded-full bg-brand text-white font-semibold">Done</button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 

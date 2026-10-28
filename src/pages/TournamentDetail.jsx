@@ -1,9 +1,34 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MapPin, Clock, BedDouble, Plane, Users, MessageCircle, FileText, ChevronLeft, ArrowRight, Check, X, CalendarCheck, ShieldCheck, Shield, Upload } from 'lucide-react'
-import { myMatches } from '../data.js'
+import { myMatches, user } from '../data.js'
 import { getTournament, getMyApplications, LIVE } from '../lib/dataSource.js'
 import { Pill, Skel } from '../components/ui.jsx'
+
+// Level + experience gating. A referee may only apply when their level is among
+// the tournament's accepted levels and their experience meets the required
+// minimum. We only ever block when ineligibility can be determined, so unknown
+// or empty values never lock a referee out.
+const normKey = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+const normLevel = (s) => String(s || '').trim().toLowerCase()
+const expRank = (s) => {
+  const n = normLevel(s).replace(/\s+/g, ' ')
+  if (/(^|[^0-9])<\s*1|less than 1|under 1|0\s*-\s*1/.test(n)) return 0
+  if (/1\s*(-|to|–)\s*3/.test(n)) return 1
+  if (/>\s*3|more than 3|over 3|3\s*\+|3 years or more/.test(n)) return 2
+  return -1
+}
+function levelEligibility(t, profile) {
+  if (!t) return { eligible: true, reasons: [] }
+  const reasons = []
+  const accepted = (t.acceptedLevels || []).map(normKey).filter(Boolean)
+  const myLevel = normKey(profile && profile.level)
+  if (accepted.length && myLevel && !accepted.includes(myLevel)) reasons.push('level')
+  const reqR = expRank(t.refereeExperience)
+  const myR = expRank(profile && profile.yearsRegistered)
+  if (reqR >= 0 && myR >= 0 && myR < reqR) reasons.push('experience')
+  return { eligible: reasons.length === 0, reasons }
+}
 
 function PayModal({ t, onClose, onPaid }) {
   const [paying, setPaying] = useState(false)
@@ -59,9 +84,9 @@ function PayModal({ t, onClose, onPaid }) {
         {done ? (
           <div className="text-center py-4">
             <div className="w-14 h-14 rounded-full bg-brand-light text-brand-dark flex items-center justify-center mx-auto"><Check size={26} /></div>
-            <p className="mt-3 text-lg font-extrabold text-ink">You are applied!</p>
-            <p className="mt-1 text-sm text-neutral-500 font-medium">Payment received for {t.name}. The team will confirm your spot shortly.</p>
-            <button onClick={onPaid} className="mt-5 w-full h-11 rounded-full bg-brand text-white font-semibold">Done</button>
+            <p className="mt-3 text-lg font-extrabold text-ink">Order placed successfully</p>
+            <p className="mt-1 text-sm text-neutral-500 font-medium">You are back in the app. Your payment for {t.name} is in and the team will confirm your spot shortly.</p>
+            <button onClick={onPaid} className="mt-5 w-full h-11 rounded-full bg-brand text-white font-semibold flex items-center justify-center gap-2"><ArrowRight size={16} /> Back to the app</button>
           </div>
         ) : (
           <>
@@ -123,6 +148,9 @@ export default function TournamentDetail() {
   if (!t) return <div className="p-6">Not found.</div>
   const showApplied = requested || t.applied || !!appStatus
   const matches = myMatches.filter((m) => m.tournamentId === t.id)
+  // Level + experience gating: only relevant before the referee has applied.
+  const { eligible, reasons } = levelEligibility(t, user)
+  const blocked = !showApplied && !eligible
 
   return (
     <div className="h-full overflow-y-auto no-scrollbar pb-6">
@@ -275,6 +303,23 @@ export default function TournamentDetail() {
             <p className="text-brand-dark text-[30px] font-extrabold mt-3">€{t.price}</p>
           </div>
 
+          {blocked && (
+            <div className="mt-3 bg-red-50 border border-red-200 rounded-2xl p-4">
+              <p className="text-[15px] font-extrabold text-red-700">Your level does not meet the requirements for this tournament</p>
+              {reasons.includes('level') && (
+                <p className="text-[13px] text-red-600 font-semibold mt-1.5">
+                  Accepted levels: {(t.acceptedLevels || []).join(', ')}. Your level: {user.level || 'not set'}.
+                </p>
+              )}
+              {reasons.includes('experience') && (
+                <p className="text-[13px] text-red-600 font-semibold mt-1.5">
+                  Required experience: {t.refereeExperience}. Your experience: {user.yearsRegistered || 'not set'}.
+                </p>
+              )}
+              <p className="text-[12px] text-red-500 font-medium mt-2">Please contact the organisation if you think this is incorrect.</p>
+            </div>
+          )}
+
           {!LIVE && (
             <div className="mt-3 bg-white rounded-2xl p-4 shadow-card">
               <div className="flex items-start gap-3">
@@ -306,12 +351,13 @@ export default function TournamentDetail() {
 
         <div className="grid grid-cols-2 gap-3 mt-3">
           <button
-            onClick={() => { if (!showApplied) setPay(true) }}
+            onClick={() => { if (!showApplied && !blocked) setPay(true) }}
+            disabled={blocked}
             className={`h-12 rounded-full font-semibold flex items-center justify-center gap-2 active:scale-[0.99] ${
-              showApplied ? 'bg-brand-dark text-white' : 'bg-brand text-white'
+              showApplied ? 'bg-brand-dark text-white' : blocked ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed active:scale-100' : 'bg-brand text-white'
             }`}
           >
-            {showApplied ? (<><Check size={16} /> Applied</>) : (<>Apply now <ArrowRight size={16} /></>)}
+            {showApplied ? (<><Check size={16} /> Applied</>) : blocked ? (<><X size={16} /> Level too low</>) : (<>Apply now <ArrowRight size={16} /></>)}
           </button>
           <button
             onClick={() => nav('/chat')}
