@@ -223,8 +223,8 @@ export default function SprintBoard({ phase = 1 }) {
       }}
     >
       <div className="max-w-[1600px] mx-auto px-6 sm:px-8 py-10">
-        <Link to={isP2 ? '/' : '/phase1'} className="inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm mb-8">
-          <ArrowLeft size={17} /> {isP2 ? 'Back to hub' : 'Back to Fase 1'}
+        <Link to={isP2 ? '/phase2' : '/phase1'} className="inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm mb-8">
+          <ArrowLeft size={17} /> {isP2 ? 'Back to Fase 2' : 'Back to Fase 1'}
         </Link>
 
         <div className="flex items-center justify-between gap-4 flex-wrap">

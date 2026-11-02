@@ -1,0 +1,296 @@
+import { useRef, useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { ArrowLeft, ChevronDown, Download, Eraser, Check } from 'lucide-react'
+import Logo from '../components/Logo.jsx'
+import offer from '../offerData.js'
+
+// Phase 2 agreement. Same structure as the Phase 1 contract, with Phase 2 wording
+// and no fixed fee or hourly rate in the text: both follow the Phase 2 commercial
+// offer. Party details and signatories are reused from the shared offer data.
+// Signatures are stored under a 'p2-' key prefix so they never clash with Phase 1.
+
+const keyOf = (name) => 'p2-' + String(name).replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()
+
+const bgStyle = {
+  backgroundImage: 'linear-gradient(rgba(244,245,244,0.58), rgba(244,245,244,0.60)), url(img/doc-bg.jpg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundAttachment: 'fixed',
+}
+
+function SignField({ label, name, role, remote, onSave }) {
+  const ref = useRef(null)
+  const savedRef = useRef(false)
+  const [saved, setSaved] = useState(false)
+  const [date, setDate] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [hint, setHint] = useState('')
+
+  useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    ctx.lineWidth = 2.2
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = '#17201A'
+    let drawing = false
+    let last = null
+    const pos = (e) => {
+      const r = canvas.getBoundingClientRect()
+      return { x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height) }
+    }
+    const down = (e) => { if (savedRef.current) return; drawing = true; last = pos(e); setHint(''); e.preventDefault() }
+    const move = (e) => {
+      if (!drawing || savedRef.current) return
+      const p = pos(e)
+      ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke()
+      last = p; e.preventDefault()
+    }
+    const up = () => { drawing = false }
+    canvas.addEventListener('pointerdown', down)
+    canvas.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    return () => {
+      canvas.removeEventListener('pointerdown', down)
+      canvas.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!remote || !remote.img || savedRef.current) return
+    const canvas = ref.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    img.src = remote.img
+    savedRef.current = true
+    setSaved(true)
+    setDate(remote.date || '')
+  }, [remote])
+
+  const hasInk = () => {
+    const cv = ref.current
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data
+    for (let j = 3; j < d.length; j += 4) { if (d[j] > 0) return true }
+    return false
+  }
+  const clear = () => { const cv = ref.current; cv.getContext('2d').clearRect(0, 0, cv.width, cv.height); setHint('') }
+  const save = async () => {
+    if (busy) return
+    if (!hasInk()) { setHint('Draw your signature first.'); return }
+    setBusy(true); setHint('')
+    const url = ref.current.toDataURL('image/png')
+    const ok = await onSave(url)
+    setBusy(false)
+    if (!ok) setHint('Could not save. Try again.')
+  }
+
+  return (
+    <div className={`rounded-2xl border p-4 ${saved ? 'bg-brand-light border-brand/40' : 'bg-white border-neutral-200'}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{label}</p>
+      <p className="mt-1 font-bold text-ink text-sm">{name}</p>
+      {role && <p className="text-xs text-neutral-500 font-medium">{role}</p>}
+      <div className="relative mt-2">
+        <canvas
+          ref={ref}
+          width={520}
+          height={130}
+          className={`w-full h-[100px] rounded-xl border bg-white touch-none ${saved ? 'border-brand/40' : 'border-neutral-200 cursor-crosshair'}`}
+        />
+        {saved && <span className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-wide bg-brand text-white px-2 py-0.5 rounded-full inline-flex items-center gap-1"><Check size={11} /> Signed</span>}
+      </div>
+      <div className="mt-2 flex items-center justify-between no-print min-h-[20px]">
+        {saved ? (
+          <span className="text-[11px] font-semibold text-brand-dark">Signed{date ? ` · ${date}` : ''}</span>
+        ) : (
+          <>
+            <button type="button" onClick={clear} className="text-[11px] font-semibold text-neutral-500 inline-flex items-center gap-1">
+              <Eraser size={12} /> Clear
+            </button>
+            <button type="button" onClick={save} disabled={busy} className="text-xs font-bold text-white bg-brand px-3 py-1 rounded-full disabled:opacity-60">
+              {busy ? 'Saving…' : 'Save'}
+            </button>
+          </>
+        )}
+      </div>
+      {hint && <p className="text-[11px] font-semibold text-red-500 no-print">{hint}</p>}
+    </div>
+  )
+}
+
+export default function Contract2() {
+  const [signedDate, setSignedDate] = useState('')
+  const [remote, setRemote] = useState(null)
+
+  useEffect(() => {
+    let alive = true
+    const load = async () => {
+      try {
+        const r = await fetch('/api/signatures')
+        const d = await r.json()
+        if (alive) setRemote(d.signatures || {})
+      } catch { if (alive) setRemote({}) }
+    }
+    load()
+    const t = setInterval(load, 6000)
+    return () => { alive = false; clearInterval(t) }
+  }, [])
+
+  const c = offer && offer.contract
+  if (!offer || !c) {
+    return (
+      <div className="min-h-screen bg-page text-ink font-sans flex items-center justify-center px-5">
+        <div className="text-center max-w-sm">
+          <Logo size={56} showText textClass="text-xl" />
+          <p className="mt-6 text-neutral-500 font-medium">The agreement is not available in this environment.</p>
+          <Link to="/phase2" className="mt-4 inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm">
+            <ArrowLeft size={16} /> Back to Fase 2
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const clauses = [
+    ['Parties & background', 'This agreement is entered into by Reemo B.V. (the provider) and Referee Abroad (the client). Referee Abroad organises international tournaments for referees. The provider designs, builds and maintains the Phase 2 platform described below.'],
+    ['Subject of the agreement', 'The provider delivers Phase 2 of the Referee Abroad platform: an own backend and database that replace WordPress and WooCommerce as the source of truth, a new website with Stripe payments, extended tournament and appointing functionality, and the data migration, testing and launch, plus ongoing maintenance after launch.'],
+    ['Scope & work', 'Phase 2 delivers the new backend and API, data cleaning and migration off WordPress and WooCommerce, the new website with Stripe, the agreed extra features, the extended AI appointing engine, and the testing and go-live, all built on the architecture and rollout agreed in the Phase 2 commercial offer. Work not listed in the offer is additional work under the additional work clause.'],
+    ['Collaboration & client responsibilities', 'The provider works in short iterations and shares progress regularly. The client appoints one contact person and provides content, access, credentials and approvals in good time. Delays caused by the client shift the planning and may lead to additional work.'],
+    ['Term & planning', 'Work starts in mutual agreement after signing. The indicative duration follows the commercial offer and depends on timely input from the client.'],
+    ['Delivery & acceptance', 'Deliverables are made available for review. The client tests within a reasonable period, indicatively 10 working days. Work is accepted when the client approves it, starts using it in production, or lets the review period pass without a substantiated objection. Acceptance of the final delivery triggers the final invoice.'],
+    ['Warranty', 'For two weeks after go live, the provider fixes defects in the delivered Phase 2 work free of charge. A defect is a demonstrable deviation from the agreed functionality. New wishes, changes and functionality outside the agreed scope are additional work. After this period, corrections fall under the monthly maintenance or additional work.'],
+    ['Fee & invoicing', 'For Phase 2 the client pays the fee set out in the Phase 2 commercial offer, excluding VAT, invoiced in the instalments agreed there. Invoices are due within 14 days. If an invoice is not paid on time, the provider may charge statutory interest and suspend the work and the maintenance until payment is received. The offer prices are valid for 30 days. The monthly maintenance fee may be indexed once a year.'],
+    ['Third party costs & services', 'Costs of third parties are not included in the fee and are borne by the client, including hosting, the database, domains, the payment provider fees, email and other services, and any plugins or licenses. The provider advises on these but does not carry their cost.'],
+    ['Changes & additional work', 'Changes to the scope are agreed in writing, where email is sufficient. Additional work outside the agreed scope is charged at the hourly rate set out in the commercial offer, excluding VAT, and is separate from and not included in the monthly maintenance. Only breaking changes, meaning changes required because third party platforms change in a way that breaks the platform, such as the payment provider or other integrated services, are additional work.'],
+    ['Support & maintenance', 'After launch, the maintenance covers the hours per month set out in the offer for updates, monitoring and support during business hours. There is no 24/7 guarantee. The provider aims to respond within one business day. Unused hours do not carry over. Work beyond the agreed hours is additional work.'],
+    ['Privacy & processing of personal data', 'In Phase 2, the new backend and database become the source of truth for personal data. The provider processes personal data only on the instructions of the client and in line with the GDPR. The parties enter into a data processing agreement covering the new backend.'],
+    ['Security, backups & incidents', 'In Phase 2, backups and the security of the new backend and database are set up and documented by the provider, within the hosting the client provides and pays for. The provider works with care and reports any security incident or data breach it becomes aware of without undue delay.'],
+    ['Accounts & handover', 'The client owns the hosting, domain, payment provider, database and other service accounts and their credentials. On request or at the end of the agreement, the provider hands over the delivered source code, access and documentation.'],
+    ['Intellectual property', 'On full payment, the intellectual property rights in the delivered source code and designs transfer to the client. Delivered software may include open source or third party components that remain under their own licenses and are not transferred. The provider keeps the right to reuse generic building blocks, methods and libraries that are not specific to Referee Abroad.'],
+    ['Confidentiality', 'Both parties keep confidential the business and technical information shared under this agreement and do not share it with third parties without consent, except where required by law.'],
+    ['No solicitation of staff', 'During the agreement and for 12 months after it ends, neither party approaches or hires staff or contractors of the other party who were involved in the project, without written consent.'],
+    ['Reference & portfolio', 'The provider may mention Referee Abroad as a client and show the delivered work in its portfolio and communication, unless the client objects in writing.'],
+    ['Subcontracting & assignment', 'The provider may engage subcontractors while remaining responsible for the result. Neither party transfers this agreement to a third party without the written consent of the other.'],
+    ['Liability', 'The liability of the provider is limited to the fees paid for Phase 2. The provider is not liable for indirect or consequential damage, including lost revenue or data. The software is provided without a guarantee of uninterrupted availability: the provider does not guarantee that the platform works without interruption during a tournament or event, and is not liable for any loss or disruption arising from unavailability, errors or downtime during a tournament. The provider is not responsible for downtime or unavailability caused by force majeure or by third parties, such as the hosting, the payment provider, the database provider, or the AI and language model providers and the companies behind them. The provider does not control and is not liable for downtime, degraded performance, changes, rate limits, or price changes of these services. The client keeps a suitable fallback for on-site situations. Any claim must be filed within six months after the client became aware of it. This limit does not apply in case of intent or deliberate recklessness.'],
+    ['Termination', 'Either party may terminate this agreement in writing with reasonable notice. Work performed and costs incurred up to the end date are invoiced. Maintenance is monthly and cancellable with one month notice.'],
+    ['Governing law & disputes', 'The parties first try to resolve any dispute in good faith. This agreement is governed by Dutch law and any dispute is submitted to the competent court in Amsterdam.'],
+    ['Final provisions', 'This agreement, together with the Phase 2 commercial offer, forms the complete agreement for Phase 2 and replaces earlier proposals. Changes are valid only in writing. If a provision is invalid, the remaining provisions stay in force.'],
+  ]
+
+  const signers = [
+    { label: 'For Reemo B.V.', name: c.provider.rep.split(' · ')[0], role: 'Founder' },
+    ...c.signatories.map((s) => ({ label: 'For Referee Abroad', name: s.name, role: s.role })),
+  ].map((s) => ({ ...s, key: keyOf(s.name) }))
+
+  const saveSig = async (key, name, url) => {
+    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    try {
+      const r = await fetch('/api/signatures', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ key, name, img: url, date }),
+      })
+      if (r.ok) { setRemote((p) => ({ ...(p || {}), [key]: { name, img: url, date } })); return true }
+      if (r.status === 409) {
+        const d = await r.json().catch(() => ({}))
+        if (d.existing) setRemote((p) => ({ ...(p || {}), [key]: d.existing }))
+        return true
+      }
+      return false
+    } catch { return false }
+  }
+
+  const download = () => {
+    setSignedDate(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }))
+    document.querySelectorAll('details').forEach((d) => { d.open = true })
+    setTimeout(() => window.print(), 200)
+  }
+
+  const Meta = ({ label, value }) => (
+    <div className="bg-white/80 rounded-xl border border-neutral-200 p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">{label}</p>
+      <p className="mt-0.5 text-sm font-bold text-ink leading-snug">{value}</p>
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen text-ink font-sans print:bg-white" style={bgStyle}>
+      <div className="max-w-3xl mx-auto px-5 py-10">
+        <Link to="/phase2" className="no-print inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm mb-8">
+          <ArrowLeft size={17} /> Back to Fase 2
+        </Link>
+
+        <div className="flex items-center gap-4 flex-wrap">
+          <Logo size={40} showText textClass="text-lg" />
+        </div>
+
+        <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-dark">Statement of work · Phase 2</p>
+        <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold leading-tight">Agreement, Referee Abroad platform</h1>
+        <p className="mt-2 text-neutral-600 font-medium max-w-2xl">
+          This document sets out the agreement between Reemo B.V. and Referee Abroad for Phase 2 of the platform: an own backend and database off WordPress, a new website with Stripe, extended functionality and the data migration, plus ongoing maintenance.
+        </p>
+
+        <div className="mt-6 grid sm:grid-cols-2 gap-3">
+          <div className="bg-white rounded-2xl border border-neutral-200 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Provider</p>
+            <p className="mt-1 font-bold text-ink">{c.provider.name}</p>
+            {c.provider.lines.map((l, i) => <p key={i} className="text-sm text-neutral-500 font-medium">{l}</p>)}
+            <p className="text-sm text-neutral-500 font-medium mt-1">Represented by: {c.provider.rep}</p>
+            <p className="text-sm text-neutral-500 font-medium">{c.provider.contact}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-neutral-200 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Client</p>
+            <p className="mt-1 font-bold text-ink">{c.clientName}</p>
+            {c.clientLines.map((l, i) => <p key={i} className="text-sm text-neutral-500 font-medium">{l}</p>)}
+            <p className="text-sm text-neutral-500 font-medium mt-1">Represented by: {c.signatories.map((s) => s.name).join(', ')}</p>
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Meta label="Project" value="Referee Abroad platform, Phase 2" />
+          <Meta label="Date" value="On signing" />
+          <Meta label="Start" value="In mutual agreement" />
+          <Meta label="Fee" value="Per the commercial offer" />
+        </div>
+
+        <h2 className="mt-8 text-lg font-bold text-ink">The agreement</h2>
+        <div className="mt-3 space-y-2">
+          {clauses.map(([title, body], i) => (
+            <details key={i} className="group bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+              <summary className="flex items-center gap-3 p-4 cursor-pointer list-none">
+                <span className="text-xs font-bold text-brand-dark tabular-nums w-6">{String(i + 1).padStart(2, '0')}</span>
+                <span className="flex-1 font-bold text-ink text-sm">{title}</span>
+                <ChevronDown size={18} className="no-print text-neutral-400 transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="px-4 pb-4 pl-12 text-sm text-neutral-600 font-medium leading-relaxed">{body}</p>
+            </details>
+          ))}
+        </div>
+
+        <h2 className="mt-8 text-lg font-bold text-ink">Approval &amp; signature</h2>
+        <p className="text-sm text-neutral-500 font-medium mt-1">
+          Each party signs in their own field below and clicks Save. Saved signatures are final and are shown to everyone who opens this link.
+        </p>
+
+        <div className="mt-4 grid sm:grid-cols-2 gap-3">
+          {signers.map((s) => (
+            <SignField key={s.key} label={s.label} name={s.name} role={s.role} remote={remote ? remote[s.key] : undefined} onSave={(url) => saveSig(s.key, s.name, url)} />
+          ))}
+        </div>
+
+        {signedDate
+          ? <p className="mt-4 text-sm font-semibold text-brand-dark">Signed on {signedDate}.</p>
+          : <p className="mt-4 text-sm font-medium text-neutral-500">Date: ______________</p>}
+
+        <button onClick={download} className="no-print mt-4 h-11 px-5 rounded-full bg-brand text-white text-sm font-semibold inline-flex items-center gap-1.5">
+          <Download size={16} /> Download signed PDF
+        </button>
+
+        <p className="mt-8 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Reemo · agreement · 2026</p>
+      </div>
+    </div>
+  )
+}
