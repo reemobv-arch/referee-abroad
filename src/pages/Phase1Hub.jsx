@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Database, KanbanSquare, Activity, PackageCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Receipt, FileSignature, Database, KanbanSquare, Activity, PackageCheck } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
 const activeCard =
@@ -37,7 +37,27 @@ export default function Phase1Hub() {
           </p>
         </div>
 
-        <div className="mt-10 grid grid-cols-2 gap-3 items-stretch">
+        <div className="mt-8 space-y-3">
+          <Link to="/offer" className="group flex items-center gap-4 rounded-2xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-4 shadow-card active:scale-[0.99] transition">
+            <span className="w-11 h-11 rounded-xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center transition"><Receipt size={20} /></span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm sm:text-base font-bold leading-tight text-ink group-hover:text-white transition">Commercial offer</span>
+              <span className="block text-[11px] font-medium text-neutral-500 group-hover:text-white/80 transition">Phase 1 pricing</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-dark group-hover:text-white transition">View <ArrowRight size={14} /></span>
+          </Link>
+          <Link to="/contract" className="group flex items-center gap-4 rounded-2xl bg-white border border-neutral-200 hover:bg-brand hover:border-brand p-4 shadow-card active:scale-[0.99] transition">
+            <span className="w-11 h-11 rounded-xl bg-brand-light text-brand-dark group-hover:bg-white/20 group-hover:text-white flex items-center justify-center transition"><FileSignature size={20} /></span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm sm:text-base font-bold leading-tight text-ink group-hover:text-white transition">Agreement fase 1</span>
+              <span className="block text-[11px] font-medium text-neutral-500 group-hover:text-white/80 transition">The rules we play by</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-dark group-hover:text-white transition">View <ArrowRight size={14} /></span>
+          </Link>
+        </div>
+
+        <p className="mt-8 mb-2 text-[11px] font-bold uppercase tracking-wide text-neutral-400">Project workspace</p>
+        <div className="grid grid-cols-2 gap-3 items-stretch">
           {cards.map((c) => {
             const Icon = c.icon
             return (
