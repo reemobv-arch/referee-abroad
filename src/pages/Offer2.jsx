@@ -5,23 +5,11 @@ import Logo from '../components/Logo.jsx'
 // Phase 2 commercial offer. Scope and effort, with an indicative total derived
 // from the per-step sprint estimates at a fixed sprint rate.
 const RATE = 4000      // euro per sprint (two weeks at 50/hour), excl. VAT
-const HALF_DAY = 200   // the 0.5 day architecture step, at 50/hour
 
 const euro = (n) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 
 const steps = [
-  {
-    title: 'Architecture & technical design',
-    time: '0.5 day', min: 0, max: 0,
-    body: 'Set the technical direction together: backend stack and database, where Stripe fits, and how the migration runs. The result is a short technical plan the rest builds on.',
-    features: [
-      'Choice of backend stack and database',
-      'Where Stripe and the new website fit in',
-      'Migration approach from WordPress and WooCommerce',
-      'A short written technical plan to build on',
-    ],
-  },
   {
     title: 'New backend & API',
     time: '1-2 sprints', min: 1, max: 2,
@@ -107,8 +95,8 @@ const steps = [
 export default function Offer2() {
   const sprintMin = steps.reduce((a, s) => a + s.min, 0)
   const sprintMax = steps.reduce((a, s) => a + s.max, 0)
-  const totalMin = sprintMin * RATE + HALF_DAY
-  const totalMax = sprintMax * RATE + HALF_DAY
+  const totalMin = sprintMin * RATE
+  const totalMax = sprintMax * RATE
   return (
     <div
       className="min-h-screen text-ink font-sans"
@@ -141,7 +129,7 @@ export default function Offer2() {
 
         <div className="mt-5 rounded-2xl bg-amber-100 border border-amber-200 p-4">
           <p className="text-sm font-bold text-amber-800">A sprint is two weeks of work at {euro(RATE)} excl. VAT</p>
-          <p className="text-[12px] font-medium text-amber-700 mt-0.5">Based on €50 per hour. The 0.5 day architecture step is {euro(HALF_DAY)}.</p>
+          <p className="text-[12px] font-medium text-amber-700 mt-0.5">Based on €50 per hour.</p>
         </div>
 
         <div className="mt-8 space-y-3">
@@ -170,7 +158,7 @@ export default function Offer2() {
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
               <h2 className="font-bold text-ink text-base leading-tight">Total estimate</h2>
-              <p className="text-[12px] font-medium text-neutral-500 mt-1">{sprintMin} to {sprintMax} sprints plus a half day, at {euro(RATE)} per sprint</p>
+              <p className="text-[12px] font-medium text-neutral-500 mt-1">{sprintMin} to {sprintMax} sprints, at {euro(RATE)} per sprint</p>
             </div>
             <div className="text-right tabular-nums whitespace-nowrap">
               <p className="text-2xl font-extrabold text-amber-700 leading-none">{euro(totalMin)} to {euro(totalMax)}</p>
