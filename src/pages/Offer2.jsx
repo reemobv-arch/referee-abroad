@@ -81,14 +81,12 @@ export default function Offer2() {
 
         <div className="mt-8 space-y-3">
           {steps.map((s, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-card">
+            <div key={i} className="relative bg-white rounded-2xl border border-neutral-200 p-5 shadow-card">
+              <span className="absolute top-5 right-5 text-[11px] font-semibold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full whitespace-nowrap">{s.time}</span>
               <div className="flex items-start gap-4">
                 <span className="text-sm font-extrabold text-amber-600 tabular-nums w-7 shrink-0 pt-0.5">{String(i + 1).padStart(2, '0')}</span>
                 <div className="min-w-0">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <h2 className="font-bold text-ink text-base leading-tight">{s.title}</h2>
-                    <span className="text-[11px] font-semibold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full whitespace-nowrap">{s.time}</span>
-                  </div>
+                  <h2 className="font-bold text-ink text-base leading-tight pr-28">{s.title}</h2>
                   <p className="mt-2 text-sm text-neutral-600 font-medium leading-relaxed">{s.body}</p>
                 </div>
               </div>
