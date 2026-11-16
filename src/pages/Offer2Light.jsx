@@ -5,8 +5,11 @@ import Logo from '../components/Logo.jsx'
 // Phase 2 "light" commercial offer. The trimmed scope that fits a tighter budget:
 // an own backend and Stripe, but WITHOUT the data migration, the new website, the
 // extra features or the smart appointing engine. Same sprint rate as the full
-// Phase 2 offer so the two are directly comparable.
-const RATE = 4000      // euro per sprint (two weeks at 50/hour), excl. VAT
+// Phase 2 offer so the two are directly comparable, with a fixed capped price
+// below the honest computed range (same treatment as the Phase 1 offer).
+const RATE_MIN = 5500  // euro per sprint (two weeks), excl. VAT, low end
+const RATE_MAX = 6000  // euro per sprint (two weeks), excl. VAT, high end
+const PRICE_CAP = 8000 // fixed capped price for the light scope, excl. VAT
 
 const euro = (n) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
@@ -59,8 +62,8 @@ const notIncluded = [
 export default function Offer2Light() {
   const sprintMin = steps.reduce((a, s) => a + s.min, 0)
   const sprintMax = steps.reduce((a, s) => a + s.max, 0)
-  const totalMin = sprintMin * RATE
-  const totalMax = sprintMax * RATE
+  const totalMin = sprintMin * RATE_MIN
+  const totalMax = sprintMax * RATE_MAX
   return (
     <div
       className="min-h-screen text-ink font-sans"
@@ -92,8 +95,7 @@ export default function Offer2Light() {
         </p>
 
         <div className="mt-5 rounded-2xl bg-amber-100 border border-amber-200 p-4">
-          <p className="text-sm font-bold text-amber-800">A sprint is two weeks of work at {euro(RATE)} excl. VAT</p>
-          <p className="text-[12px] font-medium text-amber-700 mt-0.5">Based on €50 per hour.</p>
+          <p className="text-sm font-bold text-amber-800">A sprint is two weeks of work at {euro(RATE_MIN)} to {euro(RATE_MAX)} excl. VAT</p>
         </div>
 
         <div className="mt-8 space-y-3">
@@ -118,16 +120,25 @@ export default function Offer2Light() {
           ))}
         </div>
 
-        <div className="mt-4 bg-white rounded-2xl border border-neutral-200 p-5 shadow-card">
+        <div className="mt-4 bg-white rounded-2xl border border-neutral-200 p-5 shadow-card tabular-nums">
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
               <h2 className="font-bold text-ink text-base leading-tight">Total estimate</h2>
-              <p className="text-[12px] font-medium text-neutral-500 mt-1">{sprintMin} to {sprintMax} sprints, at {euro(RATE)} per sprint</p>
+              <p className="text-[12px] font-medium text-neutral-500 mt-1">{sprintMin} to {sprintMax} sprints, at {euro(RATE_MIN)} to {euro(RATE_MAX)} per sprint</p>
             </div>
-            <div className="text-right tabular-nums whitespace-nowrap">
-              <p className="text-2xl font-extrabold text-amber-700 leading-none">{euro(totalMin)} to {euro(totalMax)}</p>
+            <div className="text-right whitespace-nowrap">
+              <p className="text-2xl font-extrabold text-neutral-400 leading-none line-through decoration-[3px] decoration-red-500">{euro(totalMin)} to {euro(totalMax)}</p>
               <p className="text-[11px] font-semibold text-neutral-400 mt-1">excl. VAT</p>
-              <p className="text-[11px] font-medium text-neutral-400 mt-0.5">{euro(Math.round(totalMin * 1.21))} to {euro(Math.round(totalMax * 1.21))} incl. VAT</p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-xl bg-amber-100 p-4 flex items-end justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-sm font-bold text-amber-800">Capped price for the light scope</p>
+              <p className="text-[11px] font-medium text-amber-700">{euro(Math.round(PRICE_CAP * 1.21))} incl. VAT</p>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-extrabold text-amber-800 leading-none">{euro(PRICE_CAP)}</p>
+              <p className="text-[11px] font-semibold text-amber-700 mt-1">excl. VAT · fixed</p>
             </div>
           </div>
         </div>

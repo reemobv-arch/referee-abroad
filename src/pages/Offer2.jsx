@@ -3,8 +3,12 @@ import { ArrowLeft, Check } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
 // Phase 2 commercial offer. Scope and effort, with an indicative total derived
-// from the per-step sprint estimates at a fixed sprint rate.
-const RATE = 4000      // euro per sprint (two weeks at 50/hour), excl. VAT
+// from the per-step sprint estimates at the sprint rate, then an agreed price
+// below that honest computed range (same treatment as the Phase 1 offer).
+const RATE_MIN = 5500  // euro per sprint (two weeks), excl. VAT, low end
+const RATE_MAX = 6000  // euro per sprint (two weeks), excl. VAT, high end
+const AGREED_MIN = 26000 // agreed Phase 2 price, excl. VAT, low end
+const AGREED_MAX = 40000 // agreed Phase 2 price, excl. VAT, high end
 
 const euro = (n) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
@@ -12,7 +16,7 @@ const euro = (n) =>
 const steps = [
   {
     title: 'New backend & API',
-    time: '1-2 sprints', min: 1, max: 2,
+    time: '2-3 sprints', min: 2, max: 3,
     body: 'Stand up an own backend with a database and APIs, separate from WordPress. Data models for tournaments, referees, enrolments and appointments. This becomes the new source of truth instead of WordPress.',
     features: [
       'Database schema for tournaments, referees, enrolments and appointments',
@@ -35,7 +39,7 @@ const steps = [
   },
   {
     title: 'Data migration & WordPress decoupling',
-    time: '1 sprint', min: 1, max: 1,
+    time: '2 sprints', min: 2, max: 2,
     body: 'Move the cleaned data into the new backend, decouple the app from WordPress and WooCommerce, and verify everything is correct: counts, relations and no loss.',
     features: [
       'Import the cleaned data into the new backend',
@@ -57,7 +61,7 @@ const steps = [
   },
   {
     title: 'Extra Phase 2 features',
-    time: '1 sprint', min: 1, max: 1,
+    time: '2 sprints', min: 2, max: 2,
     body: 'The agreed new features, captured as a fixed list or a set hour budget so the scope stays clear.',
     features: [
       'A fixed list of agreed new features, or a set hour budget',
@@ -80,7 +84,7 @@ const steps = [
   },
   {
     title: 'Testing, optimisation & go-live',
-    time: '0.5-1 sprint', min: 0.5, max: 1,
+    time: '1-1.5 sprints', min: 1, max: 1.5,
     body: 'End-to-end testing, performance, bug fixes and a controlled go-live with handover.',
     features: [
       'End-to-end tests across the main flows',
@@ -95,8 +99,8 @@ const steps = [
 export default function Offer2() {
   const sprintMin = steps.reduce((a, s) => a + s.min, 0)
   const sprintMax = steps.reduce((a, s) => a + s.max, 0)
-  const totalMin = sprintMin * RATE
-  const totalMax = sprintMax * RATE
+  const totalMin = sprintMin * RATE_MIN
+  const totalMax = sprintMax * RATE_MAX
   return (
     <div
       className="min-h-screen text-ink font-sans"
@@ -128,8 +132,7 @@ export default function Offer2() {
         </p>
 
         <div className="mt-5 rounded-2xl bg-amber-100 border border-amber-200 p-4">
-          <p className="text-sm font-bold text-amber-800">A sprint is two weeks of work at {euro(RATE)} excl. VAT</p>
-          <p className="text-[12px] font-medium text-amber-700 mt-0.5">Based on €50 per hour.</p>
+          <p className="text-sm font-bold text-amber-800">A sprint is two weeks of work at {euro(RATE_MIN)} to {euro(RATE_MAX)} excl. VAT</p>
         </div>
 
         <div className="mt-8 space-y-3">
@@ -154,16 +157,25 @@ export default function Offer2() {
           ))}
         </div>
 
-        <div className="mt-4 bg-white rounded-2xl border border-neutral-200 p-5 shadow-card">
+        <div className="mt-4 bg-white rounded-2xl border border-neutral-200 p-5 shadow-card tabular-nums">
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
               <h2 className="font-bold text-ink text-base leading-tight">Total estimate</h2>
-              <p className="text-[12px] font-medium text-neutral-500 mt-1">{sprintMin} to {sprintMax} sprints, at {euro(RATE)} per sprint</p>
+              <p className="text-[12px] font-medium text-neutral-500 mt-1">{sprintMin} to {sprintMax} sprints, at {euro(RATE_MIN)} to {euro(RATE_MAX)} per sprint</p>
             </div>
-            <div className="text-right tabular-nums whitespace-nowrap">
-              <p className="text-2xl font-extrabold text-amber-700 leading-none">{euro(totalMin)} to {euro(totalMax)}</p>
+            <div className="text-right whitespace-nowrap">
+              <p className="text-2xl font-extrabold text-neutral-400 leading-none line-through decoration-[3px] decoration-red-500">{euro(totalMin)} to {euro(totalMax)}</p>
               <p className="text-[11px] font-semibold text-neutral-400 mt-1">excl. VAT</p>
-              <p className="text-[11px] font-medium text-neutral-400 mt-0.5">{euro(Math.round(totalMin * 1.21))} to {euro(Math.round(totalMax * 1.21))} incl. VAT</p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-xl bg-amber-100 p-4 flex items-end justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-sm font-bold text-amber-800">Agreed Phase 2 price</p>
+              <p className="text-[11px] font-medium text-amber-700">{euro(Math.round(AGREED_MIN * 1.21))} to {euro(Math.round(AGREED_MAX * 1.21))} incl. VAT</p>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-extrabold text-amber-800 leading-none">{euro(AGREED_MIN)} to {euro(AGREED_MAX)}</p>
+              <p className="text-[11px] font-semibold text-amber-700 mt-1">excl. VAT</p>
             </div>
           </div>
         </div>
