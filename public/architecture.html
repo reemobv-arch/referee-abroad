@@ -102,7 +102,7 @@ h1.title{font-size:40px;letter-spacing:-0.5px;margin-top:20px;line-height:1.05;}
 
     <div class="eyebrow" style="margin-top:26px;">Platform architecture · proposal</div>
     <h1 class="title">From WordPress today to a platform you fully own</h1>
-    <p class="lede">A three step rollout that grows the platform without disrupting what already works. Each step ships on its own and delivers value before the next one starts.</p>
+    <p class="lede">A staged rollout that grows the platform without disrupting what already works. Each step ships on its own and delivers value before the next one starts. Fase 2 light is the leaner route to an own backend; the ideal situation is the full replacement.</p>
 
     <div class="legend" aria-label="Diagram key">
       <span class="key">How to read the diagrams</span>
@@ -240,10 +240,76 @@ h1.title{font-size:40px;letter-spacing:-0.5px;margin-top:20px;line-height:1.05;}
 
   <div class="spine"><span class="chev">Step 2</span><span class="line"></span></div>
 
-  <!-- ================= PHASE 2 ================= -->
+  <!-- ================= PHASE 2 LIGHT ================= -->
   <section class="phase">
     <div class="phase-head">
-      <span class="tag">Phase 2</span>
+      <span class="tag">Fase 2 light</span>
+      <h2>Own backend, keep the website</h2>
+    </div>
+    <p class="summary">The leaner route to an own backend: build a database Referee Abroad owns and switch payments to Stripe, while the current WordPress site keeps serving as the public website. The app and dashboard move onto the new backend; WordPress stays only as a read-only archive.</p>
+
+    <div class="panel">
+      <div class="diagram-scroll">
+        <svg class="d-svg" viewBox="0 0 1000 480" role="img" aria-label="Fase 2 light: the existing WordPress website keeps serving the public site, with Stripe checkout replacing WooCommerce. Applications and payments flow through the admin dashboard into an own backend and database that becomes the new source of truth, which the webapp also uses. WordPress is kept as a read-only archive and referee accounts are imported once.">
+          <defs>
+            <marker id="ahl" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2F7D33"/></marker>
+            <marker id="asl" markerWidth="9" markerHeight="9" refX="1.5" refY="3" orient="auto"><path d="M7,0 L0,3 L7,6 Z" fill="#2F7D33"/></marker>
+            <marker id="agl" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa39b"/></marker>
+          </defs>
+
+          <rect x="70" y="40" width="364" height="80" rx="16" fill="#fff" stroke="#DDE4DC" stroke-width="2"/>
+          <text x="252" y="74" text-anchor="middle" class="w-title" font-size="18">WordPress website</text>
+          <text x="252" y="97" text-anchor="middle" class="w-sub" font-size="12.5">kept · public site + read-only archive</text>
+
+          <circle cx="804" cy="92" r="62" fill="#44A546"/>
+          <text x="804" y="98" text-anchor="middle" class="n-title" font-size="19">Webapp</text>
+
+          <rect x="684" y="196" width="240" height="76" rx="16" fill="#fff" stroke="#DDE4DC" stroke-width="2"/>
+          <text x="804" y="230" text-anchor="middle" class="w-title" font-size="17">Stripe checkout</text>
+          <text x="804" y="251" text-anchor="middle" class="w-sub" font-size="12.5">replaces WooCommerce</text>
+
+          <rect x="560" y="312" width="382" height="156" rx="16" fill="#44A546"/>
+          <text x="751" y="384" text-anchor="middle" class="n-title" font-size="21">Admin dashboard</text>
+          <text x="751" y="409" text-anchor="middle" class="n-sub" font-size="13.5">manage tournaments · all comms</text>
+
+          <rect x="88" y="312" width="300" height="156" rx="16" fill="#17201A"/>
+          <text x="238" y="372" text-anchor="middle" class="n-title" font-size="19">Own backend</text>
+          <text x="238" y="396" text-anchor="middle" class="n-sub" font-size="13.5">+ database</text>
+          <rect x="150" y="410" width="176" height="24" rx="12" fill="#2F7D33"/>
+          <text x="238" y="426" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">new source of truth</text>
+
+          <path d="M434 96 C 560 140, 620 170, 682 206" fill="none" stroke="#2F7D33" stroke-width="2.5" marker-end="url(#ahl)"/>
+          <text x="560" y="150" text-anchor="middle" class="lbl" font-size="12.5">apply &amp; pay</text>
+
+          <line x1="804" y1="154" x2="804" y2="194" stroke="#2F7D33" stroke-width="3" marker-end="url(#ahl)"/>
+
+          <line x1="804" y1="272" x2="804" y2="310" stroke="#2F7D33" stroke-width="3" marker-end="url(#ahl)"/>
+          <text x="822" y="296" class="lbl" font-size="12.5">orders</text>
+
+          <line x1="392" y1="388" x2="556" y2="388" stroke="#2F7D33" stroke-width="2.5" marker-start="url(#asl)" marker-end="url(#ahl)"/>
+          <text x="474" y="376" text-anchor="middle" class="lbl" font-size="13">reads and writes</text>
+
+          <path d="M108 120 C 88 190, 112 250, 150 312" fill="none" stroke="#9aa39b" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#agl)"/>
+          <text x="150" y="238" class="lbl-mut" font-size="12">one time:</text>
+          <text x="150" y="254" class="lbl-mut" font-size="12">referee accounts</text>
+        </svg>
+      </div>
+      <div class="points">
+        <div class="point"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#E7F4E1"/><path d="M4.5 8.2l2.2 2.2 4.6-4.8" fill="none" stroke="#2F7D33" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>An own backend and database become the new source of truth.</div>
+        <div class="point"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#E7F4E1"/><path d="M4.5 8.2l2.2 2.2 4.6-4.8" fill="none" stroke="#2F7D33" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Payments move from WooCommerce to Stripe, on the existing site.</div>
+        <div class="point"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#E7F4E1"/><path d="M4.5 8.2l2.2 2.2 4.6-4.8" fill="none" stroke="#2F7D33" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>The app and dashboard no longer depend on WordPress for data.</div>
+        <div class="point"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#E7F4E1"/><path d="M4.5 8.2l2.2 2.2 4.6-4.8" fill="none" stroke="#2F7D33" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Referee accounts are imported once; historic orders stay in the WordPress archive.</div>
+      </div>
+      <p class="body-note">Fase 2 light drops the full data migration and the new website. You get off the WordPress data layer, and the hosting anti-bot issues with it, at a fraction of the full cost. The historic data can still be migrated later to reach the ideal situation.</p>
+    </div>
+  </section>
+
+  <div class="spine"><span class="chev">Step 3</span><span class="line"></span></div>
+
+  <!-- ================= IDEAL SITUATION ================= -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="tag">Ideal situation</span>
       <h2>The Tournament Command Centre</h2>
     </div>
     <p class="summary">The dashboard grows into one command centre for every tournament and all referee communication. A new website replaces WordPress, and the data moves into a database Referee Abroad fully owns.</p>

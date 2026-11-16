@@ -94,6 +94,12 @@ export default function Hub({ showOffer = true }) {
                   Open <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
                 </span>
               </div>
+
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-5xl font-extrabold text-amber-600 leading-none group-hover:text-white transition">0%</span>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 group-hover:text-white/80 transition">complete</span>
+              </div>
+
               <span className="mt-auto block text-2xl sm:text-3xl font-extrabold leading-tight text-ink group-hover:text-white transition">Fase 2</span>
               <span className="mt-1 block text-xs sm:text-sm font-medium text-neutral-500 group-hover:text-white/80 transition">Backlog · future wishes and requirements (own backend)</span>
             </Link>
