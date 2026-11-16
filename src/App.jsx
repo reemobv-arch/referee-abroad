@@ -9,6 +9,7 @@ import PasswordGate from './pages/PasswordGate.jsx'
 import Phase1Hub from './pages/Phase1Hub.jsx'
 import Phase2Hub from './pages/Phase2Hub.jsx'
 import Offer2 from './pages/Offer2.jsx'
+import Offer2Light from './pages/Offer2Light.jsx'
 import Contract2 from './pages/Contract2.jsx'
 import Phase1SourceOfTruth from './pages/Phase1SourceOfTruth.jsx'
 import SprintBoard from './pages/SprintBoard.jsx'
@@ -64,6 +65,7 @@ export default function App() {
       <Route path="/phase2" element={<PasswordGate><Phase2Hub /></PasswordGate>} />
       <Route path="/phase2/sprint-board" element={<PasswordGate><SprintBoard phase={2} /></PasswordGate>} />
       <Route path="/phase2/offer" element={<PasswordGate><Offer2 /></PasswordGate>} />
+      <Route path="/phase2/offer-light" element={<PasswordGate><Offer2Light /></PasswordGate>} />
       <Route path="/phase2/contract" element={<PasswordGate><Contract2 /></PasswordGate>} />
       <Route path="/phase1/progress-log" element={<PasswordGate><ProgressLog /></PasswordGate>} />
       <Route path="/phase1/handover" element={<PasswordGate><Handover /></PasswordGate>} />

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Receipt, FileSignature, KanbanSquare } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Receipt, ReceiptText, FileSignature, KanbanSquare } from 'lucide-react'
 import Logo from '../components/Logo.jsx'
 
 // Phase 2 workspace, same layout as the Phase 1 hub: the commercial offer and the
@@ -44,6 +44,14 @@ export default function Phase2Hub() {
             <span className="flex-1 min-w-0">
               <span className={wideTitle}>Commercial offer</span>
               <span className={wideSub}>Phase 2 scope and effort</span>
+            </span>
+            <span className={wideCta}>View <ArrowRight size={14} /></span>
+          </Link>
+          <Link to="/phase2/offer-light" className={wide}>
+            <span className={wideIcon}><ReceiptText size={20} /></span>
+            <span className="flex-1 min-w-0">
+              <span className={wideTitle}>Commercial offer · light</span>
+              <span className={wideSub}>Leaner scope for a tighter budget</span>
             </span>
             <span className={wideCta}>View <ArrowRight size={14} /></span>
           </Link>
