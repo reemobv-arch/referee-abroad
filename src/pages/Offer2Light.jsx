@@ -35,14 +35,15 @@ const steps = [
     ],
   },
   {
-    title: 'Stripe checkout on the existing website',
+    title: 'Stripe integration & backend coupling',
     time: '0.5 sprint', min: 0.5, max: 0.5,
-    body: 'Take payments through Stripe instead of WooCommerce, wired into the current website (no new website in this version). Orders and enrolments land in the new backend.',
+    body: 'The real work in this step is not the web pages, it is the payment plumbing behind the buy button. We replace the WooCommerce checkout with Stripe and wire every payment into the new backend, reusing the existing site so no new website is built.',
     features: [
-      'Stripe checkout replacing WooCommerce payments',
-      'Orders and enrolments flow into the new backend',
-      'Built on the existing website to save a full rebuild',
-      'Controlled go-live, client-assisted testing',
+      'Stripe checkout and webhooks (paid, failed, refunded)',
+      'Each payment creates the order in the new backend, not WooCommerce',
+      'Buy button on the existing pages points at the new Stripe flow',
+      'Payment confirmation and receipt handling',
+      'Controlled go-live, client-assisted payment testing',
     ],
   },
 ]
