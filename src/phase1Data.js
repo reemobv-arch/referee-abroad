@@ -272,7 +272,7 @@ export const phase1Timeline = [
     ],
   },
   {
-    n: 9, tag: 'Sprint 6', status: 'active', title: 'Integration, testing & launch',
+    n: 9, tag: 'Sprint 6', status: 'delivered', title: 'Integration, testing & launch',
     summary: 'Finish the wiring, test everything and go live.',
     points: [
       'WordPress and WooCommerce API and webhooks finalised',
@@ -281,7 +281,7 @@ export const phase1Timeline = [
     ],
   },
   {
-    n: 10, tag: 'Aftercare', status: 'planned', title: 'Warranty & maintenance',
+    n: 10, tag: 'Aftercare', status: 'delivered', title: 'Warranty & maintenance',
     summary: 'Support right after go-live, then ongoing maintenance.',
     points: [
       'Two weeks of free defect fixing after go-live',
