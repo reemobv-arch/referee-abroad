@@ -252,22 +252,26 @@ h1.title{font-size:40px;letter-spacing:-0.5px;margin-top:20px;line-height:1.05;}
   <section class="phase">
     <div class="phase-head">
       <span class="tag">Fase 2 light</span>
-      <h2>Own backend, keep the website</h2>
+      <h2>Own backend + new website</h2>
     </div>
-    <p class="summary">The leaner route to an own backend: build a database Referee Abroad owns and switch payments to Stripe, while the current WordPress site keeps serving as the public website. The app and dashboard move onto the new backend; WordPress stays only as a read-only archive.</p>
+    <p class="summary">The leaner route to a platform you own: a new website with Stripe checkout, an own backend and database, and the app and dashboard moved onto it. WordPress is kept only for its data and is no longer active, without the full historic migration.</p>
 
     <div class="panel">
       <div class="diagram-scroll">
-        <svg class="d-svg" viewBox="0 0 1000 480" role="img" aria-label="Fase 2 light: the existing WordPress website keeps serving the public site, with Stripe checkout replacing WooCommerce. Applications and payments flow through the admin dashboard into an own backend and database that becomes the new source of truth, which the webapp also uses. WordPress is kept as a read-only archive and referee accounts are imported once.">
+        <svg class="d-svg" viewBox="0 0 1000 480" role="img" aria-label="Fase 2 light: a new website with Stripe checkout replaces the WordPress shop. Applications and payments flow through the admin dashboard into an own backend and database that becomes the new source of truth, which the webapp also uses. WordPress is kept only for its data and is no longer active; referee accounts are imported once.">
           <defs>
             <marker id="ahl" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2F7D33"/></marker>
             <marker id="asl" markerWidth="9" markerHeight="9" refX="1.5" refY="3" orient="auto"><path d="M7,0 L0,3 L7,6 Z" fill="#2F7D33"/></marker>
             <marker id="agl" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa39b"/></marker>
           </defs>
 
-          <rect x="70" y="40" width="364" height="80" rx="16" fill="#fff" stroke="#DDE4DC" stroke-width="2"/>
-          <text x="252" y="74" text-anchor="middle" class="w-title" font-size="18">WordPress website</text>
-          <text x="252" y="97" text-anchor="middle" class="w-sub" font-size="12.5">kept · public site + read-only archive</text>
+          <rect x="70" y="36" width="360" height="60" rx="16" fill="#E7F4E1" stroke="#44A546" stroke-width="2.5"/>
+          <text x="250" y="62" text-anchor="middle" class="w-title" font-size="18" fill="#2F7D33">New website</text>
+          <text x="250" y="82" text-anchor="middle" font-size="12.5" fill="#4f7a4c" font-weight="500">new public site + Stripe</text>
+
+          <rect x="92" y="150" width="256" height="62" rx="15" fill="#fff" stroke="#c7cfc6" stroke-width="2" stroke-dasharray="6 5"/>
+          <text x="220" y="178" text-anchor="middle" font-size="16" fill="#9aa39b" font-weight="700">WordPress</text>
+          <text x="220" y="197" text-anchor="middle" font-size="12" fill="#aab2a9" font-weight="600">kept for data · no longer active</text>
 
           <circle cx="804" cy="92" r="62" fill="#44A546"/>
           <text x="804" y="98" text-anchor="middle" class="n-title" font-size="19">Webapp</text>
@@ -286,7 +290,7 @@ h1.title{font-size:40px;letter-spacing:-0.5px;margin-top:20px;line-height:1.05;}
           <rect x="150" y="410" width="176" height="24" rx="12" fill="#2F7D33"/>
           <text x="238" y="426" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">new source of truth</text>
 
-          <path d="M434 96 C 560 140, 620 170, 682 206" fill="none" stroke="#2F7D33" stroke-width="2.5" marker-end="url(#ahl)"/>
+          <path d="M430 72 C 556 118, 622 162, 682 202" fill="none" stroke="#2F7D33" stroke-width="2.5" marker-end="url(#ahl)"/>
           <text x="560" y="150" text-anchor="middle" class="lbl" font-size="12.5">apply &amp; pay</text>
 
           <line x1="804" y1="154" x2="804" y2="194" stroke="#2F7D33" stroke-width="3" marker-end="url(#ahl)"/>
@@ -297,9 +301,9 @@ h1.title{font-size:40px;letter-spacing:-0.5px;margin-top:20px;line-height:1.05;}
           <line x1="392" y1="388" x2="556" y2="388" stroke="#2F7D33" stroke-width="2.5" marker-start="url(#asl)" marker-end="url(#ahl)"/>
           <text x="474" y="376" text-anchor="middle" class="lbl" font-size="13">reads and writes</text>
 
-          <path d="M108 120 C 88 190, 112 250, 150 312" fill="none" stroke="#9aa39b" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#agl)"/>
-          <text x="150" y="238" class="lbl-mut" font-size="12">one time:</text>
-          <text x="150" y="254" class="lbl-mut" font-size="12">referee accounts</text>
+          <path d="M180 212 C 160 248, 164 284, 180 312" fill="none" stroke="#9aa39b" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#agl)"/>
+          <text x="238" y="250" text-anchor="middle" class="lbl-mut" font-size="12">one time:</text>
+          <text x="238" y="266" text-anchor="middle" class="lbl-mut" font-size="12">referee accounts</text>
 
           <circle cx="486" cy="236" r="50" fill="#44A546"/>
           <text x="486" y="231" text-anchor="middle" class="n-title" font-size="15">AI appointing</text>
@@ -312,11 +316,11 @@ h1.title{font-size:40px;letter-spacing:-0.5px;margin-top:20px;line-height:1.05;}
       </div>
       <div class="points">
         <div class="point"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#E7F4E1"/><path d="M4.5 8.2l2.2 2.2 4.6-4.8" fill="none" stroke="#2F7D33" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>An own backend and database become the new source of truth.</div>
-        <div class="point"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#E7F4E1"/><path d="M4.5 8.2l2.2 2.2 4.6-4.8" fill="none" stroke="#2F7D33" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Payments move from WooCommerce to Stripe, on the existing site.</div>
+        <div class="point"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#E7F4E1"/><path d="M4.5 8.2l2.2 2.2 4.6-4.8" fill="none" stroke="#2F7D33" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>A new website with Stripe checkout replaces the WooCommerce shop.</div>
         <div class="point"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#E7F4E1"/><path d="M4.5 8.2l2.2 2.2 4.6-4.8" fill="none" stroke="#2F7D33" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>The app and dashboard no longer depend on WordPress for data.</div>
         <div class="point"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#E7F4E1"/><path d="M4.5 8.2l2.2 2.2 4.6-4.8" fill="none" stroke="#2F7D33" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Referee accounts are imported once; historic orders stay in the WordPress archive.</div>
       </div>
-      <p class="body-note">Fase 2 light drops the full data migration and the new website. You get off the WordPress data layer, and the hosting anti-bot issues with it, at a fraction of the full cost. The historic data can still be migrated later to reach the ideal situation.</p>
+      <p class="body-note">Fase 2 light drops the full historic data migration and the smart appointing engine. You get off the active WordPress layer, and the hosting anti-bot issues with it, at a fraction of the full cost. The historic data can still be migrated later to reach the ideal situation.</p>
     </div>
   </section>
 
