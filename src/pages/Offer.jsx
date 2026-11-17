@@ -40,8 +40,8 @@ export default function Offer() {
       }}
     >
       <div className="max-w-3xl mx-auto px-5 py-10">
-        <Link to="/" className="inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm mb-8">
-          <ArrowLeft size={17} /> Back to hub
+        <Link to="/phase1" className="inline-flex items-center gap-1.5 text-brand-dark font-semibold text-sm mb-8">
+          <ArrowLeft size={17} /> Back to Fase 1
         </Link>
 
         <div className="flex items-center justify-between gap-4 flex-wrap">

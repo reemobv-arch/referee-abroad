@@ -95,7 +95,7 @@ export default function Offer2Light() {
         </p>
 
         <div className="mt-5 rounded-2xl bg-amber-100 border border-amber-200 p-4">
-          <p className="text-sm font-bold text-amber-800">A sprint is two weeks of work at {euro(RATE_MIN)} to {euro(RATE_MAX)} excl. VAT</p>
+          <p className="text-sm font-bold text-amber-800">A sprint is two weeks of work at {euro(RATE_MIN)} to {euro(RATE_MAX)}</p>
         </div>
 
         <div className="mt-8 space-y-3">
@@ -128,17 +128,16 @@ export default function Offer2Light() {
             </div>
             <div className="text-right whitespace-nowrap">
               <p className="text-2xl font-extrabold text-neutral-400 leading-none line-through decoration-[3px] decoration-red-500">{euro(totalMin)} to {euro(totalMax)}</p>
-              <p className="text-[11px] font-semibold text-neutral-400 mt-1">excl. VAT</p>
             </div>
           </div>
           <div className="mt-4 rounded-xl bg-amber-100 p-4 flex items-end justify-between gap-4 flex-wrap">
             <div>
               <p className="text-sm font-bold text-amber-800">Capped price for the light scope</p>
-              <p className="text-[11px] font-medium text-amber-700">{euro(Math.round(PRICE_CAP * 1.21))} incl. VAT</p>
+              <p className="text-[11px] font-medium text-amber-700">No VAT applied</p>
             </div>
             <div className="text-right">
               <p className="text-3xl font-extrabold text-amber-800 leading-none">{euro(PRICE_CAP)}</p>
-              <p className="text-[11px] font-semibold text-amber-700 mt-1">excl. VAT · fixed</p>
+              <p className="text-[11px] font-semibold text-amber-700 mt-1">fixed price</p>
             </div>
           </div>
         </div>
